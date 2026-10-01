@@ -7,11 +7,11 @@
 ![React](https://img.shields.io/badge/frontend-React%20%7C%20TypeScript-61DAFB)
 ![Licença](https://img.shields.io/badge/licen%C3%A7a-a%20definir-lightgrey)
 
-O **QueueLab** é uma ferramenta web educacional e experimental para modelar, simular e analisar sistemas computacionais que apresentam comportamento de filas (servidores web, APIs, bancos de dados, serviços distribuídos).
+O **QSimulador** é uma ferramenta educacional e experimental para modelar, simular e analisar sistemas computacionais que apresentam comportamento de filas (servidores web, APIs, bancos de dados, serviços distribuídos).
 
 Mais do que uma calculadora de teoria das filas, a proposta é uma **plataforma experimental** que integra, em um único fluxo, modelagem analítica, simulação de eventos discretos e análise de resultados.
 
-> **Status:** em desenvolvimento — fase de definição arquitetural e especificação. A primeira versão cobrirá o modelo **M/M/1** com cálculo analítico, simulação de eventos discretos e comparação entre os dois.
+> **Status:** em desenvolvimento — fase de definição arquitetural e especificação. A primeira versão cobrirá o modelo **M/M/1** e **M/M/c** com cálculo analítico, simulação de eventos discretos e comparação entre os dois.
 
 ---
 
@@ -57,7 +57,7 @@ O QueueLab permite ao usuário:
 | Modelo   | Situação        |
 | -------- | --------------- |
 | M/M/1    | versão inicial  |
-| M/M/c    | planejado       |
+| M/M/c    | versão inicial  |
 | M/M/1/K  | planejado       |
 | M/M/c/K  | planejado       |
 
