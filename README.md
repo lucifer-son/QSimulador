@@ -1,4 +1,4 @@
-# QueueLab
+# QSimulador
 
 > Laboratório interativo de modelagem, simulação e análise de sistemas de filas.
 
@@ -41,7 +41,7 @@ Uma ferramenta de modelagem permite estudar esses fenômenos de forma controlada
 
 ## Funcionalidades
 
-O QueueLab permite ao usuário:
+O QSimulador permite ao usuário:
 
 1. definir um modelo de filas e informar seus parâmetros;
 2. obter métricas analíticas;
