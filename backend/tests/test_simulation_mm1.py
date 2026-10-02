@@ -4,7 +4,11 @@ import numpy as np
 import pytest
 
 from app.analytical.mm1 import mm1_metrics
-from app.domain.validation.errors import QueueValidationError, UnstableSystemError
+from app.domain.validation.errors import (
+    InsufficientSampleError,
+    QueueValidationError,
+    UnstableSystemError,
+)
 from app.simulation.mm1 import run_replication, simulate_mm1
 
 # Tolerâncias relativas calibradas pela variação entre sementes
@@ -140,6 +144,7 @@ def test_unstable_system_is_rejected():
         {"warmup_time": 150},        # maior que simulation_time
         {"seed": -1},
         {"seed": 1.5},
+        {"seed": 2**53},          # acima do limite seguro para JSON
         {"confidence_level": 0},
         {"confidence_level": 1},
         {"confidence_level": 1.5},
@@ -154,3 +159,18 @@ def test_invalid_settings(kwargs):
 def test_oversized_simulation_is_rejected():
     with pytest.raises(QueueValidationError, match="grande demais"):
         simulate_mm1(40, 50, 1_000_000, replications=10)
+
+
+def test_random_seed_fits_in_json_safe_range():
+    # Inteiros acima de 2^53 perdem precisão em JavaScript.
+    assert 0 <= simulate_mm1(1, 2, 100, replications=1).seed < 2**53
+
+
+def test_max_seed_is_accepted():
+    simulate_mm1(1, 2, 50, replications=1, seed=2**53 - 1)
+
+
+def test_too_short_simulation_raises_insufficient_sample():
+    # Tempo tão curto que, na prática, nenhum cliente chega.
+    with pytest.raises(InsufficientSampleError):
+        simulate_mm1(1, 2, 0.001, replications=2, seed=1)

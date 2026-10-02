@@ -7,3 +7,7 @@ class QueueValidationError(ValueError):
 
 class UnstableSystemError(QueueValidationError):
     """O sistema não atende à condição de estabilidade do modelo."""
+
+
+class InsufficientSampleError(QueueValidationError):
+    """A simulação terminou sem clientes suficientes para estimar as métricas."""

@@ -12,12 +12,14 @@ Observações sobre as estimativas:
 - O sistema começa vazio; o warm-up descarta o período transitório inicial.
 """
 
+import secrets
 from collections.abc import Callable
 
 import numpy as np
 import simpy
 from scipy import stats
 
+from app.domain.validation.errors import InsufficientSampleError
 from app.domain.validation.mm1 import validate_mm1_parameters
 from app.domain.validation.simulation import validate_simulation_settings
 from app.simulation.results import (
@@ -170,11 +172,19 @@ def simulate_mm1(
         lam, simulation_time, replications, warmup_time, seed, confidence_level
     )
 
+    if seed is None:
+        seed = secrets.randbits(32)  # pequeno o bastante para trafegar em JSON
+
     seed_seq = np.random.SeedSequence(seed)
     runs = tuple(
         run_replication(lam, mu, T, warmup, np.random.default_rng(child), index=i)
         for i, child in enumerate(seed_seq.spawn(reps))
     )
+    if any(run.measured_customers == 0 for run in runs):
+        raise InsufficientSampleError(
+            "A simulação terminou sem clientes suficientes para estimar as "
+            "métricas. Aumente simulation_time."
+        )
     summary = {
         name: _summarize([getattr(r, name) for r in runs], level)
         for name in METRIC_NAMES
@@ -185,7 +195,7 @@ def simulate_mm1(
         simulation_time=T,
         warmup_time=warmup,
         replications=reps,
-        seed=int(seed_seq.entropy),
+        seed=seed,
         confidence_level=level,
         runs=runs,
         summary=summary,

@@ -10,6 +10,10 @@ from app.domain.validation.numbers import validate_positive_finite
 # Evita que uma requisição acidental trave a API por muito tempo.
 MAX_EXPECTED_ARRIVALS = 5_000_000
 
+# Maior inteiro representado com exatidão em JavaScript (2^53 - 1). A semente
+# trafega em JSON, então limitamos a esse valor para não ser corrompida.
+MAX_SEED = 2**53 - 1
+
 
 def validate_simulation_settings(
     lam: float,
@@ -39,8 +43,14 @@ def validate_simulation_settings(
         )
 
     if seed is not None:
-        if isinstance(seed, bool) or not isinstance(seed, Integral) or seed < 0:
-            raise QueueValidationError("seed deve ser um inteiro não negativo.")
+        if (
+            isinstance(seed, bool)
+            or not isinstance(seed, Integral)
+            or not 0 <= seed <= MAX_SEED
+        ):
+            raise QueueValidationError(
+                f"seed deve ser um inteiro entre 0 e {MAX_SEED}."
+            )
         seed = int(seed)
 
     if (
