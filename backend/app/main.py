@@ -4,7 +4,7 @@ from app.api.errors import register_exception_handlers
 from app.api.mm1 import router as mm1_router
 
 app = FastAPI(
-    title="QueueLab API",
+    title="QSimulador API",
     version="0.1.0",
     description="Modelagem, simulação e análise de sistemas de filas.",
 )
