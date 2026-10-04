@@ -2,9 +2,12 @@
 
 from fastapi import APIRouter
 
+from app.analysis.comparison import compare_mm1
 from app.analytical.mm1 import mm1_metrics
 from app.api.schemas import (
+    ComparisonResponse,
     ErrorResponse,
+    MM1CompareRequest,
     MM1CalculateRequest,
     MM1CalculateResponse,
     MM1SimulateRequest,
@@ -41,3 +44,24 @@ def simulate(request: MM1SimulateRequest) -> SimulationResponse:
     data = result.as_dict()
     data["lambda"] = data.pop("lam")
     return SimulationResponse.model_validate(data)
+
+
+@router.post("/compare", response_model=ComparisonResponse, responses=_errors)
+def compare(request: MM1CompareRequest) -> ComparisonResponse:
+    """Compara o modelo analítico com a simulação, métrica a métrica.
+
+    Para cada métrica devolve o erro absoluto, o erro relativo (%) e se o valor
+    analítico cai dentro do intervalo de confiança da simulação.
+    """
+    result = compare_mm1(
+        lam=request.lam,
+        mu=request.mu,
+        simulation_time=request.simulation_time,
+        replications=request.replications,
+        warmup_time=request.warmup_time,
+        seed=request.seed,
+        confidence_level=request.confidence_level,
+    )
+    data = result.as_dict()
+    data["lambda"] = data.pop("lam")
+    return ComparisonResponse.model_validate(data)

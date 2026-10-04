@@ -19,8 +19,8 @@ O projeto está em desenvolvimento. O núcleo do modelo **M/M/1** e a API já fu
 | --- | --- |
 | Modelo analítico M/M/1 | ✅ Implementado |
 | Simulação de eventos discretos M/M/1 (SimPy), com réplicas e intervalos de confiança | ✅ Implementado |
-| API REST (`/calculate` e `/simulate`) | ✅ Implementado |
-| Comparação analítico × simulação | 🚧 Disponível como script de demonstração; módulo e endpoint planejados |
+| API REST (`/calculate`, `/simulate` e `/compare`) | ✅ Implementado |
+| Comparação analítico × simulação (erro relativo e verificação do intervalo de confiança) | ✅ Implementado (módulo, endpoint e script de demonstração) |
 | Interface web (React + TypeScript) | 📋 Planejado |
 | Modelos M/M/c, M/M/1/K e M/M/c/K | 📋 Planejado |
 | Experimentos (varredura de parâmetros), importação do JMeter, persistência | 📋 Planejado |
@@ -77,7 +77,7 @@ O QSimulador permite (ou permitirá) ao usuário:
 1. definir um modelo de filas e informar seus parâmetros ✅
 2. obter métricas analíticas ✅
 3. executar uma simulação de eventos discretos com múltiplas replicações ✅
-4. comparar resultados analíticos e simulados, com erro relativo 🚧
+4. comparar resultados analíticos e simulados, com erro relativo ✅
 5. realizar experimentos do tipo *"e se..."* (varredura de λ, μ e número de servidores) 📋
 6. identificar regiões de alta utilização e aproximação da saturação 📋
 7. visualizar resultados em tabelas e gráficos 📋
@@ -133,17 +133,19 @@ O motor de simulação representa a evolução temporal do sistema por eventos (
 
 ## Exemplo de uso
 
-Resultado real do script de demonstração (`python -m examples.mm1_demo`), com $\lambda = 40$ req/s, $\mu = 50$ req/s, 2.000 s simulados por réplica, warm-up de 100 s, 10 replicações e semente 2026:
+Resultado real do script de demonstração (`python -m examples.mm1_demo`), que usa o mesmo módulo do endpoint `/compare`, com $\lambda = 40$ req/s, $\mu = 50$ req/s, 2.000 s simulados por réplica, warm-up de 100 s, 10 replicações e semente 2026:
 
-| Métrica | Analítico | Simulação | IC 95% | Erro relativo |
-| --- | ---: | ---: | --- | ---: |
-| $\rho$ | 0,8000 | 0,7982 | [0,7952; 0,8012] | 0,22% |
-| $L$ | 4,0000 | 3,9634 | [3,8720; 4,0547] | 0,92% |
-| $L_q$ | 3,2000 | 3,1651 | [3,0761; 3,2541] | 1,09% |
-| $W$ | 0,1000 s | 0,0992 s | [0,0971; 0,1013] | 0,80% |
-| $W_q$ | 0,0800 s | 0,0792 s | [0,0771; 0,0813] | 0,97% |
+| Métrica | Analítico | Simulação | IC 95% | Erro relativo | Analítico no IC? |
+| --- | ---: | ---: | --- | ---: | :---: |
+| $\rho$ | 0,8000 | 0,7982 | [0,7952; 0,8012] | 0,22% | sim |
+| $L$ | 4,0000 | 3,9634 | [3,8720; 4,0547] | 0,92% | sim |
+| $L_q$ | 3,2000 | 3,1651 | [3,0761; 3,2541] | 1,09% | sim |
+| $W$ | 0,1000 s | 0,0992 s | [0,0971; 0,1013] | 0,80% | sim |
+| $W_q$ | 0,0800 s | 0,0792 s | [0,0771; 0,0813] | 0,97% | sim |
 
 O valor analítico fica dentro do intervalo de confiança em todas as métricas, e a vazão observada (39,95 req/s) é praticamente igual a $\lambda$, como esperado em regime estável.
+
+**Como ler o resultado.** Com 95% de confiança em cada uma das seis métricas comparadas (as cinco acima mais a vazão), é esperado que, de vez em quando, uma delas fique fora do intervalo apenas por acaso. Em 60 execuções com sementes de 0 a 59 ($\lambda = 1$, $\mu = 2$, 5.000 de tempo simulado, warm-up de 200, 10 réplicas), todas as métricas ficaram dentro do intervalo em 54 (90%), e cada métrica individualmente ficou entre 95% e 98%. Portanto, uma métrica isolada fora do intervalo não indica erro de implementação; um erro relativo alto e repetido entre sementes diferentes, sim.
 
 ---
 
@@ -157,13 +159,13 @@ flowchart TD
     API["API<br/>FastAPI"]
     AN["Analítico<br/>M/M/1 ✅ · M/M/c · M/M/1/K · M/M/c/K"]
     SIM["Simulação<br/>SimPy (DES) ✅"]
-    ANL["Análise<br/>Comparação · Sensibilidade · Validação<br/>(planejado)"]
+    ANL["Análise<br/>Comparação ✅ · Sensibilidade · Validação"]
     DB[("PostgreSQL<br/>(planejado)")]
 
     FE -.->|HTTP / JSON| API
     API --> AN
     API --> SIM
-    API -.-> ANL
+    API --> ANL
     AN -.-> DB
     SIM -.-> DB
     ANL -.-> DB
@@ -210,7 +212,8 @@ qsimulador/
     │   │   ├── metrics/           # estrutura comum de métricas
     │   │   └── validation/        # validação de parâmetros e erros de domínio
     │   ├── experiments/           # (planejado)
-    │   ├── analysis/              # (planejado)
+    │   ├── analysis/
+    │   │   └── comparison.py      # comparação analítico × simulação
     │   └── persistence/           # (planejado)
     └── tests/
 ```
@@ -228,6 +231,7 @@ Com o servidor no ar (`python -m uvicorn app.main:app --reload`), a documentaç�
 | `GET /api/health` | Verifica se a API está no ar |
 | `POST /api/models/mm1/calculate` | Métricas analíticas do M/M/1 |
 | `POST /api/models/mm1/simulate` | Simulação de eventos discretos com réplicas |
+| `POST /api/models/mm1/compare` | Compara analítico × simulação, métrica a métrica |
 
 ### `POST /api/models/mm1/calculate`
 
@@ -283,6 +287,46 @@ Com o servidor no ar (`python -m uvicorn app.main:app --reload`), a documentaç�
 
 O `summary` traz `rho`, `L`, `Lq`, `W`, `Wq` e `throughput`; `runs` traz as métricas de cada réplica.
 
+### `POST /api/models/mm1/compare`
+
+Roda o modelo analítico e a simulação com os mesmos parâmetros e compara os resultados. A requisição é idêntica à de `/simulate`.
+
+```json
+// Resposta (resumida; o objeto "metrics" traz rho, L, Lq, W, Wq e throughput)
+{
+  "model": "M/M/1",
+  "lambda": 40.0,
+  "mu": 50.0,
+  "simulation_time": 2000.0,
+  "warmup_time": 100.0,
+  "replications": 10,
+  "seed": 2026,
+  "confidence_level": 0.95,
+  "metrics": {
+    "L": {
+      "analytical": 4.0,
+      "simulated_mean": 3.9634,
+      "ci_low": 3.872,
+      "ci_high": 4.0547,
+      "absolute_error": 0.0366,
+      "relative_error_pct": 0.9159,
+      "within_ci": true
+    }
+  },
+  "all_within_ci": true,
+  "max_relative_error_pct": 1.0895
+}
+```
+
+| Campo | Significado |
+| --- | --- |
+| `relative_error_pct` | Erro relativo da média simulada, em % do valor analítico |
+| `within_ci` | O valor analítico está dentro do intervalo de confiança da simulação? É `null` com 1 réplica (não há intervalo) |
+| `all_within_ci` | `true` se todas as métricas ficaram dentro do intervalo; `null` com 1 réplica |
+| `max_relative_error_pct` | Maior erro relativo entre as métricas |
+
+Para a vazão (`throughput`), o valor analítico de referência é $\lambda$, já que, em regime estável, a taxa de saída é igual à de chegada.
+
 ### Erros
 
 Toda requisição inválida devolve HTTP 422 com `{"code", "message", "fields"?}`:
@@ -303,6 +347,7 @@ Toda requisição inválida devolve HTTP 422 com `{"code", "message", "fields"?}
 - **Testes do motor de simulação:** casos determinísticos com resposta exata (por exemplo, chegadas a cada 1,0 e serviço de 0,5), crescimento da fila em sistema sobrecarregado e efeito do warm-up.
 - **Concordância estatística:** a simulação é comparada com o modelo analítico, com tolerâncias calibradas pela variação observada entre sementes; em testes de cobertura, os intervalos de 95% contiveram o valor analítico na proporção esperada.
 - **Reprodutibilidade:** a mesma semente produz resultados idênticos; réplicas diferentes são independentes.
+- **Testes da comparação:** erro relativo e verificação do intervalo (limites inclusivos, ausência de intervalo com 1 réplica) com dados sintéticos de resposta conhecida, e consistência entre o módulo de comparação, o modelo analítico e a simulação.
 - **Testes da API:** casos de sucesso, cada tipo de erro e a documentação OpenAPI.
 
 Para executar: `python -m pytest` (dentro de `backend/`).
@@ -345,7 +390,7 @@ users,avg_ms,p90_ms,throughput,error_rate
 - [x] **Fase 1 — Núcleo matemático:** estrutura do backend, modelo M/M/1, cálculo de ρ, L, Lq, W e Wq, validação de parâmetros e testes.
 - [x] **Fase 2 — Simulação:** integração com SimPy, chegadas e serviços exponenciais, fila e servidor, coleta de métricas, réplicas, warm-up, intervalos de confiança e endpoints da API.
 - [ ] **Fase 3 — Interface:** React + TypeScript, seleção do modelo, formulário de parâmetros, painel de métricas e gráficos.
-- [ ] **Fase 4 — Comparação:** módulo e endpoint de comparação analítico × simulação, com erro relativo e gráficos comparativos (hoje disponível como script de demonstração).
+- [x] **Fase 4 — Comparação:** módulo e endpoint de comparação analítico × simulação, com erro absoluto, erro relativo e verificação do intervalo de confiança. Os gráficos comparativos virão com a interface (Fase 3).
 - [ ] **Fase 5 — Novos modelos:** M/M/c, M/M/1/K e M/M/c/K.
 - [ ] **Fase 6 — Experimentação:** varredura de λ e μ, comparação de servidores e análise de sensibilidade.
 - [ ] **Fase 7 — Dados reais:** importação de CSV e de resultados do JMeter, comparação com o modelo e relatórios experimentais.

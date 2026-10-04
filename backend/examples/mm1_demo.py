@@ -11,9 +11,8 @@ Os valores padrão reproduzem o exemplo do README.
 import argparse
 import sys
 
-from app.analytical.mm1 import mm1_metrics
+from app.analysis.comparison import compare_mm1
 from app.domain.validation.errors import QueueValidationError
-from app.simulation.mm1 import simulate_mm1
 
 METRICS = ("rho", "L", "Lq", "W", "Wq")
 
@@ -32,14 +31,17 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
+def _verdict(within_ci: bool | None) -> str:
+    return "-" if within_ci is None else ("sim" if within_ci else "não")
+
+
 def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):  # evita erro de codificação no Windows
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
     args = build_parser().parse_args(argv)
     try:
-        exact = mm1_metrics(args.lam, args.mu)
-        result = simulate_mm1(
+        result = compare_mm1(
             args.lam,
             args.mu,
             simulation_time=args.time,
@@ -52,24 +54,29 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Erro: {exc}")
         return 1
 
-    print(f"M/M/1  lambda={args.lam:g}  mu={args.mu:g}  (rho = {exact.rho:.2f})")
+    print(f"M/M/1  lambda={args.lam:g}  mu={args.mu:g}  (rho = {result.metrics['rho'].analytical:.2f})")
     print(
         f"Simulação: T={args.time:g}, warm-up={args.warmup:g}, "
         f"{args.reps} réplicas, semente={result.seed}"
     )
     print()
     level = f"IC {args.confidence:.0%}"
-    print(f"{'métrica':<8}{'analítico':>11}{'simulação':>11}   {level:<22}{'erro':>7}")
+    print(f"{'métrica':<8}{'analítico':>11}{'simulação':>11}   {level:<20}{'erro':>7}   no IC?")
     for name in METRICS:
-        a = getattr(exact, name)
-        s = result.summary[name]
+        m = result.metrics[name]
         interval = (
-            f"[{s.ci_low:.4f}, {s.ci_high:.4f}]" if s.ci_low is not None else "(1 réplica)"
+            f"[{m.ci_low:.4f}, {m.ci_high:.4f}]" if m.ci_low is not None else "(1 réplica)"
         )
-        error = abs(s.mean - a) / a * 100
-        print(f"{name:<8}{a:>11.4f}{s.mean:>11.4f}   {interval:<22}{error:>6.2f}%")
+        err = f"{m.relative_error_pct:.2f}%"
+        print(
+            f"{name:<8}{m.analytical:>11.4f}{m.simulated_mean:>11.4f}   "
+            f"{interval:<20}{err:>7}   {_verdict(m.within_ci)}"
+        )
     print()
-    print(f"vazão observada: {result.summary['throughput'].mean:.3f} (esperado ≈ lambda = {args.lam:g})")
+    thr = result.metrics["throughput"]
+    print(f"vazão observada: {thr.simulated_mean:.3f} (esperado ≈ lambda = {args.lam:g})")
+    if result.all_within_ci is not None:
+        print(f"todas as métricas dentro do IC: {_verdict(result.all_within_ci)}")
     return 0
 
 

@@ -162,3 +162,68 @@ def test_openapi_lists_both_endpoints():
     assert r.status_code == 200
     paths = r.json()["paths"]
     assert CALC in paths and SIM in paths
+
+
+# ---------- /compare ----------
+
+CMP = "/api/models/mm1/compare"
+CMP_PAYLOAD = {"lambda": 1, "mu": 2, "simulation_time": 500, "replications": 4, "seed": 5}
+
+
+def test_compare_ok():
+    r = client.post(CMP, json=CMP_PAYLOAD)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["model"] == "M/M/1"
+    assert body["lambda"] == 1 and body["mu"] == 2 and body["seed"] == 5
+    assert set(body["metrics"]) == {"rho", "L", "Lq", "W", "Wq", "throughput"}
+    rho = body["metrics"]["rho"]
+    assert rho["analytical"] == pytest.approx(0.5)
+    assert rho["absolute_error"] >= 0
+    assert isinstance(rho["within_ci"], bool)
+    assert isinstance(body["all_within_ci"], bool)
+    assert body["max_relative_error_pct"] >= 0
+
+
+def test_compare_is_reproducible_with_seed():
+    assert client.post(CMP, json=CMP_PAYLOAD).json() == client.post(CMP, json=CMP_PAYLOAD).json()
+
+
+def test_compare_single_replication_has_null_verdict():
+    body = client.post(CMP, json={**CMP_PAYLOAD, "replications": 1}).json()
+    assert body["all_within_ci"] is None
+    assert body["metrics"]["L"]["within_ci"] is None
+    assert body["metrics"]["L"]["ci_low"] is None
+
+
+def test_compare_uses_defaults_and_reports_random_seed():
+    r = client.post(CMP, json={"lambda": 1, "mu": 2, "simulation_time": 100})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["replications"] == 10
+    assert isinstance(body["seed"], int) and 0 <= body["seed"] < 2**53
+
+
+def test_compare_unstable_system():
+    r = client.post(CMP, json={**CMP_PAYLOAD, "lambda": 2, "mu": 2})
+    assert r.status_code == 422 and r.json()["code"] == "unstable_system"
+
+
+@pytest.mark.parametrize("override", [{"simulation_time": 0}, {"replications": 0}, {"warmup_time": 500}])
+def test_compare_invalid_parameter(override):
+    r = client.post(CMP, json={**CMP_PAYLOAD, **override})
+    assert r.status_code == 422 and r.json()["code"] == "invalid_parameter"
+
+
+def test_compare_too_short_gives_insufficient_sample():
+    r = client.post(CMP, json={**CMP_PAYLOAD, "simulation_time": 0.001, "replications": 2})
+    assert r.status_code == 422 and r.json()["code"] == "insufficient_sample"
+
+
+def test_compare_malformed_request():
+    r = client.post(CMP, json={**CMP_PAYLOAD, "replications": "10"})
+    assert r.status_code == 422 and r.json()["code"] == "invalid_request"
+
+
+def test_compare_is_documented_in_openapi():
+    assert CMP in client.get("/openapi.json").json()["paths"]

@@ -50,6 +50,10 @@ class MM1SimulateRequest(BaseModel):
     )
 
 
+class MM1CompareRequest(MM1SimulateRequest):
+    """Mesmos parâmetros da simulação: o analítico usa apenas λ e μ."""
+
+
 # ---------- saída ----------
 
 class MM1CalculateResponse(BaseModel):
@@ -92,6 +96,30 @@ class SimulationResponse(BaseModel):
     confidence_level: float
     runs: list[ReplicationOut]
     summary: dict[str, MetricSummaryOut]
+
+
+class MetricComparisonOut(BaseModel):
+    analytical: float
+    simulated_mean: float
+    ci_low: float | None
+    ci_high: float | None
+    absolute_error: float
+    relative_error_pct: float | None
+    within_ci: bool | None
+
+
+class ComparisonResponse(BaseModel):
+    model: str = "M/M/1"
+    lam: float = Field(alias="lambda")
+    mu: float
+    simulation_time: float
+    warmup_time: float
+    replications: int
+    seed: int
+    confidence_level: float
+    metrics: dict[str, MetricComparisonOut]
+    all_within_ci: bool | None
+    max_relative_error_pct: float | None
 
 
 # ---------- erros ----------

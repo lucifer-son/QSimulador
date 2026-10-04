@@ -53,7 +53,7 @@ Quando o ambiente virtual está ativo, o prompt começa com `(.venv)`. **Todos o
 python -m pytest
 ```
 
-Todos os testes devem passar (96 no momento em que este guia foi escrito). Um aviso de depreciação do Starlette sobre o `httpx` pode aparecer e é inofensivo.
+Todos os testes devem passar (130 no momento em que este guia foi escrito). Um aviso de depreciação do Starlette sobre o `httpx` pode aparecer e é inofensivo.
 
 ---
 
@@ -71,15 +71,18 @@ Saída com os valores padrão (λ = 40, μ = 50):
 M/M/1  lambda=40  mu=50  (rho = 0.80)
 Simulação: T=2000, warm-up=100, 10 réplicas, semente=2026
 
-métrica   analítico  simulação   IC 95%                   erro
-rho          0.8000     0.7982   [0.7952, 0.8012]        0.22%
-L            4.0000     3.9634   [3.8720, 4.0547]        0.92%
-Lq           3.2000     3.1651   [3.0761, 3.2541]        1.09%
-W            0.1000     0.0992   [0.0971, 0.1013]        0.80%
-Wq           0.0800     0.0792   [0.0771, 0.0813]        0.97%
+métrica   analítico  simulação   IC 95%                 erro   no IC?
+rho          0.8000     0.7982   [0.7952, 0.8012]      0.22%   sim
+L            4.0000     3.9634   [3.8720, 4.0547]      0.92%   sim
+Lq           3.2000     3.1651   [3.0761, 3.2541]      1.09%   sim
+W            0.1000     0.0992   [0.0971, 0.1013]      0.80%   sim
+Wq           0.0800     0.0792   [0.0771, 0.0813]      0.97%   sim
 
 vazão observada: 39.950 (esperado ≈ lambda = 40)
+todas as métricas dentro do IC: sim
 ```
+
+A coluna **no IC?** indica se o valor analítico está dentro do intervalo de confiança da simulação (veja [Interpretando os resultados](#6-interpretando-os-resultados)).
 
 Para usar outros parâmetros:
 
@@ -121,6 +124,7 @@ Abra **http://127.0.0.1:8000/docs** no navegador. A página lista os endpoints, 
 | `GET /api/health` | Verifica se a API está no ar |
 | `POST /api/models/mm1/calculate` | Métricas analíticas do M/M/1 |
 | `POST /api/models/mm1/simulate` | Simulação de eventos discretos com réplicas |
+| `POST /api/models/mm1/compare` | Compara analítico × simulação, métrica a métrica |
 
 ### Chamadas de exemplo
 
@@ -138,6 +142,12 @@ $body = @{ lambda = 40; mu = 50; simulation_time = 2000; replications = 10;
 $r = Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/models/mm1/simulate `
   -ContentType "application/json" -Body $body
 $r.summary.L
+
+# Comparação analítico × simulação (mesmos parâmetros da simulação)
+$c = Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/models/mm1/compare `
+  -ContentType "application/json" -Body $body
+$c.all_within_ci
+$c.metrics.L
 ```
 
 **macOS / Linux (curl)**
@@ -150,6 +160,10 @@ curl -X POST http://127.0.0.1:8000/api/models/mm1/calculate \
 curl -X POST http://127.0.0.1:8000/api/models/mm1/simulate \
   -H "Content-Type: application/json" \
   -d '{"lambda": 40, "mu": 50, "simulation_time": 2000, "replications": 10, "warmup_time": 100, "seed": 2026}'
+
+curl -X POST http://127.0.0.1:8000/api/models/mm1/compare \
+  -H "Content-Type: application/json" \
+  -d '{"lambda": 40, "mu": 50, "simulation_time": 2000, "replications": 10, "warmup_time": 100, "seed": 2026}'
 ```
 
 Resposta de `/calculate`:
@@ -160,9 +174,11 @@ Resposta de `/calculate`:
 
 A resposta de `/simulate` traz os parâmetros usados, a semente, as métricas de cada réplica em `runs` e o resumo em `summary` (média, desvio padrão e intervalo de confiança de cada métrica).
 
+A resposta de `/compare` traz, para cada métrica (`rho`, `L`, `Lq`, `W`, `Wq` e `throughput`), o valor analítico, a média simulada com seu intervalo de confiança, o erro absoluto, o erro relativo em % (`relative_error_pct`) e `within_ci`, que indica se o valor analítico está dentro do intervalo. No nível superior, `all_within_ci` resume todas as métricas e `max_relative_error_pct` mostra o pior erro. Com 1 réplica não existe intervalo, então `within_ci` e `all_within_ci` vêm como `null`.
+
 ### Erros da API
 
-Qualquer requisição inválida devolve HTTP 422 com o formato `{"code", "message", "fields"?}`:
+Qualquer requisição inválida (nos três endpoints de modelo) devolve HTTP 422 com o formato `{"code", "message", "fields"?}`:
 
 | `code` | Quando acontece | O que fazer |
 | --- | --- | --- |
@@ -195,6 +211,17 @@ result = simulate_mm1(
 )
 L = result.summary["L"]
 print(L.mean, L.ci_low, L.ci_high)
+```
+
+Para comparar direto o analítico com a simulação:
+
+```python
+from app.analysis.comparison import compare_mm1
+
+cmp = compare_mm1(40, 50, simulation_time=2000, replications=10, warmup_time=100, seed=2026)
+print(cmp.all_within_ci, cmp.max_relative_error_pct)
+L = cmp.metrics["L"]
+print(L.analytical, L.simulated_mean, L.relative_error_pct, L.within_ci)
 ```
 
 Erros de parâmetro levantam `QueueValidationError` (ou `UnstableSystemError`, quando λ ≥ μ), que podem ser tratados com `try/except`. Ambos estão em `app.domain.validation.errors`.
@@ -231,6 +258,7 @@ Erros de parâmetro levantam `QueueValidationError` (ou `UnstableSystemError`, q
 Como ler a comparação entre analítico e simulação:
 
 - **O valor analítico dentro do intervalo de confiança** indica que a simulação está coerente com a teoria. Com 95% de confiança, espera-se que isso falhe em cerca de 1 a cada 20 execuções, por acaso.
+- **Uma métrica fora do intervalo, de vez em quando, é normal.** Com 95% de confiança em cada uma das seis métricas, é esperado que uma delas fique fora por acaso. Em 60 execuções com sementes de 0 a 59 (λ = 1, μ = 2, 5.000 de tempo simulado, warm-up de 200, 10 réplicas), todas ficaram dentro do intervalo em 54 (90%), e cada métrica individualmente ficou entre 95% e 98%. Desconfie de verdade quando o erro relativo for alto *e* se repetir com sementes diferentes.
 - **O erro relativo diminui** com mais réplicas e com tempo simulado maior. As métricas de fila (Lq e Wq) são mais ruidosas que ρ.
 - **Perto da saturação (ρ → 1)**, o sistema converge mais devagar e exige simulações mais longas e warm-up maior. Experimente `--lam 49 --mu 50`: a média simulada de L continua próxima do valor analítico (49), mas o intervalo de confiança fica muito mais largo (cerca de [37,8; 59,4], contra [3,87; 4,05] com λ = 40), indicando que a estimativa é bem menos precisa.
 - **Reprodutibilidade:** com a mesma `seed`, o resultado é idêntico. Se você omitir a semente, a que foi sorteada vem na resposta e pode ser reutilizada para repetir o experimento.
