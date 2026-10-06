@@ -1,6 +1,6 @@
-# Como executar o modelo atual
+# Como executar os modelos
 
-Este guia mostra como instalar e executar o que o QSimulador já tem implementado: o modelo **M/M/1** com cálculo analítico, simulação de eventos discretos (SimPy) e a API REST.
+Este guia mostra como instalar e executar o que o QSimulador já tem implementado: os modelos **M/M/1**, **M/M/c**, **M/M/1/K** e **M/M/c/K**, cada um com cálculo analítico, simulação de eventos discretos (SimPy), comparação entre os dois e a API REST.
 
 Há três formas de executar o modelo. Escolha a que combina com o que você quer fazer:
 
@@ -53,7 +53,7 @@ Quando o ambiente virtual está ativo, o prompt começa com `(.venv)`. **Todos o
 python -m pytest
 ```
 
-Todos os testes devem passar (130 no momento em que este guia foi escrito). Um aviso de depreciação do Starlette sobre o `httpx` pode aparecer e é inofensivo.
+Todos os testes devem passar (336 no momento em que este guia foi escrito). Um aviso de depreciação do Starlette sobre o `httpx` pode aparecer e é inofensivo.
 
 ---
 
@@ -101,6 +101,47 @@ python -m examples.mm1_demo --help
 | `--seed` | Semente aleatória | 2026 |
 | `--confidence` | Nível do intervalo de confiança | 0.95 |
 
+### Vários servidores e capacidade finita
+
+O script `queue_demo` faz a mesma comparação para M/M/c, M/M/1/K e M/M/c/K. O padrão é um M/M/3/6 (3 servidores, capacidade total de 6 clientes):
+
+```bash
+python -m examples.queue_demo
+```
+
+```text
+M/M/3/6  lambda=25  mu=10  servidores=3  capacidade=6
+Simulação: T=2000, warm-up=100, 10 réplicas, semente=2026
+
+métrica      analítico  simulação   IC 95%                 erro   no IC?
+rho             0.7480     0.7475   [0.7460, 0.7490]      0.07%   sim
+L               2.9445     2.9435   [2.9346, 2.9524]      0.03%   sim
+Lq              0.7005     0.7010   [0.6948, 0.7073]      0.07%   sim
+W               0.1312     0.1312   [0.1306, 0.1318]      0.03%   sim
+Wq              0.0312     0.0312   [0.0309, 0.0316]      0.09%   sim
+throughput     22.4396    22.4381   [22.3748, 22.5013]    0.01%   sim
+p_wait          0.4984     0.4989   [0.4963, 0.5014]      0.10%   sim
+p_block         0.1024     0.1025   [0.1010, 0.1041]      0.12%   sim
+
+todas as métricas dentro do IC: sim
+```
+
+Outros modelos, trocando as opções:
+
+```bash
+python -m examples.queue_demo --servers 10 --lam 8 --mu 1 --capacity 0 --time 1000   # M/M/10 (fila ilimitada)
+python -m examples.queue_demo --servers 1 --capacity 5 --lam 12 --mu 10               # M/M/1/5
+python -m examples.queue_demo --help
+```
+
+| Opção | Significado | Padrão |
+| --- | --- | --- |
+| `--lam` | Taxa média de chegada (λ) | 25 |
+| `--mu` | Taxa média de serviço **por servidor** (μ) | 10 |
+| `--servers` | Número de servidores (c) | 3 |
+| `--capacity` | Capacidade total (K), incluindo os clientes em atendimento. **`0` significa fila ilimitada (M/M/c)** | 6 |
+| `--time`, `--reps`, `--warmup`, `--seed`, `--confidence` | Iguais aos do `mm1_demo` | 2000, 10, 100, 2026, 0.95 |
+
 ---
 
 ## 3. API REST
@@ -125,6 +166,9 @@ Abra **http://127.0.0.1:8000/docs** no navegador. A página lista os endpoints, 
 | `POST /api/models/mm1/calculate` | Métricas analíticas do M/M/1 |
 | `POST /api/models/mm1/simulate` | Simulação de eventos discretos com réplicas |
 | `POST /api/models/mm1/compare` | Compara analítico × simulação, métrica a métrica |
+| `POST /api/models/mmc/calculate` · `/simulate` · `/compare` | M/M/c (fila ilimitada). Entrada extra: `servers` |
+| `POST /api/models/mm1k/calculate` · `/simulate` · `/compare` | M/M/1/K. Entrada extra: `capacity` |
+| `POST /api/models/mmck/calculate` · `/simulate` · `/compare` | M/M/c/K. Entradas extras: `servers` e `capacity` |
 
 ### Chamadas de exemplo
 
@@ -166,7 +210,30 @@ curl -X POST http://127.0.0.1:8000/api/models/mm1/compare \
   -d '{"lambda": 40, "mu": 50, "simulation_time": 2000, "replications": 10, "warmup_time": 100, "seed": 2026}'
 ```
 
-Resposta de `/calculate`:
+**Modelos M/M/c, M/M/1/K e M/M/c/K** (PowerShell; `servers` e `capacity` entram no corpo):
+
+```powershell
+# M/M/3/6: métricas analíticas
+$body = @{ lambda = 25; mu = 10; servers = 3; capacity = 6 } | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/models/mmck/calculate `
+  -ContentType "application/json" -Body $body
+
+# M/M/3/6: comparação analítico × simulação
+$body = @{ lambda = 25; mu = 10; servers = 3; capacity = 6; simulation_time = 2000;
+           replications = 10; warmup_time = 100; seed = 2026 } | ConvertTo-Json
+$c = Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/models/mmck/compare `
+  -ContentType "application/json" -Body $body
+$c.metrics.p_block
+```
+
+```bash
+# macOS / Linux: M/M/10 (fila ilimitada)
+curl -X POST http://127.0.0.1:8000/api/models/mmc/calculate \
+  -H "Content-Type: application/json" \
+  -d '{"lambda": 8, "mu": 1, "servers": 10}'
+```
+
+Resposta de `/calculate` (M/M/1):
 
 ```json
 { "model": "M/M/1", "rho": 0.8, "L": 4.0, "Lq": 3.2, "W": 0.1, "Wq": 0.08 }
@@ -176,14 +243,16 @@ A resposta de `/simulate` traz os parâmetros usados, a semente, as métricas de
 
 A resposta de `/compare` traz, para cada métrica (`rho`, `L`, `Lq`, `W`, `Wq` e `throughput`), o valor analítico, a média simulada com seu intervalo de confiança, o erro absoluto, o erro relativo em % (`relative_error_pct`) e `within_ci`, que indica se o valor analítico está dentro do intervalo. No nível superior, `all_within_ci` resume todas as métricas e `max_relative_error_pct` mostra o pior erro. Com 1 réplica não existe intervalo, então `within_ci` e `all_within_ci` vêm como `null`.
 
+Nos modelos M/M/c, M/M/1/K e M/M/c/K as respostas seguem o mesmo formato, com dois campos a mais (`servers` e `capacity`, este `null` quando a fila é ilimitada), o `model` em notação de Kendall (por exemplo, `"M/M/3/6"`) e **oito métricas** em vez de seis: além das anteriores, `p_wait` e `p_block` (veja [Interpretando os resultados](#6-interpretando-os-resultados)).
+
 ### Erros da API
 
 Qualquer requisição inválida (nos três endpoints de modelo) devolve HTTP 422 com o formato `{"code", "message", "fields"?}`:
 
 | `code` | Quando acontece | O que fazer |
 | --- | --- | --- |
-| `unstable_system` | λ ≥ μ | Use λ < μ |
-| `invalid_parameter` | Valor fora da regra: zero ou negativo, warm-up ≥ tempo simulado, semente fora do limite, simulação grande demais | Corrija o valor indicado em `message` |
+| `unstable_system` | λ ≥ μ (M/M/1) ou λ ≥ c·μ (M/M/c). Não se aplica à capacidade finita | Use λ < μ, ou λ < c·μ; ou limite a capacidade (K) |
+| `invalid_parameter` | Valor fora da regra: zero ou negativo, `capacity` menor que `servers`, warm-up ≥ tempo simulado, semente fora do limite, simulação grande demais | Corrija o valor indicado em `message` |
 | `invalid_request` | Campo ausente ou do tipo errado (por exemplo, texto onde se espera número). Traz a lista `fields` | Corrija os campos listados |
 | `insufficient_sample` | Tempo simulado tão curto que nenhum cliente foi medido | Aumente `simulation_time` |
 
@@ -224,7 +293,22 @@ L = cmp.metrics["L"]
 print(L.analytical, L.simulated_mean, L.relative_error_pct, L.within_ci)
 ```
 
-Erros de parâmetro levantam `QueueValidationError` (ou `UnstableSystemError`, quando λ ≥ μ), que podem ser tratados com `try/except`. Ambos estão em `app.domain.validation.errors`.
+Para M/M/c, M/M/1/K e M/M/c/K, use `servers` e `capacity` (com `capacity=None` para fila ilimitada):
+
+```python
+from app.analytical.mmck import mmc_metrics, mm1k_metrics, mmck_metrics
+from app.analysis.comparison import compare_queue
+
+print(mmc_metrics(8, 1, 10))            # M/M/10
+print(mm1k_metrics(12, 10, 5))          # M/M/1/5
+m = mmck_metrics(25, 10, 3, 6)          # M/M/3/6
+print(m.p_block, m.throughput)
+
+cmp = compare_queue(25, 10, 3, 6, simulation_time=2000, replications=10, warmup_time=100, seed=2026)
+print(cmp.all_within_ci, cmp.metrics["p_block"].relative_error_pct)
+```
+
+Erros de parâmetro levantam `QueueValidationError` (ou `UnstableSystemError`, quando λ ≥ μ no M/M/1 ou λ ≥ c·μ no M/M/c), que podem ser tratados com `try/except`. Ambos estão em `app.domain.validation.errors`.
 
 ---
 
@@ -232,8 +316,10 @@ Erros de parâmetro levantam `QueueValidationError` (ou `UnstableSystemError`, q
 
 | Parâmetro | Descrição | Regra |
 | --- | --- | --- |
-| `lambda` (λ) | Taxa média de chegada | > 0 e < μ |
-| `mu` (μ) | Taxa média de serviço | > 0 |
+| `lambda` (λ) | Taxa média de chegada | > 0. M/M/1 exige λ < μ; M/M/c exige λ < c·μ; com capacidade finita não há restrição |
+| `mu` (μ) | Taxa média de serviço **de cada servidor** | > 0 |
+| `servers` (c) | Número de servidores em paralelo (M/M/c e M/M/c/K) | inteiro de 1 a 1.000 |
+| `capacity` (K) | Capacidade **total** do sistema: fila + clientes em atendimento (M/M/1/K e M/M/c/K) | inteiro ≥ `servers`, até 100.000 |
 | `simulation_time` | Tempo simulado por réplica | > 0 |
 | `replications` | Número de réplicas independentes | inteiro ≥ 1 (padrão 10) |
 | `warmup_time` | Período inicial descartado | ≥ 0 e < `simulation_time` (padrão 0) |
@@ -255,12 +341,24 @@ Erros de parâmetro levantam `QueueValidationError` (ou `UnstableSystemError`, q
 | `Wq` | Tempo médio que um cliente espera na fila |
 | `throughput` | Vazão observada (saídas por unidade de tempo); em regime estável, ≈ λ |
 
+Nos modelos M/M/c, M/M/1/K e M/M/c/K há duas métricas a mais, e algumas ganham um significado mais amplo:
+
+| Métrica | Significado |
+| --- | --- |
+| `p_wait` | Probabilidade de um cliente aceito ter que esperar (todos os servidores ocupados). Em M/M/c é a fórmula de Erlang C |
+| `p_block` | Probabilidade de uma chegada ser recusada por o sistema estar cheio. É 0 quando a fila é ilimitada |
+| `rho` (ρ) | Utilização média dos servidores (fração de servidores ocupados). Com capacidade finita, ρ = λ_ef / (c·μ) |
+| `throughput` | Taxa efetiva de chegada λ_ef = λ·(1 − `p_block`), igual à taxa de saída. Com capacidade finita é **menor que λ** |
+| `W` e `Wq` | Valem para os clientes **aceitos**; os recusados não entram |
+
 Como ler a comparação entre analítico e simulação:
 
 - **O valor analítico dentro do intervalo de confiança** indica que a simulação está coerente com a teoria. Com 95% de confiança, espera-se que isso falhe em cerca de 1 a cada 20 execuções, por acaso.
 - **Uma métrica fora do intervalo, de vez em quando, é normal.** Com 95% de confiança em cada uma das seis métricas, é esperado que uma delas fique fora por acaso. Em 60 execuções com sementes de 0 a 59 (λ = 1, μ = 2, 5.000 de tempo simulado, warm-up de 200, 10 réplicas), todas ficaram dentro do intervalo em 54 (90%), e cada métrica individualmente ficou entre 95% e 98%. Desconfie de verdade quando o erro relativo for alto *e* se repetir com sementes diferentes.
 - **O erro relativo diminui** com mais réplicas e com tempo simulado maior. As métricas de fila (Lq e Wq) são mais ruidosas que ρ.
 - **Perto da saturação (ρ → 1)**, o sistema converge mais devagar e exige simulações mais longas e warm-up maior. Experimente `--lam 49 --mu 50`: a média simulada de L continua próxima do valor analítico (49), mas o intervalo de confiança fica muito mais largo (cerca de [37,8; 59,4], contra [3,87; 4,05] com λ = 40), indicando que a estimativa é bem menos precisa.
+- **Probabilidades pequenas exigem simulações longas.** Se `p_block` analítico for, por exemplo, 0,001, só 1 em cada mil chegadas é recusada, e uma simulação curta pode não observar nenhuma. O erro relativo parece alto (até 100%) mesmo com a simulação correta. Aumente `simulation_time` ou `replications` e olhe o intervalo de confiança.
+- **Com oito métricas** (modelos M/M/c/K), é ainda mais comum que uma delas fique fora do intervalo por acaso. Avalie cada métrica e o conjunto de execuções, não um único resultado.
 - **Reprodutibilidade:** com a mesma `seed`, o resultado é idêntico. Se você omitir a semente, a que foi sorteada vem na resposta e pode ser reutilizada para repetir o experimento.
 - **Warm-up:** o sistema começa vazio, então o início da simulação não é representativo do regime estacionário. O warm-up descarta esse período.
 
@@ -276,7 +374,7 @@ A simulação processa algo em torno de 80 mil chegadas por segundo (varia com a
 | 40 | 2.000 | 10 | 800 mil | cerca de 10 s |
 | 40 | 10.000 | 10 | 4 milhões | mais de 1 minuto |
 
-Por segurança, a API e as funções rejeitam simulações com mais de **5 milhões de chegadas esperadas** no total. Para uso interativo, prefira tempos menores e aumente só se precisar de mais precisão.
+O número de servidores quase não muda o custo, e as chegadas recusadas também contam (o custo vem das chegadas oferecidas). Por segurança, a API e as funções rejeitam simulações com mais de **5 milhões de chegadas esperadas** no total. Para uso interativo, prefira tempos menores e aumente só se precisar de mais precisão.
 
 ---
 
@@ -290,5 +388,6 @@ Por segurança, a API e as funções rejeitam simulações com mais de **5 milh�
 | PowerShell: "execução de scripts desabilitada" | Política de execução padrão do Windows | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` |
 | `python` não encontrado no Windows | Python fora do PATH | Reinstale marcando **Add Python to PATH**, ou use `py` |
 | `Address already in use` ao subir a API | A porta 8000 está ocupada | `python -m uvicorn app.main:app --port 8001` |
+| `capacity deve ser maior ou igual a servers` | A capacidade total inclui os clientes em atendimento, então não pode ser menor que o número de servidores | Use `capacity` ≥ `servers` (com `capacity = servers` não há fila: é um sistema de perda) |
 | Resposta 422 | Parâmetro inválido | Leia `code` e `message` na resposta (ver [Erros da API](#erros-da-api)) |
 | Simulação muito lenta | λ × tempo × réplicas grande | Reduza o tempo ou o número de réplicas (ver [Desempenho](#7-desempenho)) |
