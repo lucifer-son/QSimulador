@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from app.api.errors import register_exception_handlers
 from app.api.mm1 import router as mm1_router
+from app.api.queues import mm1k_router, mmc_router, mmck_router
 
 app = FastAPI(
     title="QSimulador API",
@@ -11,6 +12,9 @@ app = FastAPI(
 
 register_exception_handlers(app)
 app.include_router(mm1_router)
+app.include_router(mmc_router)
+app.include_router(mm1k_router)
+app.include_router(mmck_router)
 
 
 @app.get("/api/health", tags=["infra"])

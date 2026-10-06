@@ -45,3 +45,43 @@ class SimulationResult:
 
     def as_dict(self) -> dict:
         return asdict(self)
+
+
+# ---------- modelos M/M/c, M/M/1/K e M/M/c/K ----------
+
+QUEUE_METRIC_NAMES = ("rho", "L", "Lq", "W", "Wq", "throughput", "p_wait", "p_block")
+
+
+@dataclass(frozen=True)
+class QueueReplicationResult:
+    """Métricas observadas em uma replicação de M/M/c, M/M/1/K ou M/M/c/K."""
+
+    index: int
+    rho: float          # utilização dos servidores (fração média de servidores ocupados)
+    L: float
+    Lq: float
+    W: float
+    Wq: float
+    throughput: float   # saídas por unidade de tempo
+    p_wait: float       # fração dos clientes aceitos que tiveram que esperar
+    p_block: float      # fração das chegadas recusadas por falta de capacidade
+    measured_customers: int
+    observation_time: float
+
+
+@dataclass(frozen=True)
+class QueueSimulationResult:
+    lam: float
+    mu: float
+    servers: int
+    capacity: int | None    # None = capacidade infinita
+    simulation_time: float
+    warmup_time: float
+    replications: int
+    seed: int
+    confidence_level: float
+    runs: tuple[QueueReplicationResult, ...]
+    summary: dict[str, MetricSummary]
+
+    def as_dict(self) -> dict:
+        return asdict(self)
