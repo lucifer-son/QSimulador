@@ -133,3 +133,135 @@ class ErrorResponse(BaseModel):
     code: str       # unstable_system | invalid_parameter | insufficient_sample | invalid_request
     message: str
     fields: list[FieldError] | None = None
+
+
+# ======================================================================
+# M/M/c, M/M/1/K e M/M/c/K
+# ======================================================================
+
+# ---------- entrada ----------
+
+class MMCCalculateRequest(MM1CalculateRequest):
+    model_config = ConfigDict(json_schema_extra={"examples": [{"lambda": 8, "mu": 1, "servers": 10}]})
+
+    servers: StrictInt = Field(description="Número de servidores (c).")
+
+
+class MMCSimulateRequest(MM1SimulateRequest):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {"lambda": 8, "mu": 1, "servers": 10, "simulation_time": 2000, "replications": 10,
+                 "warmup_time": 100, "seed": 2026}
+            ]
+        }
+    )
+
+    servers: StrictInt = Field(description="Número de servidores (c).")
+
+
+class MM1KCalculateRequest(MM1CalculateRequest):
+    model_config = ConfigDict(json_schema_extra={"examples": [{"lambda": 12, "mu": 10, "capacity": 5}]})
+
+    capacity: StrictInt = Field(description="Capacidade total do sistema, em clientes (K).")
+
+
+class MM1KSimulateRequest(MM1SimulateRequest):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {"lambda": 12, "mu": 10, "capacity": 5, "simulation_time": 2000, "replications": 10,
+                 "warmup_time": 100, "seed": 2026}
+            ]
+        }
+    )
+
+    capacity: StrictInt = Field(description="Capacidade total do sistema, em clientes (K).")
+
+
+class MMCKCalculateRequest(MM1CalculateRequest):
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"lambda": 25, "mu": 10, "servers": 3, "capacity": 6}]}
+    )
+
+    servers: StrictInt = Field(description="Número de servidores (c).")
+    capacity: StrictInt = Field(
+        description="Capacidade total do sistema (K), incluindo os clientes em atendimento. Deve ser ≥ servers."
+    )
+
+
+class MMCKSimulateRequest(MM1SimulateRequest):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {"lambda": 25, "mu": 10, "servers": 3, "capacity": 6, "simulation_time": 2000,
+                 "replications": 10, "warmup_time": 100, "seed": 2026}
+            ]
+        }
+    )
+
+    servers: StrictInt = Field(description="Número de servidores (c).")
+    capacity: StrictInt = Field(
+        description="Capacidade total do sistema (K), incluindo os clientes em atendimento. Deve ser ≥ servers."
+    )
+
+
+# ---------- saída ----------
+
+class QueueCalculateResponse(BaseModel):
+    model: str
+    servers: int
+    capacity: int | None
+    rho: float
+    L: float
+    Lq: float
+    W: float
+    Wq: float
+    throughput: float
+    p_wait: float
+    p_block: float
+
+
+class QueueReplicationOut(BaseModel):
+    index: int
+    rho: float
+    L: float
+    Lq: float
+    W: float
+    Wq: float
+    throughput: float
+    p_wait: float
+    p_block: float
+    measured_customers: int
+    observation_time: float
+
+
+class QueueSimulationResponse(BaseModel):
+    model: str
+    lam: float = Field(alias="lambda")
+    mu: float
+    servers: int
+    capacity: int | None
+    simulation_time: float
+    warmup_time: float
+    replications: int
+    seed: int
+    confidence_level: float
+    runs: list[QueueReplicationOut]
+    summary: dict[str, MetricSummaryOut]
+
+
+class QueueComparisonResponse(BaseModel):
+    model: str
+    lam: float = Field(alias="lambda")
+    mu: float
+    servers: int
+    capacity: int | None
+    simulation_time: float
+    warmup_time: float
+    replications: int
+    seed: int
+    confidence_level: float
+    metrics: dict[str, MetricComparisonOut]
+    all_within_ci: bool | None
+    max_relative_error_pct: float | None
