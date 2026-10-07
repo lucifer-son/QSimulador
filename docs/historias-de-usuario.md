@@ -54,7 +54,7 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 - **Dado** λ e μ positivos, **quando** envio os parâmetros, **então** o sistema os aceita.
 - **Dado** um valor zero, negativo, ausente ou não numérico, **quando** envio os parâmetros, **então** o sistema rejeita a entrada e informa qual campo é inválido.
 
-#### US-02 — Calcular métricas analíticas ✅ · M · UC-02
+#### US-02 — Calcular métricas analíticas 🚧 · M · UC-02
 > Como **estudante**, quero obter utilização, número médio no sistema e na fila, tempos médios e probabilidade de sistema vazio, para conferir a teoria de filas sem fazer as contas à mão.
 
 **Critérios de aceitação**
@@ -83,7 +83,7 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 **Critérios de aceitação**
 - **Dado** λ, μ e parâmetros de simulação válidos, **quando** executo a simulação, **então** recebo as métricas estimadas.
 
-#### US-06 — Usar réplicas independentes e intervalo de confiança ✅ · M · UC-03
+#### US-06 — Usar réplicas independentes e intervalo de confiança 🚧 · M · UC-03
 > Como **estudante**, quero que a simulação rode várias réplicas e informe um intervalo de confiança, para saber o quanto posso confiar na estimativa.
 
 **Critérios de aceitação**
@@ -106,20 +106,20 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 
 ### E3 — Comparação analítico × simulação
 
-#### US-09 — Comparar valor analítico e simulado 🚧 · M · UC-04
+#### US-09 — Comparar valor analítico e simulado ✅ · M · UC-04
 > Como **estudante**, quero comparar numa única chamada o valor analítico e o simulado de cada métrica, para validar que a simulação reproduz a teoria.
 
 **Critérios de aceitação**
 - **Dado** um sistema estável, **quando** solicito a comparação, **então** recebo, por métrica, o valor analítico, a média simulada e o intervalo de confiança.
 - **Dado** um sistema instável, **quando** solicito a comparação, **então** o sistema recusa e explica que não há referência analítica.
 
-#### US-10 — Ver o erro relativo 🚧 · M · UC-04
+#### US-10 — Ver o erro relativo ✅ · M · UC-04
 > Como **estudante**, quero ver o erro relativo de cada métrica, para quantificar a diferença entre teoria e simulação.
 
 **Critérios de aceitação**
 - **Dado** uma comparação, **quando** é retornada, **então** o erro relativo = |simulado − analítico| / |analítico| aparece por métrica.
 
-#### US-11 — Saber se o valor analítico está dentro do IC 🚧 · S · UC-04
+#### US-11 — Saber se o valor analítico está dentro do IC ✅ · S · UC-04
 > Como **pesquisador**, quero uma indicação clara de que o valor analítico cai (ou não) dentro do intervalo de confiança, para decidir se preciso aumentar a duração ou as réplicas.
 
 **Critérios de aceitação**
@@ -129,25 +129,25 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 
 ### E4 — Interface web e visualização
 
-#### US-12 — Preencher parâmetros em um formulário 📋 · M · UC-05
+#### US-12 — Preencher parâmetros em um formulário ✅ · M · UC-05
 > Como **estudante**, quero um formulário web para informar λ, μ e os parâmetros de simulação, para usar a ferramenta sem escrever código.
 
 **Critérios de aceitação**
 - **Dado** campos inválidos, **quando** tento enviar, **então** a interface mostra a mensagem de erro junto ao campo.
 
-#### US-13 — Ver gráficos comparativos 📋 · M · UC-05
+#### US-13 — Ver gráficos comparativos ✅ · M · UC-05
 > Como **estudante**, quero ver gráficos do valor analítico, da média simulada e do intervalo de confiança, para interpretar os resultados visualmente.
 
 **Critérios de aceitação**
 - **Dado** uma comparação concluída, **quando** a interface a exibe, **então** há um gráfico (Plotly) por métrica ou agrupado.
 
-#### US-14 — Ver mensagens de erro compreensíveis 📋 · S · UC-05
+#### US-14 — Ver mensagens de erro compreensíveis ✅ · S · UC-05
 > Como **estudante**, quero mensagens claras em caso de erro ou instabilidade, para corrigir os parâmetros sem consultar a documentação.
 
 **Critérios de aceitação**
 - **Dado** um erro da API, **quando** a interface o recebe, **então** exibe uma mensagem legível e não renderiza gráficos vazios.
 
-#### US-15 — Acessar a API a partir do navegador 📋 · M · UC-05
+#### US-15 — Acessar a API a partir do navegador ✅ · M · UC-05
 > Como **desenvolvedor**, quero que a API aceite requisições do frontend (CORS), para que a interface React converse com o backend.
 
 **Critérios de aceitação**
@@ -157,19 +157,19 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 
 ### E5 — Modelos avançados
 
-#### US-16 — Modelar múltiplos servidores (M/M/c) 📋 · S · UC-06
+#### US-16 — Modelar múltiplos servidores (M/M/c) ✅ · S · UC-06
 > Como **estudante**, quero modelar sistemas com c servidores, para estudar o efeito de adicionar capacidade de atendimento.
 
 **Critérios de aceitação**
 - **Dado** λ, μ e c, **quando** solicito a análise, **então** recebo as métricas analíticas e simuladas do M/M/c.
 
-#### US-17 — Modelar capacidade finita (M/M/1/K e M/M/c/K) 📋 · S · UC-06
+#### US-17 — Modelar capacidade finita (M/M/1/K e M/M/c/K) ✅ · S · UC-06
 > Como **estudante**, quero limitar a capacidade do sistema, para estudar bloqueio e perda de clientes.
 
 **Critérios de aceitação**
 - **Dado** uma capacidade K, **quando** solicito a análise, **então** o resultado inclui a probabilidade de bloqueio.
 
-#### US-18 — Escolher o tipo de modelo 📋 · S · UC-06
+#### US-18 — Escolher o tipo de modelo ✅ · S · UC-06
 > Como **professor**, quero escolher o modelo (M/M/1, M/M/c, M/M/1/K, M/M/c/K) em um seletor, para alternar entre exemplos durante a aula.
 
 **Critérios de aceitação**
@@ -242,7 +242,7 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 **Critérios de aceitação**
 - **Dado** o servidor em execução, **quando** acesso a documentação interativa da API, **então** vejo os endpoints disponíveis e seus esquemas.
 
-#### US-27 — Receber erros de validação padronizados ✅ · S
+#### US-27 — Receber erros de validação padronizados 🚧 · S
 > Como **desenvolvedor**, quero respostas de erro consistentes, para tratá-las de forma previsível no meu código.
 
 **Critérios de aceitação**
@@ -276,7 +276,18 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 
 ## 5. Ordem sugerida de implementação
 
-1. **Concluído:** E1 e E2, além da base da API e dos testes (US-26 a US-28).
-2. **Em andamento:** E3 — comparação analítico × simulação.
-3. **Próximo:** E4 — interface web (inclui CORS, US-15).
-4. **Depois:** E5 (modelos avançados), E6 (experimentos), E7 (JMeter) e E8 (persistência e Docker).
+1. **Concluído:** E1 a E5 (modelo analítico, simulação, comparação, interface web e os modelos M/M/c, M/M/1/K e M/M/c/K), além da base da API e dos testes (US-26 a US-28). Três histórias têm divergências conhecidas com os critérios de aceitação: US-02, US-06 e US-27 (seção 6).
+2. **Próximo:** E6 — experimentos (varredura de parâmetros).
+3. **Depois:** E7 (JMeter) e E8 (persistência e Docker).
+
+---
+
+## 6. Divergências conhecidas (conferência de 06/10/2026)
+
+| História | Critério de aceitação | Situação no código |
+|----------|-----------------------|--------------------|
+| US-02 | "recebo ρ, L, Lq, W, Wq **e P0**" | A API retorna ρ, L, Lq, W e Wq, mas não P0 |
+| US-06 | "menos de duas réplicas → o sistema rejeita e informa o motivo" | `replications = 1` é aceito e devolve a simulação sem intervalo de confiança |
+| US-27 | "erro estruturado que identifica o campo e o motivo" | Erros de formato trazem o campo (`fields`); erros de regra trazem só a mensagem |
+
+As demais histórias dos épicos E1 a E5 e E9 foram verificadas executando o sistema. Detalhes e medições na seção 11 de [`requisitos-do-sistema.md`](requisitos-do-sistema.md).
