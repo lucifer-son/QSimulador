@@ -1,0 +1,14 @@
+{
+  "code": "invalid_request",
+  "message": "A requisição contém campos ausentes ou inválidos.",
+  "fields": [
+    {
+      "field": "lambda",
+      "message": "Input should be a valid number"
+    },
+    {
+      "field": "servers",
+      "message": "Field required"
+    }
+  ]
+}

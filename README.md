@@ -13,7 +13,7 @@ Mais do que uma calculadora de teoria das filas, a proposta é uma **plataforma 
 
 ## Status
 
-O projeto está em desenvolvimento. Os modelos **M/M/1**, **M/M/c**, **M/M/1/K** e **M/M/c/K** (cálculo analítico, simulação e comparação) e a API já funcionam; a interface web e os experimentos estão planejados.
+O projeto está em desenvolvimento. Os modelos **M/M/1**, **M/M/c**, **M/M/1/K** e **M/M/c/K** (cálculo analítico, simulação e comparação) e a API já funcionam; a interface web também já está disponível; os experimentos e a validação com dados reais estão planejados.
 
 | Componente | Situação |
 | --- | --- |
@@ -21,7 +21,7 @@ O projeto está em desenvolvimento. Os modelos **M/M/1**, **M/M/c**, **M/M/1/K**
 | Simulação de eventos discretos (SimPy) dos quatro modelos, com réplicas e intervalos de confiança | ✅ Implementado |
 | API REST (`/calculate`, `/simulate` e `/compare` para cada modelo) | ✅ Implementado |
 | Comparação analítico × simulação (erro relativo e verificação do intervalo de confiança) | ✅ Implementado (módulo, endpoints e scripts de demonstração) |
-| Interface web (React + TypeScript) | 📋 Planejado |
+| Interface web (React + TypeScript): formulário, comparação, gráficos, abas de réplicas e detalhes, tema claro e escuro | ✅ Implementado |
 | Experimentos (varredura de parâmetros), importação do JMeter, persistência | 📋 Planejado |
 
 ---
@@ -34,6 +34,7 @@ O projeto está em desenvolvimento. Os modelos **M/M/1**, **M/M/c**, **M/M/1/K**
 - [Modelo M/M/1](#modelo-mm1)
 - [Vários servidores e capacidade finita](#vários-servidores-e-capacidade-finita)
 - [Exemplo de uso](#exemplo-de-uso)
+- [Interface web](#interface-web)
 - [Arquitetura](#arquitetura)
 - [Tecnologias](#tecnologias)
 - [Estrutura do projeto](#estrutura-do-projeto)
@@ -63,6 +64,14 @@ python -m examples.queue_demo      # M/M/c, M/M/1/K e M/M/c/K (padrão: M/M/3/6)
 python -m uvicorn app.main:app --reload   # sobe a API em http://127.0.0.1:8000/docs
 ```
 
+Interface web (requer Node.js 20 ou superior), em outro terminal, com a API no ar:
+
+```bash
+cd frontend
+npm install
+npm run dev                        # abre em http://localhost:5173
+```
+
 O guia completo, com chamadas à API, uso em Python, interpretação dos resultados e solução de problemas, está em **[docs/como-executar.md](docs/como-executar.md)**.
 
 ## Motivação
@@ -81,7 +90,7 @@ O QSimulador permite (ou permitirá) ao usuário:
 4. comparar resultados analíticos e simulados, com erro relativo ✅
 5. realizar experimentos do tipo *"e se..."* (varredura de λ, μ e número de servidores) 📋
 6. identificar regiões de alta utilização e aproximação da saturação 📋
-7. visualizar resultados em tabelas e gráficos 📋
+7. visualizar resultados em tabelas e gráficos ✅
 8. importar dados reais, por exemplo do Apache JMeter, e compará-los com o modelo e a simulação 📋
 
 ### Modelos de filas
@@ -223,20 +232,36 @@ A vazão efetiva (22,44 req/s) é menor que $\lambda = 25$ req/s, e a diferença
 
 ---
 
+## Interface web
+
+A interface é uma tela única de trabalho: à esquerda, o modelo e os parâmetros; à direita, os resultados em quatro abas.
+
+- **Comparar** (ação principal) chama `/compare` e mostra, nesta ordem, o veredito (se o analítico está dentro do IC), quatro números de destaque, o gráfico de diferenças e a tabela completa. **Só calcular** e **Só simular** são atalhos.
+- **Gráfico de diferenças:** as métricas têm escalas muito diferentes (ρ perto de 0,7 e vazão perto de 22, por exemplo), então todas aparecem como diferença percentual da simulação em relação ao analítico, com o IC. Se a barra cruza o zero, o valor analítico está dentro do intervalo.
+- **Abas:** Resultados, Gráficos (valor de cada réplica, média simulada e analítico), Réplicas (tabela por réplica) e Detalhes (parâmetros usados, semente e resposta completa da API).
+- **Execução:** estimativa de custo antes de rodar, indicador de progresso e botão para cancelar.
+- **Erros:** os erros da API aparecem no campo certo do formulário. A tela só confere o formato (número, inteiro); as regras do modelo (λ < c·μ, capacidade ≥ servidores etc.) ficam na API.
+- **Semente:** o resultado mostra a semente usada. O `/compare` não devolve as réplicas individuais, então as abas Gráficos e Réplicas repetem a simulação com a mesma semente, que reproduz exatamente as mesmas réplicas.
+- Interface em português, tema claro e escuro automáticos e layout que se adapta a telas estreitas.
+
+Os tipos TypeScript são gerados a partir do OpenAPI da API (`npm run gen:api`), e um teste do backend avisa quando o `openapi.json` do frontend ficar desatualizado.
+
+---
+
 ## Arquitetura
 
 O projeto é um **monólito modular**, com separação clara entre interface, API, modelos matemáticos, simulação e análise. As partes tracejadas ainda não foram implementadas.
 
 ```mermaid
 flowchart TD
-    FE["Frontend<br/>React + TypeScript<br/>(planejado)"]
+    FE["Frontend<br/>React + TypeScript ✅"]
     API["API<br/>FastAPI"]
     AN["Analítico<br/>M/M/1 ✅ · M/M/c ✅ · M/M/1/K ✅ · M/M/c/K ✅"]
     SIM["Simulação<br/>SimPy (DES) ✅"]
     ANL["Análise<br/>Comparação ✅ · Sensibilidade · Validação"]
     DB[("PostgreSQL<br/>(planejado)")]
 
-    FE -.->|HTTP / JSON| API
+    FE -->|HTTP / JSON| API
     API --> AN
     API --> SIM
     API --> ANL
@@ -255,10 +280,10 @@ A persistência (`Model`, `Experiment`, `SimulationRun`, `Metric`, `JMeterDatase
 | Simulação | SimPy | ✅ em uso |
 | Computação científica | NumPy / SciPy | ✅ em uso |
 | Testes | pytest | ✅ em uso |
-| Frontend | React + TypeScript | 📋 planejado |
-| Visualização | Plotly | 📋 planejado |
+| Frontend | React + TypeScript (Vite) | ✅ em uso |
+| Visualização | Plotly | ✅ em uso |
 | Banco de dados | PostgreSQL | 📋 planejado |
-| Testes do frontend | Vitest | 📋 planejado |
+| Testes do frontend | Vitest + Testing Library | ✅ em uso |
 | Containerização | Docker | 📋 planejado |
 
 ## Estrutura do projeto
@@ -268,6 +293,7 @@ qsimulador/
 ├── README.md
 ├── docs/
 │   └── como-executar.md
+├── frontend/                  # interface web (detalhada abaixo)
 └── backend/
     ├── requirements.txt
     ├── requirements-dev.txt
@@ -297,7 +323,25 @@ qsimulador/
     └── tests/
 ```
 
-Ainda planejados: `frontend/`, `docker/` e `docker-compose.yml`.
+Estrutura do `frontend/`:
+
+```text
+frontend/
+├── package.json
+├── vite.config.ts             # proxy de /api para a API em desenvolvimento
+├── openapi.json               # esquema da API (gerado pelo backend)
+└── src/
+    ├── main.tsx · App.tsx     # tela única e estado do formulário
+    ├── styles.css             # tema claro e escuro por variáveis CSS
+    ├── api/                   # cliente HTTP, erros por campo, tipos gerados (schema.d.ts)
+    ├── domain/                # modelos, métricas, formatação, estimativa de custo
+    ├── charts/                # dados e layout dos gráficos (diferenças e réplicas)
+    ├── components/            # painel de parâmetros, resultados, tabelas e abas
+    ├── hooks/                 # execução com cancelamento, cores do tema
+    └── test/                  # fixtures com respostas reais da API e testes de contrato
+```
+
+Ainda planejados: `docker/` e `docker-compose.yml`.
 
 ---
 
@@ -474,8 +518,10 @@ Toda requisição inválida devolve HTTP 422 com `{"code", "message", "fields"?}
 - **Testes da comparação:** erro relativo e verificação do intervalo (limites inclusivos, ausência de intervalo com 1 réplica) com dados sintéticos de resposta conhecida, e consistência entre o módulo de comparação, o modelo analítico e a simulação.
 - **Testes dos modelos M/M/c, M/M/1/K e M/M/c/K:** valores conhecidos (M/M/2, Erlang B, forma fechada do M/M/1/K), comparação com a resolução direta da cadeia de Markov, reduções entre modelos (M/M/c com c = 1 equivale ao M/M/1; capacidade grande tende ao M/M/c), identidades (Lei de Little com a vazão efetiva), estabilidade numérica em modelos grandes e, na simulação, casos determinísticos (por exemplo, um sistema de perda que recusa 2 de cada 3 chegadas).
 - **Testes da API:** casos de sucesso, cada tipo de erro e a documentação OpenAPI, para todos os modelos.
+- **CORS e tipos:** a API só libera outras origens quando configurado, e um teste falha se o `openapi.json` do frontend ficar desatualizado em relação à API.
+- **Testes do frontend:** formatação, conversão do formulário em requisição, cliente HTTP e tradução de erros por campo, mapeamento das respostas (com respostas reais da API gravadas como fixtures), construção dos gráficos e fluxos completos da tela com a API simulada (comparar, calcular, simular, erros, cancelamento, abas e reprodução por semente). Um teste de contrato opcional roda o mesmo cliente contra a API de verdade e confere se as fixtures ainda têm o formato real.
 
-Para executar: `python -m pytest` (dentro de `backend/`).
+Para executar: `python -m pytest` (dentro de `backend/`) e `npm test` (dentro de `frontend/`).
 
 ## Validação com dados reais (planejado)
 
@@ -514,7 +560,7 @@ users,avg_ms,p90_ms,throughput,error_rate
 
 - [x] **Fase 1 — Núcleo matemático:** estrutura do backend, modelo M/M/1, cálculo de ρ, L, Lq, W e Wq, validação de parâmetros e testes.
 - [x] **Fase 2 — Simulação:** integração com SimPy, chegadas e serviços exponenciais, fila e servidor, coleta de métricas, réplicas, warm-up, intervalos de confiança e endpoints da API.
-- [ ] **Fase 3 — Interface:** React + TypeScript, seleção do modelo, formulário de parâmetros, painel de métricas e gráficos.
+- [x] **Fase 3 — Interface:** React + TypeScript, seleção do modelo, formulário de parâmetros com estimativa de custo, painel de resultados com veredito, gráfico de diferenças e tabela, abas de gráficos, réplicas e detalhes, cancelamento, erros por campo e tema claro e escuro.
 - [x] **Fase 4 — Comparação:** módulo e endpoint de comparação analítico × simulação, com erro absoluto, erro relativo e verificação do intervalo de confiança. Os gráficos comparativos virão com a interface (Fase 3).
 - [x] **Fase 5 — Novos modelos:** M/M/c, M/M/1/K e M/M/c/K, com cálculo analítico, simulação, comparação e endpoints, incluindo as probabilidades de espera e de bloqueio.
 - [ ] **Fase 6 — Experimentação:** varredura de λ e μ, comparação de servidores e análise de sensibilidade.

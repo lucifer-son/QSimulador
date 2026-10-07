@@ -1,0 +1,88 @@
+{
+  "model": "M/M/3/6",
+  "lambda": 25.0,
+  "mu": 10.0,
+  "servers": 3,
+  "capacity": 6,
+  "simulation_time": 300.0,
+  "warmup_time": 20.0,
+  "replications": 5,
+  "seed": 2026,
+  "confidence_level": 0.95,
+  "metrics": {
+    "rho": {
+      "analytical": 0.7479860778825796,
+      "simulated_mean": 0.7465940488618654,
+      "ci_low": 0.7307889460302455,
+      "ci_high": 0.7623991516934854,
+      "absolute_error": 0.001392029020714225,
+      "relative_error_pct": 0.18610360030427578,
+      "within_ci": true
+    },
+    "L": {
+      "analytical": 2.9444885063875255,
+      "simulated_mean": 2.9283754789903527,
+      "ci_low": 2.8346449699403777,
+      "ci_high": 3.0221059880403276,
+      "absolute_error": 0.016113027397172797,
+      "relative_error_pct": 0.5472267037965525,
+      "within_ci": true
+    },
+    "Lq": {
+      "analytical": 0.7005302727397862,
+      "simulated_mean": 0.688593332404752,
+      "ci_low": 0.6416377487966253,
+      "ci_high": 0.7355489160128786,
+      "absolute_error": 0.01193694033503423,
+      "relative_error_pct": 1.7039863656924696,
+      "within_ci": true
+    },
+    "W": {
+      "analytical": 0.13121850764579593,
+      "simulated_mean": 0.13018124517654234,
+      "ci_low": 0.12618368863905313,
+      "ci_high": 0.13417880171403154,
+      "absolute_error": 0.0010372624692535914,
+      "relative_error_pct": 0.7904848849931453,
+      "within_ci": true
+    },
+    "Wq": {
+      "analytical": 0.03121850764579591,
+      "simulated_mean": 0.030606913333257026,
+      "ci_low": 0.028568245942156355,
+      "ci_high": 0.0326455807243577,
+      "absolute_error": 0.0006115943125388837,
+      "relative_error_pct": 1.9590760694842022,
+      "within_ci": true
+    },
+    "throughput": {
+      "analytical": 22.43958233647739,
+      "simulated_mean": 22.492142857142856,
+      "ci_low": 22.173021085533062,
+      "ci_high": 22.81126462875265,
+      "absolute_error": 0.052560520665466015,
+      "relative_error_pct": 0.23423127880604339,
+      "within_ci": true
+    },
+    "p_wait": {
+      "analytical": 0.4984007360995486,
+      "simulated_mean": 0.4916215793500961,
+      "ci_low": 0.4653538032446592,
+      "ci_high": 0.5178893554555329,
+      "absolute_error": 0.0067791567494525085,
+      "relative_error_pct": 1.3601819296066342,
+      "within_ci": true
+    },
+    "p_block": {
+      "analytical": 0.10241670654090443,
+      "simulated_mean": 0.10148919416696586,
+      "ci_low": 0.0901927723858488,
+      "ci_high": 0.11278561594808292,
+      "absolute_error": 0.000927512373938566,
+      "relative_error_pct": 0.9056260499532124,
+      "within_ci": true
+    }
+  },
+  "all_within_ci": true,
+  "max_relative_error_pct": 1.9590760694842022
+}

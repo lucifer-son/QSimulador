@@ -1,0 +1,4 @@
+{
+  "code": "invalid_parameter",
+  "message": "capacity deve ser maior ou igual a servers (é a capacidade total, incluindo os clientes em atendimento)."
+}

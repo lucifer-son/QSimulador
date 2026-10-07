@@ -1,0 +1,1756 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "QSimulador API",
+    "description": "Modelagem, simulação e análise de sistemas de filas.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/models/mm1/calculate": {
+      "post": {
+        "tags": [
+          "M/M/1"
+        ],
+        "summary": "Calculate",
+        "description": "Métricas analíticas (regime estacionário). Exige λ < μ.",
+        "operationId": "calculate_api_models_mm1_calculate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MM1CalculateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MM1CalculateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/mm1/simulate": {
+      "post": {
+        "tags": [
+          "M/M/1"
+        ],
+        "summary": "Simulate",
+        "description": "Simulação de eventos discretos com várias replicações independentes.",
+        "operationId": "simulate_api_models_mm1_simulate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MM1SimulateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/mm1/compare": {
+      "post": {
+        "tags": [
+          "M/M/1"
+        ],
+        "summary": "Compare",
+        "description": "Compara o modelo analítico com a simulação, métrica a métrica.\n\nPara cada métrica devolve o erro absoluto, o erro relativo (%) e se o valor\nanalítico cai dentro do intervalo de confiança da simulação.",
+        "operationId": "compare_api_models_mm1_compare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MM1CompareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComparisonResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/mmc/calculate": {
+      "post": {
+        "tags": [
+          "M/M/c"
+        ],
+        "summary": "Calculate",
+        "description": "Métricas analíticas (regime estacionário).",
+        "operationId": "calculate_api_models_mmc_calculate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MMCCalculateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueCalculateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/mmc/simulate": {
+      "post": {
+        "tags": [
+          "M/M/c"
+        ],
+        "summary": "Simulate",
+        "description": "Simulação de eventos discretos com várias replicações independentes.",
+        "operationId": "simulate_api_models_mmc_simulate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MMCSimulateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueSimulationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/mmc/compare": {
+      "post": {
+        "tags": [
+          "M/M/c"
+        ],
+        "summary": "Compare",
+        "description": "Compara o analítico com a simulação, métrica a métrica.",
+        "operationId": "compare_api_models_mmc_compare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MMCSimulateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueComparisonResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/mm1k/calculate": {
+      "post": {
+        "tags": [
+          "M/M/1/K"
+        ],
+        "summary": "Calculate",
+        "description": "Métricas analíticas (regime estacionário).",
+        "operationId": "calculate_api_models_mm1k_calculate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MM1KCalculateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueCalculateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/mm1k/simulate": {
+      "post": {
+        "tags": [
+          "M/M/1/K"
+        ],
+        "summary": "Simulate",
+        "description": "Simulação de eventos discretos com várias replicações independentes.",
+        "operationId": "simulate_api_models_mm1k_simulate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MM1KSimulateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueSimulationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/mm1k/compare": {
+      "post": {
+        "tags": [
+          "M/M/1/K"
+        ],
+        "summary": "Compare",
+        "description": "Compara o analítico com a simulação, métrica a métrica.",
+        "operationId": "compare_api_models_mm1k_compare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MM1KSimulateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueComparisonResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/mmck/calculate": {
+      "post": {
+        "tags": [
+          "M/M/c/K"
+        ],
+        "summary": "Calculate",
+        "description": "Métricas analíticas (regime estacionário).",
+        "operationId": "calculate_api_models_mmck_calculate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MMCKCalculateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueCalculateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/mmck/simulate": {
+      "post": {
+        "tags": [
+          "M/M/c/K"
+        ],
+        "summary": "Simulate",
+        "description": "Simulação de eventos discretos com várias replicações independentes.",
+        "operationId": "simulate_api_models_mmck_simulate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MMCKSimulateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueSimulationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/mmck/compare": {
+      "post": {
+        "tags": [
+          "M/M/c/K"
+        ],
+        "summary": "Compare",
+        "description": "Compara o analítico com a simulação, métrica a métrica.",
+        "operationId": "compare_api_models_mmck_compare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MMCKSimulateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueComparisonResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "tags": [
+          "infra"
+        ],
+        "summary": "Health",
+        "description": "Verifica se a API está no ar.",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Health Api Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ComparisonResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "default": "M/M/1"
+          },
+          "lambda": {
+            "type": "number",
+            "title": "Lambda"
+          },
+          "mu": {
+            "type": "number",
+            "title": "Mu"
+          },
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time"
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time"
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed"
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level"
+          },
+          "metrics": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MetricComparisonOut"
+            },
+            "type": "object",
+            "title": "Metrics"
+          },
+          "all_within_ci": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "All Within Ci"
+          },
+          "max_relative_error_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Relative Error Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lambda",
+          "mu",
+          "simulation_time",
+          "warmup_time",
+          "replications",
+          "seed",
+          "confidence_level",
+          "metrics",
+          "all_within_ci",
+          "max_relative_error_pct"
+        ],
+        "title": "ComparisonResponse"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FieldError"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fields"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorResponse"
+      },
+      "FieldError": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field",
+          "message"
+        ],
+        "title": "FieldError"
+      },
+      "MM1CalculateRequest": {
+        "properties": {
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa média de chegada (λ)."
+          },
+          "mu": {
+            "type": "number",
+            "title": "Mu",
+            "description": "Taxa média de serviço (μ)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "lambda",
+          "mu"
+        ],
+        "title": "MM1CalculateRequest",
+        "examples": [
+          {
+            "lambda": 40,
+            "mu": 50
+          }
+        ]
+      },
+      "MM1CalculateResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "default": "M/M/1"
+          },
+          "rho": {
+            "type": "number",
+            "title": "Rho"
+          },
+          "L": {
+            "type": "number",
+            "title": "L"
+          },
+          "Lq": {
+            "type": "number",
+            "title": "Lq"
+          },
+          "W": {
+            "type": "number",
+            "title": "W"
+          },
+          "Wq": {
+            "type": "number",
+            "title": "Wq"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rho",
+          "L",
+          "Lq",
+          "W",
+          "Wq"
+        ],
+        "title": "MM1CalculateResponse"
+      },
+      "MM1CompareRequest": {
+        "properties": {
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa média de chegada (λ)."
+          },
+          "mu": {
+            "type": "number",
+            "title": "Mu",
+            "description": "Taxa média de serviço (μ)."
+          },
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time",
+            "description": "Tempo simulado por replicação."
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications",
+            "description": "Número de replicações.",
+            "default": 10
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time",
+            "description": "Período inicial descartado (transitório).",
+            "default": 0.0
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Semente aleatória. Se omitida, uma é sorteada e devolvida."
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level",
+            "description": "Nível do intervalo de confiança (0 a 1).",
+            "default": 0.95
+          }
+        },
+        "type": "object",
+        "required": [
+          "lambda",
+          "mu",
+          "simulation_time"
+        ],
+        "title": "MM1CompareRequest",
+        "description": "Mesmos parâmetros da simulação: o analítico usa apenas λ e μ.",
+        "examples": [
+          {
+            "lambda": 40,
+            "mu": 50,
+            "replications": 10,
+            "seed": 2026,
+            "simulation_time": 2000,
+            "warmup_time": 100
+          }
+        ]
+      },
+      "MM1KCalculateRequest": {
+        "properties": {
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa média de chegada (λ)."
+          },
+          "mu": {
+            "type": "number",
+            "title": "Mu",
+            "description": "Taxa média de serviço (μ)."
+          },
+          "capacity": {
+            "type": "integer",
+            "title": "Capacity",
+            "description": "Capacidade total do sistema, em clientes (K)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "lambda",
+          "mu",
+          "capacity"
+        ],
+        "title": "MM1KCalculateRequest",
+        "examples": [
+          {
+            "capacity": 5,
+            "lambda": 12,
+            "mu": 10
+          }
+        ]
+      },
+      "MM1KSimulateRequest": {
+        "properties": {
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa média de chegada (λ)."
+          },
+          "mu": {
+            "type": "number",
+            "title": "Mu",
+            "description": "Taxa média de serviço (μ)."
+          },
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time",
+            "description": "Tempo simulado por replicação."
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications",
+            "description": "Número de replicações.",
+            "default": 10
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time",
+            "description": "Período inicial descartado (transitório).",
+            "default": 0.0
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Semente aleatória. Se omitida, uma é sorteada e devolvida."
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level",
+            "description": "Nível do intervalo de confiança (0 a 1).",
+            "default": 0.95
+          },
+          "capacity": {
+            "type": "integer",
+            "title": "Capacity",
+            "description": "Capacidade total do sistema, em clientes (K)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "lambda",
+          "mu",
+          "simulation_time",
+          "capacity"
+        ],
+        "title": "MM1KSimulateRequest",
+        "examples": [
+          {
+            "capacity": 5,
+            "lambda": 12,
+            "mu": 10,
+            "replications": 10,
+            "seed": 2026,
+            "simulation_time": 2000,
+            "warmup_time": 100
+          }
+        ]
+      },
+      "MM1SimulateRequest": {
+        "properties": {
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa média de chegada (λ)."
+          },
+          "mu": {
+            "type": "number",
+            "title": "Mu",
+            "description": "Taxa média de serviço (μ)."
+          },
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time",
+            "description": "Tempo simulado por replicação."
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications",
+            "description": "Número de replicações.",
+            "default": 10
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time",
+            "description": "Período inicial descartado (transitório).",
+            "default": 0.0
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Semente aleatória. Se omitida, uma é sorteada e devolvida."
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level",
+            "description": "Nível do intervalo de confiança (0 a 1).",
+            "default": 0.95
+          }
+        },
+        "type": "object",
+        "required": [
+          "lambda",
+          "mu",
+          "simulation_time"
+        ],
+        "title": "MM1SimulateRequest",
+        "examples": [
+          {
+            "lambda": 40,
+            "mu": 50,
+            "replications": 10,
+            "seed": 2026,
+            "simulation_time": 2000,
+            "warmup_time": 100
+          }
+        ]
+      },
+      "MMCCalculateRequest": {
+        "properties": {
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa média de chegada (λ)."
+          },
+          "mu": {
+            "type": "number",
+            "title": "Mu",
+            "description": "Taxa média de serviço (μ)."
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers",
+            "description": "Número de servidores (c)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "lambda",
+          "mu",
+          "servers"
+        ],
+        "title": "MMCCalculateRequest",
+        "examples": [
+          {
+            "lambda": 8,
+            "mu": 1,
+            "servers": 10
+          }
+        ]
+      },
+      "MMCKCalculateRequest": {
+        "properties": {
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa média de chegada (λ)."
+          },
+          "mu": {
+            "type": "number",
+            "title": "Mu",
+            "description": "Taxa média de serviço (μ)."
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers",
+            "description": "Número de servidores (c)."
+          },
+          "capacity": {
+            "type": "integer",
+            "title": "Capacity",
+            "description": "Capacidade total do sistema (K), incluindo os clientes em atendimento. Deve ser ≥ servers."
+          }
+        },
+        "type": "object",
+        "required": [
+          "lambda",
+          "mu",
+          "servers",
+          "capacity"
+        ],
+        "title": "MMCKCalculateRequest",
+        "examples": [
+          {
+            "capacity": 6,
+            "lambda": 25,
+            "mu": 10,
+            "servers": 3
+          }
+        ]
+      },
+      "MMCKSimulateRequest": {
+        "properties": {
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa média de chegada (λ)."
+          },
+          "mu": {
+            "type": "number",
+            "title": "Mu",
+            "description": "Taxa média de serviço (μ)."
+          },
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time",
+            "description": "Tempo simulado por replicação."
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications",
+            "description": "Número de replicações.",
+            "default": 10
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time",
+            "description": "Período inicial descartado (transitório).",
+            "default": 0.0
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Semente aleatória. Se omitida, uma é sorteada e devolvida."
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level",
+            "description": "Nível do intervalo de confiança (0 a 1).",
+            "default": 0.95
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers",
+            "description": "Número de servidores (c)."
+          },
+          "capacity": {
+            "type": "integer",
+            "title": "Capacity",
+            "description": "Capacidade total do sistema (K), incluindo os clientes em atendimento. Deve ser ≥ servers."
+          }
+        },
+        "type": "object",
+        "required": [
+          "lambda",
+          "mu",
+          "simulation_time",
+          "servers",
+          "capacity"
+        ],
+        "title": "MMCKSimulateRequest",
+        "examples": [
+          {
+            "capacity": 6,
+            "lambda": 25,
+            "mu": 10,
+            "replications": 10,
+            "seed": 2026,
+            "servers": 3,
+            "simulation_time": 2000,
+            "warmup_time": 100
+          }
+        ]
+      },
+      "MMCSimulateRequest": {
+        "properties": {
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa média de chegada (λ)."
+          },
+          "mu": {
+            "type": "number",
+            "title": "Mu",
+            "description": "Taxa média de serviço (μ)."
+          },
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time",
+            "description": "Tempo simulado por replicação."
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications",
+            "description": "Número de replicações.",
+            "default": 10
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time",
+            "description": "Período inicial descartado (transitório).",
+            "default": 0.0
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Semente aleatória. Se omitida, uma é sorteada e devolvida."
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level",
+            "description": "Nível do intervalo de confiança (0 a 1).",
+            "default": 0.95
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers",
+            "description": "Número de servidores (c)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "lambda",
+          "mu",
+          "simulation_time",
+          "servers"
+        ],
+        "title": "MMCSimulateRequest",
+        "examples": [
+          {
+            "lambda": 8,
+            "mu": 1,
+            "replications": 10,
+            "seed": 2026,
+            "servers": 10,
+            "simulation_time": 2000,
+            "warmup_time": 100
+          }
+        ]
+      },
+      "MetricComparisonOut": {
+        "properties": {
+          "analytical": {
+            "type": "number",
+            "title": "Analytical"
+          },
+          "simulated_mean": {
+            "type": "number",
+            "title": "Simulated Mean"
+          },
+          "ci_low": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ci Low"
+          },
+          "ci_high": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ci High"
+          },
+          "absolute_error": {
+            "type": "number",
+            "title": "Absolute Error"
+          },
+          "relative_error_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relative Error Pct"
+          },
+          "within_ci": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Within Ci"
+          }
+        },
+        "type": "object",
+        "required": [
+          "analytical",
+          "simulated_mean",
+          "ci_low",
+          "ci_high",
+          "absolute_error",
+          "relative_error_pct",
+          "within_ci"
+        ],
+        "title": "MetricComparisonOut"
+      },
+      "MetricSummaryOut": {
+        "properties": {
+          "mean": {
+            "type": "number",
+            "title": "Mean"
+          },
+          "std": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Std"
+          },
+          "ci_low": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ci Low"
+          },
+          "ci_high": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ci High"
+          },
+          "n": {
+            "type": "integer",
+            "title": "N"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mean",
+          "std",
+          "ci_low",
+          "ci_high",
+          "n"
+        ],
+        "title": "MetricSummaryOut"
+      },
+      "QueueCalculateResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers"
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity"
+          },
+          "rho": {
+            "type": "number",
+            "title": "Rho"
+          },
+          "L": {
+            "type": "number",
+            "title": "L"
+          },
+          "Lq": {
+            "type": "number",
+            "title": "Lq"
+          },
+          "W": {
+            "type": "number",
+            "title": "W"
+          },
+          "Wq": {
+            "type": "number",
+            "title": "Wq"
+          },
+          "throughput": {
+            "type": "number",
+            "title": "Throughput"
+          },
+          "p_wait": {
+            "type": "number",
+            "title": "P Wait"
+          },
+          "p_block": {
+            "type": "number",
+            "title": "P Block"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "servers",
+          "capacity",
+          "rho",
+          "L",
+          "Lq",
+          "W",
+          "Wq",
+          "throughput",
+          "p_wait",
+          "p_block"
+        ],
+        "title": "QueueCalculateResponse"
+      },
+      "QueueComparisonResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "lambda": {
+            "type": "number",
+            "title": "Lambda"
+          },
+          "mu": {
+            "type": "number",
+            "title": "Mu"
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers"
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity"
+          },
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time"
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time"
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed"
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level"
+          },
+          "metrics": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MetricComparisonOut"
+            },
+            "type": "object",
+            "title": "Metrics"
+          },
+          "all_within_ci": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "All Within Ci"
+          },
+          "max_relative_error_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Relative Error Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "lambda",
+          "mu",
+          "servers",
+          "capacity",
+          "simulation_time",
+          "warmup_time",
+          "replications",
+          "seed",
+          "confidence_level",
+          "metrics",
+          "all_within_ci",
+          "max_relative_error_pct"
+        ],
+        "title": "QueueComparisonResponse"
+      },
+      "QueueReplicationOut": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "rho": {
+            "type": "number",
+            "title": "Rho"
+          },
+          "L": {
+            "type": "number",
+            "title": "L"
+          },
+          "Lq": {
+            "type": "number",
+            "title": "Lq"
+          },
+          "W": {
+            "type": "number",
+            "title": "W"
+          },
+          "Wq": {
+            "type": "number",
+            "title": "Wq"
+          },
+          "throughput": {
+            "type": "number",
+            "title": "Throughput"
+          },
+          "p_wait": {
+            "type": "number",
+            "title": "P Wait"
+          },
+          "p_block": {
+            "type": "number",
+            "title": "P Block"
+          },
+          "measured_customers": {
+            "type": "integer",
+            "title": "Measured Customers"
+          },
+          "observation_time": {
+            "type": "number",
+            "title": "Observation Time"
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "rho",
+          "L",
+          "Lq",
+          "W",
+          "Wq",
+          "throughput",
+          "p_wait",
+          "p_block",
+          "measured_customers",
+          "observation_time"
+        ],
+        "title": "QueueReplicationOut"
+      },
+      "QueueSimulationResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "lambda": {
+            "type": "number",
+            "title": "Lambda"
+          },
+          "mu": {
+            "type": "number",
+            "title": "Mu"
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers"
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity"
+          },
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time"
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time"
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed"
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level"
+          },
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/QueueReplicationOut"
+            },
+            "type": "array",
+            "title": "Runs"
+          },
+          "summary": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MetricSummaryOut"
+            },
+            "type": "object",
+            "title": "Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "lambda",
+          "mu",
+          "servers",
+          "capacity",
+          "simulation_time",
+          "warmup_time",
+          "replications",
+          "seed",
+          "confidence_level",
+          "runs",
+          "summary"
+        ],
+        "title": "QueueSimulationResponse"
+      },
+      "ReplicationOut": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "rho": {
+            "type": "number",
+            "title": "Rho"
+          },
+          "L": {
+            "type": "number",
+            "title": "L"
+          },
+          "Lq": {
+            "type": "number",
+            "title": "Lq"
+          },
+          "W": {
+            "type": "number",
+            "title": "W"
+          },
+          "Wq": {
+            "type": "number",
+            "title": "Wq"
+          },
+          "throughput": {
+            "type": "number",
+            "title": "Throughput"
+          },
+          "measured_customers": {
+            "type": "integer",
+            "title": "Measured Customers"
+          },
+          "observation_time": {
+            "type": "number",
+            "title": "Observation Time"
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "rho",
+          "L",
+          "Lq",
+          "W",
+          "Wq",
+          "throughput",
+          "measured_customers",
+          "observation_time"
+        ],
+        "title": "ReplicationOut"
+      },
+      "SimulationResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "default": "M/M/1"
+          },
+          "lambda": {
+            "type": "number",
+            "title": "Lambda"
+          },
+          "mu": {
+            "type": "number",
+            "title": "Mu"
+          },
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time"
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time"
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed"
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level"
+          },
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/ReplicationOut"
+            },
+            "type": "array",
+            "title": "Runs"
+          },
+          "summary": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MetricSummaryOut"
+            },
+            "type": "object",
+            "title": "Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lambda",
+          "mu",
+          "simulation_time",
+          "warmup_time",
+          "replications",
+          "seed",
+          "confidence_level",
+          "runs",
+          "summary"
+        ],
+        "title": "SimulationResponse"
+      }
+    }
+  }
+}

@@ -2,13 +2,14 @@
 
 Este guia mostra como instalar e executar o que o QSimulador já tem implementado: os modelos **M/M/1**, **M/M/c**, **M/M/1/K** e **M/M/c/K**, cada um com cálculo analítico, simulação de eventos discretos (SimPy), comparação entre os dois e a API REST.
 
-Há três formas de executar o modelo. Escolha a que combina com o que você quer fazer:
+Há quatro formas de executar o modelo. Escolha a que combina com o que você quer fazer:
 
 | Forma | Quando usar |
 | --- | --- |
 | [Script de demonstração](#2-script-de-demonstração) | Ver rapidamente a comparação analítico × simulação no terminal |
 | [API REST](#3-api-rest) | Testar os endpoints, ou preparar a integração com a interface |
 | [Python direto](#4-usando-em-python) | Usar as funções em seus próprios scripts e experimentos |
+| [Interface web](#9-interface-web-frontend) | Usar o QSimulador pelo navegador, com tabelas e gráficos |
 
 ---
 
@@ -53,7 +54,7 @@ Quando o ambiente virtual está ativo, o prompt começa com `(.venv)`. **Todos o
 python -m pytest
 ```
 
-Todos os testes devem passar (336 no momento em que este guia foi escrito). Um aviso de depreciação do Starlette sobre o `httpx` pode aparecer e é inofensivo.
+Todos os testes devem passar (347 no momento em que este guia foi escrito). Um aviso de depreciação do Starlette sobre o `httpx` pode aparecer e é inofensivo.
 
 ---
 
@@ -391,3 +392,110 @@ O número de servidores quase não muda o custo, e as chegadas recusadas também
 | `capacity deve ser maior ou igual a servers` | A capacidade total inclui os clientes em atendimento, então não pode ser menor que o número de servidores | Use `capacity` ≥ `servers` (com `capacity = servers` não há fila: é um sistema de perda) |
 | Resposta 422 | Parâmetro inválido | Leia `code` e `message` na resposta (ver [Erros da API](#erros-da-api)) |
 | Simulação muito lenta | λ × tempo × réplicas grande | Reduza o tempo ou o número de réplicas (ver [Desempenho](#7-desempenho)) |
+
+---
+
+## 9. Interface web (frontend)
+
+A interface roda no navegador e conversa com a API. É a forma mais cômoda de comparar o analítico com a simulação.
+
+### Pré-requisito
+
+**Node.js 20 ou superior.** Confira com `node --version`; se não tiver, instale a versão LTS em [nodejs.org](https://nodejs.org) e abra um novo terminal.
+
+### Executar em desenvolvimento
+
+São dois terminais, a partir da raiz do repositório.
+
+**Terminal 1: a API**
+
+```powershell
+cd backend
+.venv\Scripts\Activate.ps1
+python -m uvicorn app.main:app --reload
+```
+
+**Terminal 2: a interface**
+
+```powershell
+cd frontend
+npm install        # só na primeira vez (e quando as dependências mudarem)
+npm run dev
+```
+
+Abra **http://localhost:5173**. Em desenvolvimento, o Vite encaminha as chamadas `/api` para `http://127.0.0.1:8000`, então não há CORS a configurar. Se a API estiver em outra porta:
+
+```powershell
+$env:VITE_DEV_API="http://127.0.0.1:8001"; npm run dev      # PowerShell
+VITE_DEV_API=http://127.0.0.1:8001 npm run dev              # bash
+```
+
+### Como usar
+
+1. **Escolha o modelo.** Os campos de servidores (c) e de capacidade (K) só aparecem nos modelos que os usam. Cada modelo guarda os valores digitados, então trocar de modelo não apaga o que você fez.
+2. **Ajuste os parâmetros** do sistema e da simulação. Abaixo deles, a tela estima o custo (chegadas e segundos aproximados). Semente em branco significa aleatória.
+3. **Clique em Comparar.** Aparecem o veredito (se o valor analítico está dentro do intervalo de confiança de cada métrica), quatro números de destaque, o gráfico de diferenças e a tabela completa. **Só calcular** mostra apenas o analítico, e **Só simular** apenas a simulação.
+4. **Explore as abas.** Gráficos mostra o valor de cada réplica, a média simulada e o analítico, e permite escolher a métrica. Réplicas traz a tabela por réplica. Detalhes mostra os parâmetros, a semente (com botão de copiar) e a resposta completa da API. Como o Comparar não devolve as réplicas individuais, as abas Gráficos e Réplicas têm o botão **Carregar réplicas**, que repete a simulação com a mesma semente e reproduz exatamente os mesmos números.
+5. **Cancele** uma execução demorada com o botão que substitui o Comparar enquanto ela roda.
+
+Como ler o gráfico de diferenças: cada linha é uma métrica, mostrada como a diferença percentual da média simulada em relação ao analítico, com a barra do intervalo de confiança. Se a barra **cruza o zero**, o valor analítico está dentro do intervalo. Métricas com valor analítico igual a 0 (como a probabilidade de recusa no M/M/c) não têm diferença relativa e aparecem em uma nota abaixo do gráfico.
+
+Os erros da API aparecem no campo correspondente do formulário (por exemplo, λ no caso de sistema instável). A tela só confere o formato (número, inteiro); as regras do modelo ficam na API.
+
+### Versão de produção
+
+```powershell
+npm run build      # confere os tipos e gera a pasta frontend/dist
+npm run preview    # serve a versão de produção em http://localhost:4173
+```
+
+Para publicar o frontend em um endereço diferente do da API, configure as duas pontas:
+
+```powershell
+# API: liberar a origem do frontend (lista separada por vírgulas)
+$env:QSIMULADOR_CORS_ORIGINS="https://meusite.com"; python -m uvicorn app.main:app
+
+# Frontend: dizer onde a API está (no momento do build)
+$env:VITE_API_BASE_URL="https://api.meusite.com"; npm run build
+```
+
+Sem `QSIMULADOR_CORS_ORIGINS`, a API não libera nenhuma outra origem.
+
+### Testes do frontend
+
+```powershell
+cd frontend
+npm test               # testes unitários e de componentes
+npm run typecheck      # conferência de tipos (inclui os testes)
+```
+
+O **teste de contrato** roda o mesmo cliente do frontend contra a API de verdade e confere se as fixtures dos testes ainda têm o formato real. Ele só executa quando você informa a API (a API precisa estar no ar):
+
+```powershell
+$env:VITE_API_BASE_URL="http://127.0.0.1:8000"; npm run test:contract     # PowerShell
+VITE_API_BASE_URL=http://127.0.0.1:8000 npm run test:contract             # bash
+```
+
+### Quando a API mudar
+
+Os tipos TypeScript vêm do esquema OpenAPI da API. Depois de mudar rotas ou campos:
+
+```powershell
+cd backend
+python -m scripts.export_openapi        # atualiza frontend/openapi.json
+cd ../frontend
+npm run gen:api                         # regenera src/api/schema.d.ts
+```
+
+O teste `tests/test_openapi_snapshot.py` do backend falha se o `openapi.json` ficar desatualizado, e o `npm run typecheck` aponta o que quebrou nos tipos.
+
+### Problemas comuns
+
+| Sintoma | Causa provável | Solução |
+| --- | --- | --- |
+| `npm` não é reconhecido | Node.js não instalado, ou terminal aberto antes da instalação | Instale o Node.js 20+ e abra um novo terminal |
+| "Sem conexão com a API" na tela | API fora do ar, ou em outra porta | Suba a API no terminal 1, ou use `VITE_DEV_API` com a porta certa |
+| A porta 5173 está em uso | Outra instância do Vite aberta | O Vite escolhe a próxima porta e mostra o endereço no terminal; use esse endereço |
+| A tela fica em "Comparando…" por muito tempo | Simulação grande (veja a estimativa abaixo do formulário) | Cancele e reduza o tempo simulado ou o número de réplicas |
+| O primeiro gráfico demora um instante | O Plotly (cerca de 380 KB comprimido) é carregado só quando o primeiro gráfico aparece | É o esperado; nas próximas vezes já está em cache |
+| Erro de CORS ao publicar | A API não liberou a origem do frontend | Defina `QSIMULADOR_CORS_ORIGINS` com o endereço do frontend |
