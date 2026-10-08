@@ -70,7 +70,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="topbar">
-        <div className="brand"><IconChartDots3 size={22} aria-hidden="true" />QSimulador</div>
+        <h1 className="brand"><IconChartDots3 size={22} aria-hidden="true" />QSimulador</h1>
         <nav aria-label="Seções">
           <span className="nav-item" aria-current="page">Laboratório</span>
           <span className="nav-item soon" aria-disabled="true">Experimentos <small>em breve</small></span>

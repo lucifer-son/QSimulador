@@ -19,3 +19,13 @@ export const METRIC_INFO: Record<MetricName, MetricInfo> = {
   p_wait: { label: "Probabilidade de esperar", short: "p_wait", kind: "fraction" },
   p_block: { label: "Probabilidade de recusa", short: "p_block", kind: "fraction" },
 };
+
+const UNIT_BY_KIND: Record<MetricInfo["kind"], string> = {
+  fraction: "%", count: "clientes", time: "s", rate: "req/s",
+};
+
+/** Rótulo de eixo com unidade, ex.: "Tempo médio no sistema (s)". */
+export function metricAxisTitle(name: MetricName): string {
+  const info = METRIC_INFO[name];
+  return `${info.label} (${UNIT_BY_KIND[info.kind]})`;
+}
