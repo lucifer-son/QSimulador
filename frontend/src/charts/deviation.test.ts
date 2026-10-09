@@ -54,12 +54,26 @@ describe("deviationChart", () => {
     expect(data[1].marker.color).toBe(colors.danger);
   });
 
-  it("só mostra a legenda quando existe série fora do IC", () => {
+  it("a legenda está sempre presente, mesmo quando tudo está dentro do IC", () => {
     expect(deviationChart(points, colors).layout.showlegend).toBe(true);
     const allInside = deviationData([row("L", 4, 4, 3.9, 4.1)]).points;
     const chart = deviationChart(allInside, colors);
-    expect(chart.layout.showlegend).toBe(false);
+    expect(chart.layout.showlegend).toBe(true);
     expect(chart.data).toHaveLength(1);
+  });
+
+  it("dentro e fora do IC diferem por cor E por forma do marcador (não só por cor)", () => {
+    const { data } = deviationChart(points, colors);
+    expect(data[0].marker.symbol).toBe("circle");
+    expect(data[1].marker.symbol).toBe("diamond");
+    expect(data[0].marker.symbol).not.toBe(data[1].marker.symbol);
+    expect(data[0].marker.color).not.toBe(data[1].marker.color);
+  });
+
+  it("os dois eixos têm rótulo, e o eixo X traz a unidade (%)", () => {
+    const { layout } = deviationChart(points, colors);
+    expect(layout.xaxis.title.text).toMatch(/\(%\)$/);
+    expect(layout.yaxis.title.text).toBe("Métrica");
   });
 
   it("monta as barras de erro assimétricas a partir do IC", () => {
@@ -79,6 +93,6 @@ describe("deviationChart", () => {
   });
 
   it("a altura cresce com o número de métricas", () => {
-    expect(deviationChart(points, colors).layout.height).toBe(90 + 30 * 2);
+    expect(deviationChart(points, colors).layout.height).toBe(120 + 30 * 2);
   });
 });

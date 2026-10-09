@@ -26,6 +26,13 @@ const setup = (handler: FakeHandler = happyPath) => {
 const button = (name: string) => screen.getByRole("button", { name });
 const lambda = () => screen.getByLabelText(/Chegadas λ/);
 
+describe("estrutura da página", () => {
+  it("tem um título de nível 1 com o nome do produto", () => {
+    setup();
+    expect(screen.getByRole("heading", { level: 1, name: "QSimulador" })).toBeInTheDocument();
+  });
+});
+
 describe("formulário", () => {
   it("começa no M/M/c/K com os exemplos da documentação e a estimativa de custo", () => {
     setup();

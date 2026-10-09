@@ -42,7 +42,7 @@ export function deviationData(metrics: MetricRow[]): DeviationData {
   return { points, omitted };
 }
 
-function trace(points: DeviationPoint[], name: string, color: string) {
+function trace(points: DeviationPoint[], name: string, color: string, symbol: string) {
   return {
     type: "scatter",
     mode: "markers",
@@ -50,7 +50,7 @@ function trace(points: DeviationPoint[], name: string, color: string) {
     x: points.map((p) => p.diff),
     y: points.map((p) => p.label),
     text: points.map((p) => `IC: ${formatSignedPercent(p.lo)} a ${formatSignedPercent(p.hi)}`),
-    marker: { color, size: 9 },
+    marker: { color, size: 10, symbol },
     error_x: {
       type: "data",
       symmetric: false,
@@ -69,18 +69,18 @@ export function deviationChart(points: DeviationPoint[], colors: ThemeColors) {
   const outside = points.filter((p) => !p.within);
   const maxAbs = Math.max(0.5, ...points.flatMap((p) => [Math.abs(p.lo), Math.abs(p.hi)])) * 1.15;
   const data = [
-    ...(inside.length ? [trace(inside, "Analítico dentro do IC", colors.accent)] : []),
-    ...(outside.length ? [trace(outside, "Analítico fora do IC", colors.danger)] : []),
+    ...(inside.length ? [trace(inside, "Analítico dentro do IC", colors.accent, "circle")] : []),
+    ...(outside.length ? [trace(outside, "Analítico fora do IC", colors.danger, "diamond")] : []),
   ];
   const layout = {
-    height: 90 + 30 * points.length,
-    margin: { l: 70, r: 20, t: 10, b: outside.length ? 90 : 60 },
+    height: 120 + 30 * points.length,
+    margin: { l: 90, r: 20, t: 10, b: 90 },
     separators: ",.",
     paper_bgcolor: "rgba(0,0,0,0)",
     plot_bgcolor: "rgba(0,0,0,0)",
     font: { color: colors.textSecondary, size: 12 },
     dragmode: false,
-    showlegend: outside.length > 0,
+    showlegend: true,
     legend: { orientation: "h", y: -0.4 },
     xaxis: {
       title: { text: "Diferença em relação ao analítico (%)" },
@@ -92,7 +92,7 @@ export function deviationChart(points: DeviationPoint[], colors: ThemeColors) {
       gridcolor: colors.border,
       fixedrange: true,
     },
-    yaxis: { autorange: "reversed", gridcolor: colors.border, fixedrange: true },
+    yaxis: { title: { text: "Métrica" }, automargin: true, autorange: "reversed", gridcolor: colors.border, fixedrange: true },
   };
   return { data, layout };
 }
