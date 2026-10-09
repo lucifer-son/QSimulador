@@ -23,7 +23,7 @@ def test_compare_metrics_accepts_custom_metric_list():
 
 
 def test_compare_metrics_default_is_unchanged():
-    names = ("rho", "L", "Lq", "W", "Wq", "throughput")
+    names = ("rho", "L", "Lq", "W", "Wq", "p0", "throughput")
     ref = {n: 1.0 for n in names}
     out = compare_metrics(ref, {n: summary(1.0, 0.9, 1.1) for n in names})
     assert tuple(out) == names
@@ -54,10 +54,12 @@ def test_compare_queue_overall_fields():
     assert cmp.max_relative_error_pct == pytest.approx(max(m.relative_error_pct for m in cmp.metrics.values()))
 
 
-def test_compare_queue_single_replication_has_no_verdict():
-    cmp = compare_queue(2.5, 1, 3, 6, 300, replications=1, seed=1)
-    assert cmp.all_within_ci is None
-    assert all(m.within_ci is None for m in cmp.metrics.values())
+def test_compare_queue_single_replication_is_rejected():
+    from app.domain.validation.errors import QueueValidationError
+
+    with pytest.raises(QueueValidationError) as exc:
+        compare_queue(2.5, 1, 3, 6, 300, replications=1, seed=1)
+    assert exc.value.field == "replications"
 
 
 def test_compare_queue_is_reproducible_and_serializable():

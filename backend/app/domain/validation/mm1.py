@@ -14,6 +14,7 @@ def validate_mm1_parameters(lam: object, mu: object) -> tuple[float, float]:
     if lam_v >= mu_v:
         raise UnstableSystemError(
             "O modelo não está em condição estável. "
-            "Para M/M/1, é necessário que λ < μ."
+            "Para M/M/1, é necessário que λ < μ.",
+            field="lambda",
         )
     return lam_v, mu_v

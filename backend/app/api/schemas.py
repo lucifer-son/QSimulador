@@ -63,6 +63,7 @@ class MM1CalculateResponse(BaseModel):
     Lq: float
     W: float
     Wq: float
+    p0: float
 
 
 class ReplicationOut(BaseModel):
@@ -72,6 +73,7 @@ class ReplicationOut(BaseModel):
     Lq: float
     W: float
     Wq: float
+    p0: float
     throughput: float
     measured_customers: int
     observation_time: float
@@ -217,6 +219,7 @@ class QueueCalculateResponse(BaseModel):
     Lq: float
     W: float
     Wq: float
+    p0: float
     throughput: float
     p_wait: float
     p_block: float
@@ -229,6 +232,7 @@ class QueueReplicationOut(BaseModel):
     Lq: float
     W: float
     Wq: float
+    p0: float
     throughput: float
     p_wait: float
     p_block: float

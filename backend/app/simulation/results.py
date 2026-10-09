@@ -2,7 +2,7 @@
 
 from dataclasses import asdict, dataclass
 
-METRIC_NAMES = ("rho", "L", "Lq", "W", "Wq", "throughput")
+METRIC_NAMES = ("rho", "L", "Lq", "W", "Wq", "p0", "throughput")
 
 
 @dataclass(frozen=True)
@@ -15,6 +15,7 @@ class ReplicationResult:
     Lq: float           # nº médio na fila (média no tempo)
     W: float            # tempo médio no sistema (média por cliente)
     Wq: float           # tempo médio de espera (média por cliente)
+    p0: float           # fração do tempo com o sistema vazio
     throughput: float   # vazão observada (saídas por unidade de tempo)
     measured_customers: int  # clientes usados no cálculo de W e Wq
     observation_time: float  # duração da janela medida (T - warm-up)
@@ -49,7 +50,7 @@ class SimulationResult:
 
 # ---------- modelos M/M/c, M/M/1/K e M/M/c/K ----------
 
-QUEUE_METRIC_NAMES = ("rho", "L", "Lq", "W", "Wq", "throughput", "p_wait", "p_block")
+QUEUE_METRIC_NAMES = ("rho", "L", "Lq", "W", "Wq", "p0", "throughput", "p_wait", "p_block")
 
 
 @dataclass(frozen=True)
@@ -62,6 +63,7 @@ class QueueReplicationResult:
     Lq: float
     W: float
     Wq: float
+    p0: float           # fração do tempo com o sistema vazio
     throughput: float   # saídas por unidade de tempo
     p_wait: float       # fração dos clientes aceitos que tiveram que esperar
     p_block: float      # fração das chegadas recusadas por falta de capacidade

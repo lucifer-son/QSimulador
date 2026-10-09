@@ -27,7 +27,7 @@ def test_mm1_metrics_second_known_case():
 
 
 def test_as_dict_keys():
-    assert set(mm1_metrics(40, 50).as_dict()) == {"rho", "L", "Lq", "W", "Wq"}
+    assert set(mm1_metrics(40, 50).as_dict()) == {"rho", "L", "Lq", "W", "Wq", "p0"}
 
 
 @pytest.mark.parametrize("lam,mu", [(1, 2), (40, 50), (0.1, 0.11), (999, 1000), (3.5, 7)])

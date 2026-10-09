@@ -111,11 +111,14 @@ def test_random_seed_is_reported_and_reproducible():
 
 # ---------- uma única replicação / serialização ----------
 
-def test_single_replication_has_no_interval():
-    r = simulate_mm1(1, 2, 300, replications=1, seed=1)
-    s = r.summary["L"]
-    assert s.n == 1
-    assert s.std is None and s.ci_low is None and s.ci_high is None
+def test_a_single_replication_is_rejected_because_there_is_no_variance_to_estimate():
+    with pytest.raises(QueueValidationError) as exc:
+        simulate_mm1(1, 2, 300, replications=1, seed=1)
+    assert exc.value.field == "replications"
+
+    # com o mínimo de 2 réplicas o intervalo de confiança sempre existe
+    s = simulate_mm1(1, 2, 300, replications=2, seed=1).summary["L"]
+    assert s.n == 2 and s.std is not None and s.ci_low is not None and s.ci_high is not None
 
 
 def test_result_is_json_serializable():
@@ -137,6 +140,8 @@ def test_unstable_system_is_rejected():
         {"simulation_time": -10},
         {"simulation_time": float("inf")},
         {"replications": 0},
+        {"replications": 1},
+        {"replications": 101},
         {"replications": 2.5},
         {"replications": True},
         {"warmup_time": -1},
@@ -163,11 +168,11 @@ def test_oversized_simulation_is_rejected():
 
 def test_random_seed_fits_in_json_safe_range():
     # Inteiros acima de 2^53 perdem precisão em JavaScript.
-    assert 0 <= simulate_mm1(1, 2, 100, replications=1).seed < 2**53
+    assert 0 <= simulate_mm1(1, 2, 100, replications=2).seed < 2**53
 
 
 def test_max_seed_is_accepted():
-    simulate_mm1(1, 2, 50, replications=1, seed=2**53 - 1)
+    simulate_mm1(1, 2, 50, replications=2, seed=2**53 - 1)
 
 
 def test_too_short_simulation_raises_insufficient_sample():

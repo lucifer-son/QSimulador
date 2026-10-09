@@ -34,7 +34,7 @@ def build_parser() -> argparse.ArgumentParser:
                    help="capacidade total K, incluindo os em atendimento (padrão: 6). "
                         "Use --capacity 0 para fila ilimitada (M/M/c)")
     p.add_argument("--time", type=float, default=2000.0, help="tempo simulado por réplica (padrão: 2000)")
-    p.add_argument("--reps", type=int, default=10, help="número de réplicas (padrão: 10)")
+    p.add_argument("--reps", type=int, default=10, help="número de réplicas, de 2 a 100 (padrão: 10)")
     p.add_argument("--warmup", type=float, default=100.0, help="período inicial descartado (padrão: 100)")
     p.add_argument("--seed", type=int, default=2026, help="semente aleatória (padrão: 2026)")
     p.add_argument("--confidence", type=float, default=0.95, help="nível do intervalo de confiança (padrão: 0.95)")

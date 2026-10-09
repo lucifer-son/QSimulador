@@ -9,7 +9,7 @@ from app.domain.validation.mm1 import validate_mm1_parameters
 
 
 def mm1_metrics(lam: float, mu: float) -> QueueMetrics:
-    """Calcula ρ, L, Lq, W e Wq para um M/M/1.
+    """Calcula ρ, L, Lq, W, Wq e P0 para um M/M/1.
 
     `lam` é a taxa média de chegada (λ) e `mu` a taxa média de serviço (μ),
     na mesma unidade (por exemplo, req/s). Os tempos saem na unidade inversa.
@@ -25,4 +25,6 @@ def mm1_metrics(lam: float, mu: float) -> QueueMetrics:
     W = 1 / (mu - lam)
     Wq = lam / (mu * (mu - lam))
 
-    return QueueMetrics(rho=rho, L=L, Lq=Lq, W=W, Wq=Wq)
+    p0 = (mu - lam) / mu  # probabilidade de sistema vazio (= 1 − ρ)
+
+    return QueueMetrics(rho=rho, L=L, Lq=Lq, W=W, Wq=Wq, p0=p0)

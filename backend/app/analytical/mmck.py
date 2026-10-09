@@ -8,7 +8,7 @@
 """
 
 import numpy as np
-from scipy.special import gammaln
+from scipy.special import gammaln, logsumexp
 
 from app.domain.metrics.queue_metrics import QueueModelMetrics
 from app.domain.validation.mmck import (
@@ -24,6 +24,16 @@ def erlang_b(offered_load: float, servers: int) -> float:
     for k in range(1, servers + 1):
         b = offered_load * b / (k + offered_load * b)
     return b
+
+
+def _mmc_p0(a: float, servers: int, rho: float) -> float:
+    """P0 do M/M/c: 1 / (Σ_{n<c} aⁿ/n! + aᶜ / (c!·(1 − ρ))), em escala logarítmica."""
+    n = np.arange(servers)
+    log_terms = np.append(
+        n * np.log(a) - gammaln(n + 1),
+        servers * np.log(a) - gammaln(servers + 1) - np.log(1 - rho),
+    )
+    return float(np.exp(-logsumexp(log_terms)))
 
 
 def mmc_metrics(lam: float, mu: float, servers: int) -> QueueModelMetrics:
@@ -43,6 +53,7 @@ def mmc_metrics(lam: float, mu: float, servers: int) -> QueueModelMetrics:
         Lq=Lq,
         W=Wq + 1 / mu,
         Wq=Wq,
+        p0=_mmc_p0(a, c, rho),
         throughput=lam,
         p_wait=p_wait,
         p_block=0.0,
@@ -82,6 +93,7 @@ def mmck_metrics(lam: float, mu: float, servers: int, capacity: int) -> QueueMod
         Lq=Lq,
         W=L / lam_eff,
         Wq=Lq / lam_eff,
+        p0=float(p[0]),
         throughput=lam_eff,
         p_wait=p_wait,
         p_block=p_block,

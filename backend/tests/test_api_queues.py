@@ -13,7 +13,7 @@ MODELS = {
 }
 RATES = {"lambda": 1.5, "mu": 1}
 SIM = {"simulation_time": 300, "replications": 3, "seed": 1}
-METRICS = {"rho", "L", "Lq", "W", "Wq", "throughput", "p_wait", "p_block"}
+METRICS = {"rho", "L", "Lq", "W", "Wq", "p0", "throughput", "p_wait", "p_block"}
 
 
 def url(model, op):
@@ -174,10 +174,10 @@ def test_compare_is_consistent_with_calculate_and_simulate(model):
         assert cmp_["metrics"][name]["ci_low"] == sim["summary"][name]["ci_low"]
 
 
-def test_compare_single_replication_has_null_verdict():
-    b = client.post(url("mmck", "compare"), json=body("mmck", **{**SIM, "replications": 1})).json()
-    assert b["all_within_ci"] is None
-    assert b["metrics"]["L"]["within_ci"] is None and b["metrics"]["L"]["ci_low"] is None
+def test_compare_rejects_a_single_replication():
+    r = client.post(url("mmck", "compare"), json=body("mmck", **{**SIM, "replications": 1}))
+    assert r.status_code == 422
+    assert [f["field"] for f in r.json()["fields"]] == ["replications"]
 
 
 def test_compare_validation_errors():

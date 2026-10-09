@@ -163,9 +163,12 @@ def test_random_seed_is_reported_in_json_safe_range_and_reproducible():
     assert a.runs == b.runs
 
 
-def test_single_replication_has_no_interval():
-    s = simulate_mmck(2.5, 1, 3, 6, 300, replications=1, seed=1).summary["L"]
-    assert s.n == 1 and s.std is None and s.ci_low is None and s.ci_high is None
+def test_a_single_replication_is_rejected_and_two_always_give_an_interval():
+    with pytest.raises(QueueValidationError) as exc:
+        simulate_mmck(2.5, 1, 3, 6, 300, replications=1, seed=1)
+    assert exc.value.field == "replications"
+    s = simulate_mmck(2.5, 1, 3, 6, 300, replications=2, seed=1).summary["L"]
+    assert s.n == 2 and s.std is not None and s.ci_low is not None
 
 
 def test_result_is_json_serializable():
@@ -193,7 +196,7 @@ def test_finite_capacity_accepts_overload():
         {"servers": 0}, {"servers": 1.5}, {"servers": True},
         {"capacity": 1},                  # K < c (com servers=2)
         {"capacity": 0}, {"capacity": 2.5},
-        {"simulation_time": 0}, {"replications": 0}, {"warmup_time": 100},
+        {"simulation_time": 0}, {"replications": 0}, {"replications": 1}, {"replications": 101}, {"warmup_time": 100},
         {"seed": -1}, {"seed": 2**53}, {"confidence_level": 1.5},
     ],
 )

@@ -82,7 +82,7 @@ def test_simulate_ok():
     assert body["lambda"] == 1 and body["mu"] == 2
     assert body["replications"] == 3 and len(body["runs"]) == 3
     assert body["seed"] == 1
-    assert set(body["summary"]) == {"rho", "L", "Lq", "W", "Wq", "throughput"}
+    assert set(body["summary"]) == {"rho", "L", "Lq", "W", "Wq", "p0", "throughput"}
     s = body["summary"]["L"]
     assert s["ci_low"] <= s["mean"] <= s["ci_high"]
 
@@ -103,10 +103,12 @@ def test_simulate_uses_defaults_and_reports_random_seed():
     assert isinstance(body["seed"], int) and 0 <= body["seed"] < 2**53
 
 
-def test_simulate_single_replication_has_null_interval():
+def test_simulate_rejects_a_single_replication():
     r = client.post(SIM, json={**SIM_PAYLOAD, "replications": 1})
-    s = r.json()["summary"]["L"]
-    assert s["n"] == 1 and s["std"] is None and s["ci_low"] is None
+    assert r.status_code == 422
+    body = r.json()
+    assert body["code"] == "invalid_parameter"
+    assert [f["field"] for f in body["fields"]] == ["replications"]
 
 
 def test_simulate_unstable_system():
@@ -176,7 +178,7 @@ def test_compare_ok():
     body = r.json()
     assert body["model"] == "M/M/1"
     assert body["lambda"] == 1 and body["mu"] == 2 and body["seed"] == 5
-    assert set(body["metrics"]) == {"rho", "L", "Lq", "W", "Wq", "throughput"}
+    assert set(body["metrics"]) == {"rho", "L", "Lq", "W", "Wq", "p0", "throughput"}
     rho = body["metrics"]["rho"]
     assert rho["analytical"] == pytest.approx(0.5)
     assert rho["absolute_error"] >= 0
@@ -189,11 +191,10 @@ def test_compare_is_reproducible_with_seed():
     assert client.post(CMP, json=CMP_PAYLOAD).json() == client.post(CMP, json=CMP_PAYLOAD).json()
 
 
-def test_compare_single_replication_has_null_verdict():
-    body = client.post(CMP, json={**CMP_PAYLOAD, "replications": 1}).json()
-    assert body["all_within_ci"] is None
-    assert body["metrics"]["L"]["within_ci"] is None
-    assert body["metrics"]["L"]["ci_low"] is None
+def test_compare_rejects_a_single_replication():
+    r = client.post(CMP, json={**CMP_PAYLOAD, "replications": 1})
+    assert r.status_code == 422
+    assert [f["field"] for f in r.json()["fields"]] == ["replications"]
 
 
 def test_compare_uses_defaults_and_reports_random_seed():

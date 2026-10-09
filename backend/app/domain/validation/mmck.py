@@ -13,16 +13,16 @@ MAX_CAPACITY = 100_000
 def _validate_integer(name: str, value: object) -> int:
     # bool é subclasse de int em Python; True/False não são valores válidos.
     if isinstance(value, bool) or not isinstance(value, Integral):
-        raise QueueValidationError(f"{name} deve ser um número inteiro.")
+        raise QueueValidationError(f"{name} deve ser um número inteiro.", name)
     return int(value)
 
 
 def validate_servers(servers: object) -> int:
     c = _validate_integer("servers", servers)
     if c < 1:
-        raise QueueValidationError("servers deve ser pelo menos 1.")
+        raise QueueValidationError("servers deve ser pelo menos 1.", "servers")
     if c > MAX_SERVERS:
-        raise QueueValidationError(f"servers deve ser no máximo {MAX_SERVERS}.")
+        raise QueueValidationError(f"servers deve ser no máximo {MAX_SERVERS}.", "servers")
     return c
 
 
@@ -32,10 +32,11 @@ def validate_capacity(capacity: object, servers: int) -> int:
     if k < servers:
         raise QueueValidationError(
             "capacity deve ser maior ou igual a servers "
-            "(é a capacidade total, incluindo os clientes em atendimento)."
+            "(é a capacidade total, incluindo os clientes em atendimento).",
+            "capacity",
         )
     if k > MAX_CAPACITY:
-        raise QueueValidationError(f"capacity deve ser no máximo {MAX_CAPACITY}.")
+        raise QueueValidationError(f"capacity deve ser no máximo {MAX_CAPACITY}.", "capacity")
     return k
 
 
@@ -47,7 +48,8 @@ def validate_mmc_parameters(lam: object, mu: object, servers: object) -> tuple[f
     if lam_v >= c * mu_v:
         raise UnstableSystemError(
             "O modelo não está em condição estável. "
-            "Para M/M/c, é necessário que λ < c·μ."
+            "Para M/M/c, é necessário que λ < c·μ.",
+            field="lambda",
         )
     return lam_v, mu_v, c
 

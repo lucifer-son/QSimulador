@@ -41,6 +41,7 @@ class _Monitor:
         self.area_system = 0.0
         self.area_queue = 0.0
         self.area_busy = 0.0    # integral do nº de servidores ocupados
+        self.area_empty = 0.0   # tempo com o sistema vazio
         self.offered = 0        # chegadas após o warm-up
         self.blocked = 0        # chegadas recusadas
         self.accepted = 0
@@ -55,12 +56,14 @@ class _Monitor:
         self.area_system += self.n_system * dt
         self.area_queue += self.n_queue * dt
         self.area_busy += (self.n_system - self.n_queue) * dt   # 0..c
+        if self.n_system == 0:
+            self.area_empty += dt
         self._last = now
 
     def reset(self, now: float) -> None:
         """Descarta o acumulado até `now` (fim do warm-up)."""
         self.advance(now)
-        self.area_system = self.area_queue = self.area_busy = 0.0
+        self.area_system = self.area_queue = self.area_busy = self.area_empty = 0.0
         self.offered = self.blocked = self.accepted = self.waited = 0
         self.measured = self.departures = 0
         self.sum_wait = self.sum_sojourn = 0.0
@@ -149,6 +152,7 @@ def run_replication(
         Lq=mon.area_queue / obs,
         W=mon.sum_sojourn / n if n else float("nan"),
         Wq=mon.sum_wait / n if n else float("nan"),
+        p0=mon.area_empty / obs,
         throughput=mon.departures / obs,
         p_wait=mon.waited / mon.accepted if mon.accepted else float("nan"),
         p_block=mon.blocked / mon.offered if mon.offered else float("nan"),
@@ -191,7 +195,8 @@ def simulate_mmck(
     if any(run.measured_customers == 0 for run in runs):
         raise InsufficientSampleError(
             "A simulação terminou sem clientes suficientes para estimar as "
-            "métricas. Aumente simulation_time."
+            "métricas. Aumente simulation_time.",
+            field="simulation_time",
         )
     summary = {
         name: summarize([getattr(r, name) for r in runs], level)

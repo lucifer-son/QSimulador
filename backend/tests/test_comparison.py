@@ -106,11 +106,12 @@ def test_metadata_is_echoed(result):
     assert result.confidence_level == 0.95
 
 
-def test_single_replication_has_no_overall_verdict():
-    r = compare_mm1(1, 2, 300, replications=1, seed=1)
-    assert r.all_within_ci is None
-    assert all(m.within_ci is None for m in r.metrics.values())
-    assert r.max_relative_error_pct is not None
+def test_single_replication_is_rejected():
+    from app.domain.validation.errors import QueueValidationError
+
+    with pytest.raises(QueueValidationError) as exc:
+        compare_mm1(1, 2, 300, replications=1, seed=1)
+    assert exc.value.field == "replications"
 
 
 def test_random_seed_is_reported_and_reproducible():

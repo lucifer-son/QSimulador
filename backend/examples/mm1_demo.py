@@ -14,7 +14,7 @@ import sys
 from app.analysis.comparison import compare_mm1
 from app.domain.validation.errors import QueueValidationError
 
-METRICS = ("rho", "L", "Lq", "W", "Wq")
+METRICS = ("rho", "L", "Lq", "W", "Wq", "p0")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -24,7 +24,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--lam", type=float, default=40.0, help="taxa de chegada λ (padrão: 40)")
     p.add_argument("--mu", type=float, default=50.0, help="taxa de serviço μ (padrão: 50)")
     p.add_argument("--time", type=float, default=2000.0, help="tempo simulado por réplica (padrão: 2000)")
-    p.add_argument("--reps", type=int, default=10, help="número de réplicas (padrão: 10)")
+    p.add_argument("--reps", type=int, default=10, help="número de réplicas, de 2 a 100 (padrão: 10)")
     p.add_argument("--warmup", type=float, default=100.0, help="período inicial descartado (padrão: 100)")
     p.add_argument("--seed", type=int, default=2026, help="semente aleatória (padrão: 2026)")
     p.add_argument("--confidence", type=float, default=0.95, help="nível do intervalo de confiança (padrão: 0.95)")

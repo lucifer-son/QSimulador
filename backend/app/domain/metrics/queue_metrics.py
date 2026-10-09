@@ -10,6 +10,7 @@ class QueueMetrics:
     Lq: float   # nº médio de clientes na fila
     W: float    # tempo médio no sistema
     Wq: float   # tempo médio de espera na fila
+    p0: float   # probabilidade de sistema vazio
 
     def as_dict(self) -> dict[str, float]:
         return asdict(self)
@@ -29,6 +30,7 @@ class QueueModelMetrics:
     Lq: float          # nº médio de clientes na fila
     W: float           # tempo médio no sistema (clientes aceitos)
     Wq: float          # tempo médio de espera (clientes aceitos)
+    p0: float          # probabilidade de sistema vazio
     throughput: float  # taxa efetiva de chegada = taxa de saída
     p_wait: float      # prob. de um cliente aceito ter que esperar
     p_block: float     # prob. de um cliente ser recusado (0 se capacidade infinita)
