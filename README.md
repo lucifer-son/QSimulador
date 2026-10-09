@@ -121,6 +121,7 @@ Para $\lambda < \mu$, as métricas analíticas são:
 | Nº médio na fila $L_q$ | $L_q = \dfrac{\lambda^2}{\mu(\mu - \lambda)}$ |
 | Tempo médio no sistema $W$ | $W = \dfrac{1}{\mu - \lambda}$ |
 | Tempo médio na fila $W_q$ | $W_q = \dfrac{\lambda}{\mu(\mu - \lambda)}$ |
+| Probabilidade de sistema vazio $P_0$ | $P_0 = 1 - \rho$ |
 
 Se $\lambda \ge \mu$, o sistema não é estável e as métricas estacionárias não se aplicam. Nesse caso, a API e as funções devolvem um erro explícito, em vez de resultados enganosos:
 
@@ -161,7 +162,7 @@ $$
 B_0 = 1,\quad B_k = \frac{a\,B_{k-1}}{k + a\,B_{k-1}},\qquad C(c,a) = \frac{B_c}{1 - \rho\,(1 - B_c)}
 $$
 
-As métricas são $L_q = C\,\dfrac{\rho}{1-\rho}$, $W_q = \dfrac{L_q}{\lambda}$, $W = W_q + \dfrac{1}{\mu}$ e $L = L_q + a$.
+As métricas são $L_q = C\,\dfrac{\rho}{1-\rho}$, $W_q = \dfrac{L_q}{\lambda}$, $W = W_q + \dfrac{1}{\mu}$ e $L = L_q + a$. A probabilidade de sistema vazio é $P_0 = \left[\sum_{n=0}^{c-1}\dfrac{a^n}{n!} + \dfrac{a^c}{c!\,(1-\rho)}\right]^{-1}$, calculada em escala logarítmica.
 
 **Capacidade finita (M/M/1/K e M/M/c/K).** A distribuição estacionária $p_n$ do número de clientes no sistema é proporcional a
 
@@ -180,11 +181,13 @@ normalizada para somar 1 (o cálculo é feito em escala logarítmica, para não 
 | Utilização $\rho$ | $\frac{1}{c}\sum_n \min(n,c)\,p_n = \lambda_{ef}/(c\mu)$ |
 | $W$ e $W_q$ | $L/\lambda_{ef}$ e $L_q/\lambda_{ef}$ (Lei de Little, para os clientes aceitos) |
 | Espera $p_{wait}$ | $\sum_{n=c}^{K-1} p_n \,/\, (1 - p_K)$ |
+| Sistema vazio $P_0$ | $p_0$ |
 
 ### Métricas dos modelos adicionais
 
-Os modelos M/M/c, M/M/1/K e M/M/c/K devolvem **oito métricas**: as cinco do M/M/1, mais:
+Todos os modelos devolvem ρ (`rho`), L, Lq, W, Wq e **P0** (`p0`, a probabilidade de o sistema estar vazio), nessa ordem, e a vazão (`throughput`) na simulação e na comparação. No M/M/1 isso dá **sete métricas** (seis no `/calculate`, que não traz a vazão). Os modelos M/M/c, M/M/1/K e M/M/c/K devolvem **nove**, com mais duas:
 
+- `p0`: probabilidade de sistema vazio. No M/M/1 é $1 - \rho$; na simulação é a fração do tempo em que não há nenhum cliente no sistema.
 - `throughput`: a vazão efetiva $\lambda_{ef}$, igual à taxa de saída. Com capacidade finita é **menor que $\lambda$**.
 - `p_wait`: probabilidade de um cliente aceito ter que esperar (todos os servidores ocupados). No M/M/c é a fórmula de Erlang C.
 - `p_block`: probabilidade de uma chegada ser recusada por o sistema estar cheio. É 0 quando a capacidade é ilimitada.
@@ -208,10 +211,11 @@ Resultado real do script de demonstração (`python -m examples.mm1_demo`), que 
 | $L_q$ | 3,2000 | 3,1651 | [3,0761; 3,2541] | 1,09% | sim |
 | $W$ | 0,1000 s | 0,0992 s | [0,0971; 0,1013] | 0,80% | sim |
 | $W_q$ | 0,0800 s | 0,0792 s | [0,0771; 0,0813] | 0,97% | sim |
+| $P_0$ | 0,2000 | 0,2018 | [0,1988; 0,2048] | 0,89% | sim |
 
 O valor analítico fica dentro do intervalo de confiança em todas as métricas, e a vazão observada (39,95 req/s) é praticamente igual a $\lambda$, como esperado em regime estável.
 
-**Como ler o resultado.** Com 95% de confiança em cada uma das seis métricas comparadas (as cinco acima mais a vazão), é esperado que, de vez em quando, uma delas fique fora do intervalo apenas por acaso. Em 60 execuções com sementes de 0 a 59 ($\lambda = 1$, $\mu = 2$, 5.000 de tempo simulado, warm-up de 200, 10 réplicas), todas as métricas ficaram dentro do intervalo em 54 (90%), e cada métrica individualmente ficou entre 95% e 98%. Portanto, uma métrica isolada fora do intervalo não indica erro de implementação; um erro relativo alto e repetido entre sementes diferentes, sim.
+**Como ler o resultado.** Com 95% de confiança em cada uma das sete métricas comparadas (as seis da tabela mais a vazão), é esperado que, de vez em quando, uma delas fique fora do intervalo apenas por acaso. Em 60 execuções com sementes de 0 a 59 ($\lambda = 1$, $\mu = 2$, 5.000 de tempo simulado, warm-up de 200, 10 réplicas), todas as métricas ficaram dentro do intervalo em 54 (90%), e cada métrica individualmente ficou entre 95% e 98%. Portanto, uma métrica isolada fora do intervalo não indica erro de implementação; um erro relativo alto e repetido entre sementes diferentes, sim.
 
 ### Exemplo com vários servidores e capacidade finita
 
@@ -224,6 +228,7 @@ Resultado real de `python -m examples.queue_demo`: um M/M/3/6 (3 servidores e ca
 | $L_q$ | 0,7005 | 0,7010 | [0,6948; 0,7073] | 0,07% | sim |
 | $W$ | 0,1312 s | 0,1312 s | [0,1306; 0,1318] | 0,03% | sim |
 | $W_q$ | 0,0312 s | 0,0312 s | [0,0309; 0,0316] | 0,09% | sim |
+| $P_0$ | 0,0680 | 0,0683 | [0,0671; 0,0696] | 0,53% | sim |
 | Vazão (`throughput`) | 22,4396 | 22,4381 | [22,3748; 22,5013] | 0,01% | sim |
 | `p_wait` | 0,4984 | 0,4989 | [0,4963; 0,5014] | 0,10% | sim |
 | `p_block` | 0,1024 | 0,1025 | [0,1010; 0,1041] | 0,12% | sim |
@@ -368,7 +373,7 @@ Com o servidor no ar (`python -m uvicorn app.main:app --reload`), a documentaç�
 
 ```json
 // Resposta
-{ "model": "M/M/1", "rho": 0.8, "L": 4.0, "Lq": 3.2, "W": 0.1, "Wq": 0.08 }
+{ "model": "M/M/1", "rho": 0.8, "L": 4.0, "Lq": 3.2, "W": 0.1, "Wq": 0.08, "p0": 0.2 }
 ```
 
 ### `POST /api/models/mm1/simulate`
@@ -388,7 +393,7 @@ Com o servidor no ar (`python -m uvicorn app.main:app --reload`), a documentaç�
 
 | Campo | Descrição | Padrão |
 | --- | --- | --- |
-| `replications` | Número de réplicas independentes | 10 |
+| `replications` | Número de réplicas independentes, de **2 a 100** (com menos de 2 não há como estimar o intervalo de confiança) | 10 |
 | `warmup_time` | Período inicial descartado | 0 |
 | `seed` | Semente aleatória; se omitida, uma é sorteada e devolvida | aleatória |
 | `confidence_level` | Nível do intervalo de confiança | 0,95 |
@@ -411,14 +416,14 @@ Com o servidor no ar (`python -m uvicorn app.main:app --reload`), a documentaç�
 }
 ```
 
-O `summary` traz `rho`, `L`, `Lq`, `W`, `Wq` e `throughput`; `runs` traz as métricas de cada réplica.
+O `summary` traz `rho`, `L`, `Lq`, `W`, `Wq`, `p0` e `throughput`; `runs` traz as métricas de cada réplica.
 
 ### `POST /api/models/mm1/compare`
 
 Roda o modelo analítico e a simulação com os mesmos parâmetros e compara os resultados. A requisição é idêntica à de `/simulate`.
 
 ```json
-// Resposta (resumida; o objeto "metrics" traz rho, L, Lq, W, Wq e throughput)
+// Resposta (resumida; o objeto "metrics" traz rho, L, Lq, W, Wq, p0 e throughput)
 {
   "model": "M/M/1",
   "lambda": 40.0,
@@ -447,8 +452,8 @@ Roda o modelo analítico e a simulação com os mesmos parâmetros e compara os 
 | Campo | Significado |
 | --- | --- |
 | `relative_error_pct` | Erro relativo da média simulada, em % do valor analítico |
-| `within_ci` | O valor analítico está dentro do intervalo de confiança da simulação? É `null` com 1 réplica (não há intervalo) |
-| `all_within_ci` | `true` se todas as métricas ficaram dentro do intervalo; `null` com 1 réplica |
+| `within_ci` | O valor analítico está dentro do intervalo de confiança da simulação? |
+| `all_within_ci` | `true` se todas as métricas ficaram dentro do intervalo |
 | `max_relative_error_pct` | Maior erro relativo entre as métricas |
 
 Para a vazão (`throughput`), o valor analítico de referência é $\lambda$, já que, em regime estável, a taxa de saída é igual à de chegada.
@@ -479,6 +484,7 @@ Cada modelo tem as rotas `calculate`, `simulate` e `compare`, com os mesmos camp
   "Lq": 0.7005,
   "W": 0.1312,
   "Wq": 0.0312,
+  "p0": 0.068,
   "throughput": 22.4396,
   "p_wait": 0.4984,
   "p_block": 0.1024
@@ -493,16 +499,16 @@ Cada modelo tem as rotas `calculate`, `simulate` e `compare`, com os mesmos camp
 }
 ```
 
-As respostas de `/simulate` e `/compare` seguem o formato do M/M/1, com os campos `model` (notação de Kendall, por exemplo `"M/M/3/6"`), `servers` e `capacity` (`null` quando a fila é ilimitada) e **oito métricas** em vez de seis (`p_wait` e `p_block` a mais).
+As respostas de `/simulate` e `/compare` seguem o formato do M/M/1, com os campos `model` (notação de Kendall, por exemplo `"M/M/3/6"`), `servers` e `capacity` (`null` quando a fila é ilimitada) e **nove métricas** em vez de sete (`p_wait` e `p_block` a mais).
 
 ### Erros
 
-Toda requisição inválida devolve HTTP 422 com `{"code", "message", "fields"?}`:
+Toda requisição inválida devolve HTTP 422 com `{"code", "message", "fields"?}`. `fields` lista o campo e o motivo de cada erro, tanto nos erros de formato quanto nos de regra:
 
 | `code` | Quando acontece |
 | --- | --- |
 | `unstable_system` | λ ≥ μ (M/M/1) ou λ ≥ c·μ (M/M/c). Não se aplica à capacidade finita |
-| `invalid_parameter` | Valor fora da regra (zero, negativo, `capacity` menor que `servers`, `servers` acima de 1.000, `capacity` acima de 100.000, warm-up ≥ tempo simulado, simulação grande demais) |
+| `invalid_parameter` | Valor fora da regra (zero, negativo, `capacity` menor que `servers`, `servers` acima de 1.000, `capacity` acima de 100.000, `replications` fora de 2 a 100, warm-up ≥ tempo simulado, mais de 1.000.000 de chegadas esperadas por réplica ou de 5.000.000 no total) |
 | `invalid_request` | Campo ausente ou do tipo errado (inclui a lista `fields`) |
 | `insufficient_sample` | Tempo simulado tão curto que nenhum cliente foi medido |
 
@@ -515,9 +521,10 @@ Toda requisição inválida devolve HTTP 422 com `{"code", "message", "fields"?}
 - **Testes do motor de simulação:** casos determinísticos com resposta exata (por exemplo, chegadas a cada 1,0 e serviço de 0,5), crescimento da fila em sistema sobrecarregado e efeito do warm-up.
 - **Concordância estatística:** a simulação é comparada com o modelo analítico, com tolerâncias calibradas pela variação observada entre sementes; em testes de cobertura, os intervalos de 95% contiveram o valor analítico na proporção esperada.
 - **Reprodutibilidade:** a mesma semente produz resultados idênticos; réplicas diferentes são independentes.
-- **Testes da comparação:** erro relativo e verificação do intervalo (limites inclusivos, ausência de intervalo com 1 réplica) com dados sintéticos de resposta conhecida, e consistência entre o módulo de comparação, o modelo analítico e a simulação.
+- **Testes da comparação:** erro relativo e verificação do intervalo (limites inclusivos, rejeição de menos de 2 réplicas) com dados sintéticos de resposta conhecida, e consistência entre o módulo de comparação, o modelo analítico e a simulação.
 - **Testes dos modelos M/M/c, M/M/1/K e M/M/c/K:** valores conhecidos (M/M/2, Erlang B, forma fechada do M/M/1/K), comparação com a resolução direta da cadeia de Markov, reduções entre modelos (M/M/c com c = 1 equivale ao M/M/1; capacidade grande tende ao M/M/c), identidades (Lei de Little com a vazão efetiva), estabilidade numérica em modelos grandes e, na simulação, casos determinísticos (por exemplo, um sistema de perda que recusa 2 de cada 3 chegadas).
-- **Testes da API:** casos de sucesso, cada tipo de erro e a documentação OpenAPI, para todos os modelos.
+- **Testes da API:** casos de sucesso, cada tipo de erro (com o campo identificado) e a documentação OpenAPI, para todos os modelos.
+- **Conformidade com a especificação:** P0 conferido com aritmética exata de frações, com valores conhecidos e na simulação (casos determinísticos e comparação estatística), réplicas entre 2 e 100, limites de chegadas por réplica e no total, e o campo presente em cada erro de regra.
 - **CORS e tipos:** a API só libera outras origens quando configurado, e um teste falha se o `openapi.json` do frontend ficar desatualizado em relação à API.
 - **Testes do frontend:** formatação, conversão do formulário em requisição, cliente HTTP e tradução de erros por campo, mapeamento das respostas (com respostas reais da API gravadas como fixtures), construção dos gráficos e fluxos completos da tela com a API simulada (comparar, calcular, simular, erros, cancelamento, abas e reprodução por semente). Um teste de contrato opcional roda o mesmo cliente contra a API de verdade e confere se as fixtures ainda têm o formato real.
 
