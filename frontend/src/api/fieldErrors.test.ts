@@ -10,9 +10,10 @@ describe("fieldErrorsFromApi", () => {
   it("invalid_request: marca cada campo listado, com os nomes do formulário", () => {
     const errors = fieldErrorsFromApi(fromFixture(fixtures.errorInvalidRequest));
     expect(Object.keys(errors).sort()).toEqual(["lambda", "servers"]);
+    expect(Object.values(errors).every((m) => m === "Valor inválido para este campo.")).toBe(true);
   });
 
-  it("invalid_request: traduz os nomes de campo da API para os do formulário", () => {
+  it("traduz os nomes de campo da API para os do formulário", () => {
     const e = new ApiError("invalid_request", "m", [
       { field: "simulation_time", message: "x" }, { field: "warmup_time", message: "x" },
       { field: "replications", message: "x" }, { field: "seed", message: "x" },
@@ -22,33 +23,38 @@ describe("fieldErrorsFromApi", () => {
       .toEqual(["replications", "seed", "simulationTime", "warmupTime"]);
   });
 
-  it("unstable_system: mostra a mensagem da API em λ", () => {
-    const e = fromFixture(fixtures.errorUnstable);
-    expect(fieldErrorsFromApi(e)).toEqual({ lambda: fixtures.errorUnstable.message });
-  });
+  describe("erros de regra: o campo vem da API, sem adivinhar pelo texto", () => {
+    it("unstable_system: a mensagem da API aparece em λ", () => {
+      expect(fieldErrorsFromApi(fromFixture(fixtures.errorUnstable))).toEqual({ lambda: fixtures.errorUnstable.message });
+    });
 
-  it("insufficient_sample: pede mais tempo simulado", () => {
-    const e = new ApiError("insufficient_sample", "m");
-    expect(fieldErrorsFromApi(e)).toEqual({ simulationTime: "Aumente o tempo simulado." });
-  });
+    it("invalid_parameter: capacity < servers aparece em capacidade", () => {
+      expect(fieldErrorsFromApi(fromFixture(fixtures.errorInvalidParameter))).toEqual({ capacity: fixtures.errorInvalidParameter.message });
+    });
 
-  it("invalid_parameter: acha o campo pelo início da mensagem", () => {
-    const e = fromFixture(fixtures.errorInvalidParameter);
-    expect(fieldErrorsFromApi(e)).toEqual({ capacity: fixtures.errorInvalidParameter.message });
-    const cases: [string, string][] = [
-      ["λ deve ser maior que zero.", "lambda"], ["μ deve ser um número finito.", "mu"],
-      ["servers deve estar entre 1 e 1000.", "servers"], ["simulation_time deve ser maior que zero.", "simulationTime"],
-      ["warmup_time deve ser menor que simulation_time.", "warmupTime"], ["replications deve ser pelo menos 1.", "replications"],
-      ["seed deve ser um inteiro entre 0 e 9007199254740991.", "seed"],
-    ];
-    for (const [message, field] of cases) {
-      expect(Object.keys(fieldErrorsFromApi(new ApiError("invalid_parameter", message)))).toEqual([field]);
-    }
-  });
+    it("menos de 2 réplicas aparece no campo de réplicas", () => {
+      const errors = fieldErrorsFromApi(fromFixture(fixtures.errorReplications));
+      expect(errors).toEqual({ replications: fixtures.errorReplications.message });
+      expect(errors.replications).toMatch(/entre 2 e 100/);
+    });
 
-  it("invalid_parameter sem campo reconhecível não marca nenhum campo", () => {
-    const e = new ApiError("invalid_parameter", "Simulação grande demais (~5.000.000 chegadas esperadas).");
-    expect(fieldErrorsFromApi(e)).toEqual({});
+    it.each([
+      ["lambda", "lambda"], ["mu", "mu"], ["servers", "servers"], ["capacity", "capacity"],
+      ["simulation_time", "simulationTime"], ["warmup_time", "warmupTime"], ["replications", "replications"], ["seed", "seed"],
+    ])("o campo %s da API vira %s no formulário", (apiField, formField) => {
+      const e = new ApiError("invalid_parameter", "msg", [{ field: apiField, message: "msg do campo" }]);
+      expect(fieldErrorsFromApi(e)).toEqual({ [formField]: "msg do campo" });
+    });
+
+    it("insufficient_sample: pede mais tempo simulado", () => {
+      const e = new ApiError("insufficient_sample", "m", [{ field: "simulation_time", message: "m" }]);
+      expect(fieldErrorsFromApi(e)).toEqual({ simulationTime: "Aumente o tempo simulado." });
+    });
+
+    it("erro sem campo (ex.: o texto cita um campo, mas a API não o informou) não marca nada", () => {
+      expect(fieldErrorsFromApi(new ApiError("invalid_parameter", "capacity deve ser maior ou igual a servers."))).toEqual({});
+      expect(fieldErrorsFromApi(new ApiError("unstable_system", "λ < μ"))).toEqual({});
+    });
   });
 
   it("erros de rede e HTTP não marcam campos", () => {

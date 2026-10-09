@@ -353,6 +353,8 @@ export interface components {
             W: number;
             /** Wq */
             Wq: number;
+            /** P0 */
+            p0: number;
         };
         /**
          * MM1CompareRequest
@@ -763,6 +765,8 @@ export interface components {
             W: number;
             /** Wq */
             Wq: number;
+            /** P0 */
+            p0: number;
             /** Throughput */
             throughput: number;
             /** P Wait */
@@ -815,6 +819,8 @@ export interface components {
             W: number;
             /** Wq */
             Wq: number;
+            /** P0 */
+            p0: number;
             /** Throughput */
             throughput: number;
             /** P Wait */
@@ -869,6 +875,8 @@ export interface components {
             W: number;
             /** Wq */
             Wq: number;
+            /** P0 */
+            p0: number;
             /** Throughput */
             throughput: number;
             /** Measured Customers */

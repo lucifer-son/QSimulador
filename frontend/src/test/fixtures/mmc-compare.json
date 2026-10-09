@@ -55,6 +55,15 @@
       "relative_error_pct": 19.936005277845993,
       "within_ci": true
     },
+    "p0": {
+      "analytical": 0.0002765716856736946,
+      "simulated_mean": 0.00018943987277461968,
+      "ci_low": -9.968093538477213e-05,
+      "ci_high": 0.0004785606809340115,
+      "absolute_error": 8.713181289907493e-05,
+      "relative_error_pct": 31.50424190633707,
+      "within_ci": true
+    },
     "throughput": {
       "analytical": 8.0,
       "simulated_mean": 7.996428571428572,
@@ -84,5 +93,5 @@
     }
   },
   "all_within_ci": true,
-  "max_relative_error_pct": 22.264582430603145
+  "max_relative_error_pct": 31.50424190633707
 }

@@ -1,0 +1,10 @@
+{
+  "code": "invalid_parameter",
+  "message": "replications deve estar entre 2 e 100 (são necessárias pelo menos 2 réplicas para estimar a variância).",
+  "fields": [
+    {
+      "field": "replications",
+      "message": "replications deve estar entre 2 e 100 (são necessárias pelo menos 2 réplicas para estimar a variância)."
+    }
+  ]
+}

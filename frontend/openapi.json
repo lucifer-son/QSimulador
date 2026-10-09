@@ -721,6 +721,10 @@
           "Wq": {
             "type": "number",
             "title": "Wq"
+          },
+          "p0": {
+            "type": "number",
+            "title": "P0"
           }
         },
         "type": "object",
@@ -729,7 +733,8 @@
           "L",
           "Lq",
           "W",
-          "Wq"
+          "Wq",
+          "p0"
         ],
         "title": "MM1CalculateResponse"
       },
@@ -1364,6 +1369,10 @@
             "type": "number",
             "title": "Wq"
           },
+          "p0": {
+            "type": "number",
+            "title": "P0"
+          },
           "throughput": {
             "type": "number",
             "title": "Throughput"
@@ -1387,6 +1396,7 @@
           "Lq",
           "W",
           "Wq",
+          "p0",
           "throughput",
           "p_wait",
           "p_block"
@@ -1516,6 +1526,10 @@
             "type": "number",
             "title": "Wq"
           },
+          "p0": {
+            "type": "number",
+            "title": "P0"
+          },
           "throughput": {
             "type": "number",
             "title": "Throughput"
@@ -1545,6 +1559,7 @@
           "Lq",
           "W",
           "Wq",
+          "p0",
           "throughput",
           "p_wait",
           "p_block",
@@ -1660,6 +1675,10 @@
             "type": "number",
             "title": "Wq"
           },
+          "p0": {
+            "type": "number",
+            "title": "P0"
+          },
           "throughput": {
             "type": "number",
             "title": "Throughput"
@@ -1681,6 +1700,7 @@
           "Lq",
           "W",
           "Wq",
+          "p0",
           "throughput",
           "measured_customers",
           "observation_time"

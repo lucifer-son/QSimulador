@@ -32,11 +32,8 @@ function verdict(result: ViewResult): { tone: Tone; text: string; detail?: strin
         "Confira o erro relativo e, se precisar, aumente o tempo simulado ou as réplicas.",
     };
   }
-  return {
-    tone: "info",
-    text: "Com 1 réplica não há intervalo de confiança.",
-    detail: "Use 2 ou mais réplicas para validar a simulação contra o analítico.",
-  };
+  // A API exige pelo menos 2 réplicas, então o veredito sempre existe; este é só um respaldo.
+  return { tone: "info", text: "Não foi possível verificar o intervalo de confiança." };
 }
 
 const ICONS = { success: IconCircleCheck, warning: IconAlertTriangle, info: IconInfoCircle };

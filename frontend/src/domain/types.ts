@@ -1,7 +1,7 @@
 export type ModelKey = "mm1" | "mmc" | "mm1k" | "mmck";
 export type Action = "compare" | "simulate" | "calculate";
 export type MetricName =
-  | "rho" | "L" | "Lq" | "W" | "Wq" | "throughput" | "p_wait" | "p_block";
+  | "rho" | "L" | "Lq" | "W" | "Wq" | "p0" | "throughput" | "p_wait" | "p_block";
 
 export type FieldKey =
   | "lambda" | "mu" | "servers" | "capacity"

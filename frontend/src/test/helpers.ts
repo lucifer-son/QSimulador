@@ -1,6 +1,7 @@
 import { vi } from "vitest";
 import errorInvalidParameter from "./fixtures/error-invalid-parameter.json";
 import errorInvalidRequest from "./fixtures/error-invalid-request.json";
+import errorReplications from "./fixtures/error-replications.json";
 import errorUnstable from "./fixtures/error-unstable.json";
 import mm1Calculate from "./fixtures/mm1-calculate.json";
 import mm1Compare from "./fixtures/mm1-compare.json";
@@ -10,16 +11,15 @@ import mmcCompare from "./fixtures/mmc-compare.json";
 import mmcSimulate from "./fixtures/mmc-simulate.json";
 import mmckCalculate from "./fixtures/mmck-calculate.json";
 import mmckCompare from "./fixtures/mmck-compare.json";
-import mmckCompare1Rep from "./fixtures/mmck-compare-1rep.json";
 import mmckSimulate from "./fixtures/mmck-simulate.json";
 import type { ThemeColors } from "../hooks/useThemeColors";
 
 /** Respostas reais da API, gravadas em arquivos (ver src/test/fixtures). */
 export const fixtures = {
-  errorInvalidParameter, errorInvalidRequest, errorUnstable,
+  errorInvalidParameter, errorInvalidRequest, errorReplications, errorUnstable,
   mm1Calculate, mm1Compare, mm1Simulate,
   mmcCalculate, mmcCompare, mmcSimulate,
-  mmckCalculate, mmckCompare, mmckCompare1Rep, mmckSimulate,
+  mmckCalculate, mmckCompare, mmckSimulate,
 };
 
 export const colors: ThemeColors = {

@@ -1,4 +1,10 @@
 {
   "code": "unstable_system",
-  "message": "O modelo não está em condição estável. Para M/M/c, é necessário que λ < c·μ."
+  "message": "O modelo não está em condição estável. Para M/M/c, é necessário que λ < c·μ.",
+  "fields": [
+    {
+      "field": "lambda",
+      "message": "O modelo não está em condição estável. Para M/M/c, é necessário que λ < c·μ."
+    }
+  ]
 }

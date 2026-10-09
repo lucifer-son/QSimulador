@@ -100,7 +100,7 @@ export function ParametersPanel({
       <h2 className="group-title">Simulação</h2>
       <div className="grid2">
         <Field {...common} field="simulationTime" label="Tempo (s)" value={values.simulationTime} error={errors.simulationTime} />
-        <Field {...common} field="replications" label="Réplicas" value={values.replications} error={errors.replications} />
+        <Field {...common} field="replications" label="Réplicas" value={values.replications} error={errors.replications} hint="De 2 a 100" />
         <Field {...common} field="warmupTime" label="Warm-up (s)" value={values.warmupTime} error={errors.warmupTime} />
         <Field {...common} field="seed" label="Semente" value={values.seed} error={errors.seed} hint="Vazio = aleatória" />
       </div>

@@ -1,4 +1,10 @@
 {
   "code": "invalid_parameter",
-  "message": "capacity deve ser maior ou igual a servers (é a capacidade total, incluindo os clientes em atendimento)."
+  "message": "capacity deve ser maior ou igual a servers (é a capacidade total, incluindo os clientes em atendimento).",
+  "fields": [
+    {
+      "field": "capacity",
+      "message": "capacity deve ser maior ou igual a servers (é a capacidade total, incluindo os clientes em atendimento)."
+    }
+  ]
 }

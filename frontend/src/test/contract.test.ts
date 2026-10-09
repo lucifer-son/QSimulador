@@ -62,6 +62,55 @@ describe.skipIf(!live)("contrato com a API real", () => {
     });
   });
 
+  it("todos os modelos trazem o P0, no analítico e na comparação (RF-03 e RF-31)", async () => {
+    for (const model of MODEL_ORDER) {
+      for (const action of ["calculate", "compare"] as const) {
+        const r = await runAction(model, action, PARAMS[model]);
+        const p0 = r.metrics.find((m) => m.name === "p0");
+        expect(p0, `${model}/${action}`).toBeDefined();
+        expect(p0!.analytical!).toBeGreaterThan(0);
+        expect(p0!.analytical!).toBeLessThanOrEqual(1);
+        if (action === "compare") expect(p0!.simulated).toBeTypeOf("number");
+      }
+      const names = (await runAction(model, "compare", PARAMS[model])).metrics.map((m) => m.name);
+      expect(names.slice(0, 6)).toEqual(["rho", "L", "Lq", "W", "Wq", "p0"]); // ordem da especificação
+    }
+  });
+
+  it("menos de 2 réplicas é recusado, e o erro identifica o campo", async () => {
+    for (const model of MODEL_ORDER) {
+      const error = await runAction(model, "compare", { ...PARAMS[model], replications: 1 }).catch((e: unknown) => e);
+      expect(error, model).toBeInstanceOf(ApiError);
+      expect((error as ApiError).code).toBe("invalid_parameter");
+      expect((error as ApiError).fields?.map((f) => f.field)).toEqual(["replications"]);
+      expect(Object.keys(fieldErrorsFromApi(error as ApiError))).toEqual(["replications"]);
+    }
+  });
+
+  it("os erros de regra trazem o campo (e os de formato também)", async () => {
+    const base = import.meta.env.VITE_API_BASE_URL as string;
+    const post = async (path: string, body: object) => {
+      const r = await fetch(`${base}${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      return { status: r.status, body: (await r.json()) as { code: string; fields?: { field: string }[] } };
+    };
+    const unstable = await post("/api/models/mmc/calculate", { lambda: 20, mu: 1, servers: 10 });
+    expect([unstable.status, unstable.body.code, unstable.body.fields?.[0].field]).toEqual([422, "unstable_system", "lambda"]);
+    const tooBig = await post("/api/models/mm1/simulate", { lambda: 40, mu: 50, simulation_time: 100000, replications: 2 });
+    expect([tooBig.body.code, tooBig.body.fields?.[0].field]).toEqual(["invalid_parameter", "simulation_time"]);
+    const missing = await post("/api/models/mmc/calculate", { mu: 1 });
+    expect(missing.body.code).toBe("invalid_request");
+    expect(missing.body.fields?.map((f) => f.field)).toContain("lambda");
+  });
+
+  it("as fixtures de erro têm o formato real da API", async () => {
+    const base = import.meta.env.VITE_API_BASE_URL as string;
+    const shape = async (path: string, body: object) =>
+      Object.keys(await (await fetch(`${base}${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })).json()).sort();
+    expect(await shape("/api/models/mmc/calculate", { lambda: 20, mu: 1, servers: 10 })).toEqual(keys(fixtures.errorUnstable));
+    expect(await shape("/api/models/mmck/calculate", { lambda: 1, mu: 1, servers: 3, capacity: 2 })).toEqual(keys(fixtures.errorInvalidParameter));
+    expect(await shape("/api/models/mmck/simulate", { ...PARAMS.mmck, replications: 1 })).toEqual(keys(fixtures.errorReplications));
+  });
+
   it("usa servers e capacity conforme o modelo", async () => {
     const r = await runAction("mmck", "calculate", PARAMS.mmck);
     expect(r).toMatchObject({ modelLabel: "M/M/3/6", servers: 3, capacity: 6 });

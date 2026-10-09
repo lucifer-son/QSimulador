@@ -12,39 +12,18 @@ const API_TO_FORM: Record<string, FieldKey> = {
   seed: "seed",
 };
 
-// As mensagens de domínio começam pelo nome do campo (ex.: "capacity deve ser...").
-const MESSAGE_PREFIXES: [RegExp, FieldKey][] = [
-  [/^λ/, "lambda"],
-  [/^μ/, "mu"],
-  [/^servers\b/, "servers"],
-  [/^capacity\b/, "capacity"],
-  [/^simulation_time\b/, "simulationTime"],
-  [/^replications\b/, "replications"],
-  [/^warmup_time\b/, "warmupTime"],
-  [/^seed\b/, "seed"],
-];
-
-/** Decide em quais campos do formulário um erro da API deve aparecer. */
+/**
+ * Decide em quais campos do formulário um erro da API deve aparecer, a partir do
+ * `fields` que a própria API devolve (nos erros de formato e nos de regra).
+ */
 export function fieldErrorsFromApi(error: ApiError): FieldErrors {
   const out: FieldErrors = {};
-  if (error.code === "invalid_request") {
-    for (const issue of error.fields ?? []) {
-      const key = API_TO_FORM[issue.field];
-      if (key) out[key] = "Valor inválido para este campo.";
-    }
-    return out;
-  }
-  if (error.code === "unstable_system") {
-    out.lambda = error.message;
-    return out;
-  }
-  if (error.code === "insufficient_sample") {
-    out.simulationTime = "Aumente o tempo simulado.";
-    return out;
-  }
-  if (error.code === "invalid_parameter") {
-    const match = MESSAGE_PREFIXES.find(([re]) => re.test(error.message));
-    if (match) out[match[1]] = error.message;
+  for (const issue of error.fields ?? []) {
+    const key = API_TO_FORM[issue.field];
+    if (!key) continue;
+    if (error.code === "invalid_request") out[key] = "Valor inválido para este campo.";
+    else if (error.code === "insufficient_sample") out[key] = "Aumente o tempo simulado.";
+    else out[key] = issue.message;
   }
   return out;
 }

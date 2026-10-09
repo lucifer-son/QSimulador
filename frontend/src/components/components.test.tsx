@@ -24,11 +24,19 @@ const calculate = (model: "mm1" | "mmck" = "mmck"): ViewResult =>
     ? fromCalculate("mm1", params, fx.mm1Calculate as unknown as CalculateResponse)
     : fromCalculate("mmck", params, fx.mmckCalculate as unknown as CalculateResponse);
 
+/** Resposta sem IC nem veredito. A API não a produz mais (exige 2+ réplicas); testa o respaldo da tela. */
+function withoutInterval() {
+  const res = clone(fx.mmckCompare) as Record<string, any>;
+  for (const m of Object.values<Record<string, unknown>>(res.metrics)) Object.assign(m, { ci_low: null, ci_high: null, within_ci: null });
+  res.all_within_ci = null;
+  return res;
+}
+
 describe("VerdictBanner", () => {
   it("compare com tudo dentro do IC: sucesso, com o erro máximo", () => {
     render(<VerdictBanner result={compare()} />);
     expect(screen.getByRole("status")).toHaveClass("banner-success");
-    expect(screen.getByText("As 8 métricas do analítico estão dentro do IC de 95%.")).toBeInTheDocument();
+    expect(screen.getByText("As 9 métricas do analítico estão dentro do IC de 95%.")).toBeInTheDocument();
     expect(screen.getByText(/Erro relativo máximo: \d+,\d{2}%\./)).toBeInTheDocument();
   });
 
@@ -39,14 +47,14 @@ describe("VerdictBanner", () => {
     res.all_within_ci = false;
     render(<VerdictBanner result={compare(res)} />);
     expect(screen.getByRole("status")).toHaveClass("banner-warning");
-    expect(screen.getByText("2 de 8 métricas ficaram fora do IC de 95%.")).toBeInTheDocument();
+    expect(screen.getByText("2 de 9 métricas ficaram fora do IC de 95%.")).toBeInTheDocument();
     expect(screen.getByText(/é normal uma ou outra sair do intervalo por acaso/)).toBeInTheDocument();
   });
 
-  it("compare com 1 réplica: informa que não há IC", () => {
-    render(<VerdictBanner result={compare(fx.mmckCompare1Rep)} />);
+  it("sem veredito (caso defensivo: a API exige 2+ réplicas): mensagem neutra", () => {
+    render(<VerdictBanner result={compare(withoutInterval())} />);
     expect(screen.getByRole("status")).toHaveClass("banner-info");
-    expect(screen.getByText("Com 1 réplica não há intervalo de confiança.")).toBeInTheDocument();
+    expect(screen.getByText("Não foi possível verificar o intervalo de confiança.")).toBeInTheDocument();
   });
 
   it("só calcular e só simular têm mensagens próprias", () => {
@@ -91,9 +99,9 @@ describe("MetricsTable", () => {
     render(<MetricsTable result={compare()} />);
     const headers = screen.getAllByRole("columnheader").map((h) => h.textContent);
     expect(headers).toEqual(["Métrica", "Analítico", "Simulação", "IC", "Erro", "No IC?"]);
-    expect(screen.getAllByRole("row")).toHaveLength(1 + 8);
+    expect(screen.getAllByRole("row")).toHaveLength(1 + 9);
     expect(screen.getByRole("rowheader", { name: "Probabilidade de recusa (p_block)" })).toBeInTheDocument();
-    expect(screen.getAllByText("sim")).toHaveLength(8);
+    expect(screen.getAllByText("sim")).toHaveLength(9);
   });
 
   it("compare com métrica fora do IC mostra 'não'", () => {
@@ -103,9 +111,9 @@ describe("MetricsTable", () => {
     expect(screen.getByText("não")).toBeInTheDocument();
   });
 
-  it("com 1 réplica, IC e veredito aparecem como traço", () => {
-    render(<MetricsTable result={compare(fx.mmckCompare1Rep)} />);
-    expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(16);
+  it("sem IC (caso defensivo), IC e veredito aparecem como traço", () => {
+    render(<MetricsTable result={compare(withoutInterval())} />);
+    expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(18);
     expect(screen.queryByText("sim")).toBeNull();
   });
 
@@ -146,8 +154,8 @@ describe("DeviationChart", () => {
     expect(screen.getByText(/Fora do gráfico \(valor analítico igual a 0\): p_block\./)).toBeInTheDocument();
   });
 
-  it("não desenha nada com 1 réplica (sem IC)", () => {
-    const { container } = render(<DeviationChart result={compare(fx.mmckCompare1Rep)} />);
+  it("não desenha nada sem IC", () => {
+    const { container } = render(<DeviationChart result={compare(withoutInterval())} />);
     expect(container).toBeEmptyDOMElement();
   });
 });

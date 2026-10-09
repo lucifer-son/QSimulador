@@ -53,6 +53,15 @@
       "relative_error_pct": 4.03542415564612,
       "within_ci": true
     },
+    "p0": {
+      "analytical": 0.2,
+      "simulated_mean": 0.20353739832732773,
+      "ci_low": 0.18330298094983263,
+      "ci_high": 0.22377181570482282,
+      "absolute_error": 0.0035373983273277176,
+      "relative_error_pct": 1.7686991636638587,
+      "within_ci": true
+    },
     "throughput": {
       "analytical": 40.0,
       "simulated_mean": 40.090714285714284,

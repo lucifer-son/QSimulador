@@ -95,7 +95,7 @@ describe("ações", () => {
   it("Comparar: chama /compare com os parâmetros e mostra veredito, destaques, gráfico e tabela", async () => {
     const { user, fetchMock } = setup();
     await user.click(button("Comparar"));
-    expect(await screen.findByText("As 8 métricas do analítico estão dentro do IC de 95%.")).toBeInTheDocument();
+    expect(await screen.findByText("As 9 métricas do analítico estão dentro do IC de 95%.")).toBeInTheDocument();
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe("/api/models/mmck/compare");
     expect(JSON.parse(String(init!.body))).toEqual({
@@ -104,7 +104,19 @@ describe("ações", () => {
     });
     expect(screen.getByLabelText("Destaques")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /Diferença percentual/ })).toBeInTheDocument();
-    expect(screen.getAllByRole("row")).toHaveLength(9);
+    expect(screen.getAllByRole("row")).toHaveLength(10);
+  });
+
+  it("o P0 aparece na tabela e entre as métricas do gráfico por réplica", async () => {
+    const { user } = setup();
+    await user.click(button("Comparar"));
+    expect(await screen.findByRole("rowheader", { name: "Probabilidade de sistema vazio (P0)" })).toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: "Gráficos" }));
+    await user.click(button("Carregar réplicas"));
+    const select = await screen.findByLabelText("Métrica");
+    expect(within(select).getByRole("option", { name: /Probabilidade de sistema vazio/ })).toBeInTheDocument();
+    await user.selectOptions(select, "p0");
+    expect(screen.getByRole("img", { name: /Valor de Probabilidade de sistema vazio \(P0\) em cada réplica/ })).toBeInTheDocument();
   });
 
   it("Só calcular: chama /calculate sem campos de simulação", async () => {
@@ -139,7 +151,7 @@ describe("ações", () => {
     const { user, fetchMock } = setup();
     await user.clear(screen.getByLabelText("Semente"));
     await user.click(button("Comparar"));
-    await screen.findByText(/As 8 métricas/);
+    await screen.findByText(/As 9 métricas/);
     expect(JSON.parse(String(fetchMock.mock.calls[0][1]!.body))).not.toHaveProperty("seed");
   });
 });
@@ -192,6 +204,23 @@ describe("erros", () => {
     expect(screen.getByText("Corrija os campos destacados à esquerda.")).toBeInTheDocument();
   });
 
+  it("menos de 2 réplicas: o erro da API aparece no campo Réplicas", async () => {
+    const { user, fetchMock } = setup(() => ({ status: 422, body: fx.errorReplications }));
+    await user.clear(screen.getByLabelText("Réplicas"));
+    await user.type(screen.getByLabelText("Réplicas"), "1");
+    await user.click(button("Comparar"));
+    await screen.findByText("Parâmetro inválido");
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]!.body)).replications).toBe(1);
+    expect(screen.getByLabelText("Réplicas")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getAllByText(fx.errorReplications.message)).toHaveLength(2); // painel + campo
+    expect(screen.getByLabelText("Servidores c")).not.toHaveAttribute("aria-invalid");
+  });
+
+  it("o campo Réplicas informa o intervalo permitido", () => {
+    setup();
+    expect(screen.getByText("De 2 a 100")).toBeInTheDocument();
+  });
+
   it("API fora do ar: mensagem de conexão", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("Failed to fetch"); }));
     const user = userEvent.setup();
@@ -228,7 +257,7 @@ describe("abas", () => {
   const compared = async () => {
     const ctx = setup();
     await ctx.user.click(button("Comparar"));
-    await screen.findByText(/As 8 métricas/);
+    await screen.findByText(/As 9 métricas/);
     return ctx;
   };
 
@@ -255,7 +284,7 @@ describe("abas", () => {
     await user.click(screen.getByRole("tab", { name: "Gráficos" }));
     await user.click(button("Carregar réplicas"));
     const select = await screen.findByLabelText("Métrica");
-    expect(within(select).getAllByRole("option")).toHaveLength(8);
+    expect(within(select).getAllByRole("option")).toHaveLength(9);
     await user.selectOptions(select, "L");
     expect(screen.getByRole("img", { name: /Valor de Nº médio no sistema \(L\) em cada réplica/ })).toBeInTheDocument();
   });
@@ -267,7 +296,7 @@ describe("abas", () => {
       return fail ? { status: 500, body: {} } : { body: fx.mmckSimulate };
     });
     await user.click(button("Comparar"));
-    await screen.findByText(/As 8 métricas/);
+    await screen.findByText(/As 9 métricas/);
     await user.click(screen.getByRole("tab", { name: "Réplicas" }));
     await user.click(button("Carregar réplicas"));
     expect(await screen.findByText("Não foi possível carregar as réplicas. Tente de novo.")).toBeInTheDocument();
@@ -310,7 +339,7 @@ describe("abas", () => {
     await user.click(screen.getByRole("tab", { name: "Detalhes" }));
     expect(screen.getByRole("tab", { name: "Detalhes" })).toHaveAttribute("aria-selected", "true");
     await user.click(button("Comparar"));
-    expect(await screen.findByText(/As 8 métricas/)).toBeInTheDocument();
+    expect(await screen.findByText(/As 9 métricas/)).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Resultados" })).toHaveAttribute("aria-selected", "true");
   });
 });

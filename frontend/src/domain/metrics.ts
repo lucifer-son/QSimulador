@@ -1,6 +1,7 @@
 import type { MetricName } from "./types";
 
-export const MM1_METRICS: MetricName[] = ["rho", "L", "Lq", "W", "Wq", "throughput"];
+// A ordem segue a especificação: ρ, L, Lq, W, Wq, P0; depois vazão e as probabilidades de espera e recusa.
+export const MM1_METRICS: MetricName[] = ["rho", "L", "Lq", "W", "Wq", "p0", "throughput"];
 export const QUEUE_METRICS: MetricName[] = [...MM1_METRICS, "p_wait", "p_block"];
 
 export interface MetricInfo {
@@ -15,6 +16,7 @@ export const METRIC_INFO: Record<MetricName, MetricInfo> = {
   Lq: { label: "Nº médio na fila", short: "Lq", kind: "count" },
   W: { label: "Tempo médio no sistema", short: "W", kind: "time" },
   Wq: { label: "Tempo médio de espera", short: "Wq", kind: "time" },
+  p0: { label: "Probabilidade de sistema vazio", short: "P0", kind: "fraction" },
   throughput: { label: "Vazão", short: "Vazão", kind: "rate" },
   p_wait: { label: "Probabilidade de esperar", short: "p_wait", kind: "fraction" },
   p_block: { label: "Probabilidade de recusa", short: "p_block", kind: "fraction" },
