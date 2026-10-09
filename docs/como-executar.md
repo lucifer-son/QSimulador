@@ -54,7 +54,7 @@ Quando o ambiente virtual está ativo, o prompt começa com `(.venv)`. **Todos o
 python -m pytest
 ```
 
-Todos os testes devem passar (347 no momento em que este guia foi escrito). Um aviso de depreciação do Starlette sobre o `httpx` pode aparecer e é inofensivo.
+Todos os testes devem passar (432 no momento em que este guia foi escrito). Um aviso de depreciação do Starlette sobre o `httpx` pode aparecer e é inofensivo.
 
 ---
 
@@ -78,6 +78,7 @@ L            4.0000     3.9634   [3.8720, 4.0547]      0.92%   sim
 Lq           3.2000     3.1651   [3.0761, 3.2541]      1.09%   sim
 W            0.1000     0.0992   [0.0971, 0.1013]      0.80%   sim
 Wq           0.0800     0.0792   [0.0771, 0.0813]      0.97%   sim
+p0           0.2000     0.2018   [0.1988, 0.2048]      0.89%   sim
 
 vazão observada: 39.950 (esperado ≈ lambda = 40)
 todas as métricas dentro do IC: sim
@@ -97,7 +98,7 @@ python -m examples.mm1_demo --help
 | `--lam` | Taxa média de chegada (λ) | 40 |
 | `--mu` | Taxa média de serviço (μ) | 50 |
 | `--time` | Tempo simulado por réplica | 2000 |
-| `--reps` | Número de réplicas | 10 |
+| `--reps` | Número de réplicas (de 2 a 100) | 10 |
 | `--warmup` | Período inicial descartado | 100 |
 | `--seed` | Semente aleatória | 2026 |
 | `--confidence` | Nível do intervalo de confiança | 0.95 |
@@ -120,6 +121,7 @@ L               2.9445     2.9435   [2.9346, 2.9524]      0.03%   sim
 Lq              0.7005     0.7010   [0.6948, 0.7073]      0.07%   sim
 W               0.1312     0.1312   [0.1306, 0.1318]      0.03%   sim
 Wq              0.0312     0.0312   [0.0309, 0.0316]      0.09%   sim
+p0              0.0680     0.0683   [0.0671, 0.0696]      0.53%   sim
 throughput     22.4396    22.4381   [22.3748, 22.5013]    0.01%   sim
 p_wait          0.4984     0.4989   [0.4963, 0.5014]      0.10%   sim
 p_block         0.1024     0.1025   [0.1010, 0.1041]      0.12%   sim
@@ -237,23 +239,23 @@ curl -X POST http://127.0.0.1:8000/api/models/mmc/calculate \
 Resposta de `/calculate` (M/M/1):
 
 ```json
-{ "model": "M/M/1", "rho": 0.8, "L": 4.0, "Lq": 3.2, "W": 0.1, "Wq": 0.08 }
+{ "model": "M/M/1", "rho": 0.8, "L": 4.0, "Lq": 3.2, "W": 0.1, "Wq": 0.08, "p0": 0.2 }
 ```
 
 A resposta de `/simulate` traz os parâmetros usados, a semente, as métricas de cada réplica em `runs` e o resumo em `summary` (média, desvio padrão e intervalo de confiança de cada métrica).
 
-A resposta de `/compare` traz, para cada métrica (`rho`, `L`, `Lq`, `W`, `Wq` e `throughput`), o valor analítico, a média simulada com seu intervalo de confiança, o erro absoluto, o erro relativo em % (`relative_error_pct`) e `within_ci`, que indica se o valor analítico está dentro do intervalo. No nível superior, `all_within_ci` resume todas as métricas e `max_relative_error_pct` mostra o pior erro. Com 1 réplica não existe intervalo, então `within_ci` e `all_within_ci` vêm como `null`.
+A resposta de `/compare` traz, para cada métrica (`rho`, `L`, `Lq`, `W`, `Wq`, `p0` e `throughput`), o valor analítico, a média simulada com seu intervalo de confiança, o erro absoluto, o erro relativo em % (`relative_error_pct`) e `within_ci`, que indica se o valor analítico está dentro do intervalo. No nível superior, `all_within_ci` resume todas as métricas e `max_relative_error_pct` mostra o pior erro. Como a API exige pelo menos 2 réplicas, o intervalo de confiança sempre existe.
 
-Nos modelos M/M/c, M/M/1/K e M/M/c/K as respostas seguem o mesmo formato, com dois campos a mais (`servers` e `capacity`, este `null` quando a fila é ilimitada), o `model` em notação de Kendall (por exemplo, `"M/M/3/6"`) e **oito métricas** em vez de seis: além das anteriores, `p_wait` e `p_block` (veja [Interpretando os resultados](#6-interpretando-os-resultados)).
+Nos modelos M/M/c, M/M/1/K e M/M/c/K as respostas seguem o mesmo formato, com dois campos a mais (`servers` e `capacity`, este `null` quando a fila é ilimitada), o `model` em notação de Kendall (por exemplo, `"M/M/3/6"`) e **nove métricas** em vez de sete: além das anteriores, `p_wait` e `p_block` (veja [Interpretando os resultados](#6-interpretando-os-resultados)).
 
 ### Erros da API
 
-Qualquer requisição inválida (nos três endpoints de modelo) devolve HTTP 422 com o formato `{"code", "message", "fields"?}`:
+Qualquer requisição inválida (nos três endpoints de modelo) devolve HTTP 422 com o formato `{"code", "message", "fields"?}`. `fields` lista o campo e o motivo de cada erro, tanto nos de formato quanto nos de regra, e a interface usa essa lista para marcar o campo certo:
 
 | `code` | Quando acontece | O que fazer |
 | --- | --- | --- |
 | `unstable_system` | λ ≥ μ (M/M/1) ou λ ≥ c·μ (M/M/c). Não se aplica à capacidade finita | Use λ < μ, ou λ < c·μ; ou limite a capacidade (K) |
-| `invalid_parameter` | Valor fora da regra: zero ou negativo, `capacity` menor que `servers`, warm-up ≥ tempo simulado, semente fora do limite, simulação grande demais | Corrija o valor indicado em `message` |
+| `invalid_parameter` | Valor fora da regra: zero ou negativo, `capacity` menor que `servers`, `replications` fora de 2 a 100, warm-up ≥ tempo simulado, semente fora do limite, simulação grande demais (veja [Desempenho](#7-desempenho)) | Corrija o valor indicado em `message` |
 | `invalid_request` | Campo ausente ou do tipo errado (por exemplo, texto onde se espera número). Traz a lista `fields` | Corrija os campos listados |
 | `insufficient_sample` | Tempo simulado tão curto que nenhum cliente foi medido | Aumente `simulation_time` |
 
@@ -269,7 +271,7 @@ from app.simulation.mm1 import simulate_mm1
 
 # Modelo analítico
 metrics = mm1_metrics(40, 50)
-print(metrics)            # QueueMetrics(rho=0.8, L=4.0, Lq=3.2, W=0.1, Wq=0.08)
+print(metrics)            # QueueMetrics(rho=0.8, L=4.0, Lq=3.2, W=0.1, Wq=0.08, p0=0.2)
 
 # Simulação (10 réplicas)
 result = simulate_mm1(
@@ -321,8 +323,8 @@ Erros de parâmetro levantam `QueueValidationError` (ou `UnstableSystemError`, q
 | `mu` (μ) | Taxa média de serviço **de cada servidor** | > 0 |
 | `servers` (c) | Número de servidores em paralelo (M/M/c e M/M/c/K) | inteiro de 1 a 1.000 |
 | `capacity` (K) | Capacidade **total** do sistema: fila + clientes em atendimento (M/M/1/K e M/M/c/K) | inteiro ≥ `servers`, até 100.000 |
-| `simulation_time` | Tempo simulado por réplica | > 0 |
-| `replications` | Número de réplicas independentes | inteiro ≥ 1 (padrão 10) |
+| `simulation_time` | Tempo simulado por réplica | > 0, com λ × tempo ≤ 1.000.000 chegadas por réplica |
+| `replications` | Número de réplicas independentes | inteiro de 2 a 100 (padrão 10); com menos de 2 não há como estimar o intervalo |
 | `warmup_time` | Período inicial descartado | ≥ 0 e < `simulation_time` (padrão 0) |
 | `seed` | Semente aleatória | inteiro de 0 a 2^53 − 1; se omitida, uma é sorteada e devolvida |
 | `confidence_level` | Nível do intervalo de confiança | entre 0 e 1 (padrão 0,95) |
@@ -340,9 +342,10 @@ Erros de parâmetro levantam `QueueValidationError` (ou `UnstableSystemError`, q
 | `Lq` | Número médio de clientes na fila |
 | `W` | Tempo médio que um cliente passa no sistema |
 | `Wq` | Tempo médio que um cliente espera na fila |
+| `p0` (P0) | Probabilidade de o sistema estar vazio. No M/M/1 é 1 − ρ; na simulação, a fração do tempo sem nenhum cliente |
 | `throughput` | Vazão observada (saídas por unidade de tempo); em regime estável, ≈ λ |
 
-Nos modelos M/M/c, M/M/1/K e M/M/c/K há duas métricas a mais, e algumas ganham um significado mais amplo:
+Nos modelos M/M/c, M/M/1/K e M/M/c/K há duas métricas a mais (`p_wait` e `p_block`), e algumas ganham um significado mais amplo:
 
 | Métrica | Significado |
 | --- | --- |
@@ -351,15 +354,16 @@ Nos modelos M/M/c, M/M/1/K e M/M/c/K há duas métricas a mais, e algumas ganham
 | `rho` (ρ) | Utilização média dos servidores (fração de servidores ocupados). Com capacidade finita, ρ = λ_ef / (c·μ) |
 | `throughput` | Taxa efetiva de chegada λ_ef = λ·(1 − `p_block`), igual à taxa de saída. Com capacidade finita é **menor que λ** |
 | `W` e `Wq` | Valem para os clientes **aceitos**; os recusados não entram |
+| `p0` (P0) | Probabilidade de o sistema estar vazio, calculada com a distribuição de estados (e, no M/M/c, em escala logarítmica) |
 
 Como ler a comparação entre analítico e simulação:
 
 - **O valor analítico dentro do intervalo de confiança** indica que a simulação está coerente com a teoria. Com 95% de confiança, espera-se que isso falhe em cerca de 1 a cada 20 execuções, por acaso.
-- **Uma métrica fora do intervalo, de vez em quando, é normal.** Com 95% de confiança em cada uma das seis métricas, é esperado que uma delas fique fora por acaso. Em 60 execuções com sementes de 0 a 59 (λ = 1, μ = 2, 5.000 de tempo simulado, warm-up de 200, 10 réplicas), todas ficaram dentro do intervalo em 54 (90%), e cada métrica individualmente ficou entre 95% e 98%. Desconfie de verdade quando o erro relativo for alto *e* se repetir com sementes diferentes.
+- **Uma métrica fora do intervalo, de vez em quando, é normal.** Com 95% de confiança em cada uma das sete métricas do M/M/1, é esperado que uma delas fique fora por acaso. Em 60 execuções com sementes de 0 a 59 (λ = 1, μ = 2, 5.000 de tempo simulado, warm-up de 200, 10 réplicas), todas ficaram dentro do intervalo em 54 (90%), e cada métrica individualmente ficou entre 95% e 98%. Desconfie de verdade quando o erro relativo for alto *e* se repetir com sementes diferentes.
 - **O erro relativo diminui** com mais réplicas e com tempo simulado maior. As métricas de fila (Lq e Wq) são mais ruidosas que ρ.
 - **Perto da saturação (ρ → 1)**, o sistema converge mais devagar e exige simulações mais longas e warm-up maior. Experimente `--lam 49 --mu 50`: a média simulada de L continua próxima do valor analítico (49), mas o intervalo de confiança fica muito mais largo (cerca de [37,8; 59,4], contra [3,87; 4,05] com λ = 40), indicando que a estimativa é bem menos precisa.
-- **Probabilidades pequenas exigem simulações longas.** Se `p_block` analítico for, por exemplo, 0,001, só 1 em cada mil chegadas é recusada, e uma simulação curta pode não observar nenhuma. O erro relativo parece alto (até 100%) mesmo com a simulação correta. Aumente `simulation_time` ou `replications` e olhe o intervalo de confiança.
-- **Com oito métricas** (modelos M/M/c/K), é ainda mais comum que uma delas fique fora do intervalo por acaso. Avalie cada métrica e o conjunto de execuções, não um único resultado.
+- **Probabilidades pequenas exigem simulações longas.** Se `p_block` analítico for, por exemplo, 0,001, só 1 em cada mil chegadas é recusada, e uma simulação curta pode não observar nenhuma. O erro relativo parece alto (até 100%) mesmo com a simulação correta. Aumente `simulation_time` ou `replications` e olhe o intervalo de confiança. O mesmo vale para o `p0` em sistemas com muitos servidores e muita carga: no M/M/10 com λ = 8 e μ = 1, o P0 analítico é 0,0003, e uma simulação de 1.000 s deu erro relativo de 38% com o valor analítico ainda dentro do intervalo.
+- **Com nove métricas** (modelos M/M/c/K), é ainda mais comum que uma delas fique fora do intervalo por acaso. Avalie cada métrica e o conjunto de execuções, não um único resultado.
 - **Reprodutibilidade:** com a mesma `seed`, o resultado é idêntico. Se você omitir a semente, a que foi sorteada vem na resposta e pode ser reutilizada para repetir o experimento.
 - **Warm-up:** o sistema começa vazio, então o início da simulação não é representativo do regime estacionário. O warm-up descarta esse período.
 
@@ -375,7 +379,7 @@ A simulação processa algo em torno de 80 mil chegadas por segundo (varia com a
 | 40 | 2.000 | 10 | 800 mil | cerca de 10 s |
 | 40 | 10.000 | 10 | 4 milhões | mais de 1 minuto |
 
-O número de servidores quase não muda o custo, e as chegadas recusadas também contam (o custo vem das chegadas oferecidas). Por segurança, a API e as funções rejeitam simulações com mais de **5 milhões de chegadas esperadas** no total. Para uso interativo, prefira tempos menores e aumente só se precisar de mais precisão.
+O número de servidores quase não muda o custo, e as chegadas recusadas também contam (o custo vem das chegadas oferecidas). Por segurança, a API e as funções impõem três limites: de **2 a 100 réplicas**, no máximo **1.000.000 de chegadas esperadas por réplica** (λ × `simulation_time`) e no máximo **5.000.000 no total** (λ × `simulation_time` × `replications`). O limite total existe porque 100 réplicas de 1.000.000 de chegadas levariam cerca de 20 minutos. Para uso interativo, prefira tempos menores e aumente só se precisar de mais precisão.
 
 ---
 
@@ -433,7 +437,7 @@ VITE_DEV_API=http://127.0.0.1:8001 npm run dev              # bash
 ### Como usar
 
 1. **Escolha o modelo.** Os campos de servidores (c) e de capacidade (K) só aparecem nos modelos que os usam. Cada modelo guarda os valores digitados, então trocar de modelo não apaga o que você fez.
-2. **Ajuste os parâmetros** do sistema e da simulação. Abaixo deles, a tela estima o custo (chegadas e segundos aproximados). Semente em branco significa aleatória.
+2. **Ajuste os parâmetros** do sistema e da simulação. Abaixo deles, a tela estima o custo (chegadas e segundos aproximados). O campo **Réplicas** aceita de 2 a 100 (com menos de 2 não há intervalo de confiança), e a semente em branco significa aleatória.
 3. **Clique em Comparar.** Aparecem o veredito (se o valor analítico está dentro do intervalo de confiança de cada métrica), quatro números de destaque, o gráfico de diferenças e a tabela completa. **Só calcular** mostra apenas o analítico, e **Só simular** apenas a simulação.
 4. **Explore as abas.** Gráficos mostra o valor de cada réplica, a média simulada e o analítico, e permite escolher a métrica. Réplicas traz a tabela por réplica. Detalhes mostra os parâmetros, a semente (com botão de copiar) e a resposta completa da API. Como o Comparar não devolve as réplicas individuais, as abas Gráficos e Réplicas têm o botão **Carregar réplicas**, que repete a simulação com a mesma semente e reproduz exatamente os mesmos números.
 5. **Cancele** uma execução demorada com o botão que substitui o Comparar enquanto ela roda.

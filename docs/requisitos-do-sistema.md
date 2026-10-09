@@ -4,7 +4,7 @@ Laboratório interativo de modelagem, simulação e análise de sistemas de fila
 
 Este documento especifica os **requisitos funcionais (RF)** e **não funcionais (RNF)** do sistema e os relaciona aos [Casos de Uso](casos-de-uso.md) e às [Histórias de Usuário](historias-de-usuario.md). Para instruções de execução, veja [`como-executar.md`](como-executar.md).
 
-**Versão:** 1.2 (status verificado em 06/10/2026)
+**Versão:** 1.3 (divergências 1 a 4 fechadas em 08/10/2026)
 
 ---
 
@@ -15,6 +15,7 @@ Este documento especifica os **requisitos funcionais (RF)** e **não funcionais 
 | 1.0 | Primeira versão: 28 RF e 28 RNF. |
 | 1.1 | Requisitos compostos desdobrados; redundância entre RF-02 e RF-28 eliminada; termos vagos substituídos por critérios mensuráveis; incluída a coluna **Verificação**; incluídos glossário com fórmulas, premissas do modelo e tabela de parâmetros; incluídos 10 novos RF (RF-29 a RF-38) e 4 novos RNF (RNF-29 a RNF-32); incluída a seção **Decisões em aberto**. Os IDs da v1.0 foram preservados. |
 | 1.2 | Status de todos os requisitos conferido executando o sistema (ver seção 11); resolvidos os ❓; decisões em aberto 1 a 4 e 7 confirmadas pelo código; incluída a seção **Auditoria de conformidade**. |
+| 1.3 | Fechadas as divergências 1 a 4 da auditoria: P0 em todos os modelos, no analítico e na simulação (RF-03, RF-31); réplicas entre 2 e 100 (RF-06, RNF-12); limite de 1.000.000 de chegadas esperadas por réplica (RNF-12); e campo identificado em cada erro de regra (RF-28). Segue em aberto a divergência 5 (versões fixas, RNF-05). |
 
 ---
 
@@ -103,7 +104,7 @@ Com λ = taxa de chegada, μ = taxa de serviço e ρ = λ/μ, válidas apenas pa
 
 | ID | Requisito | Prior. | Verif. | UC | US | Status |
 |----|-----------|--------|--------|----|----|--------|
-| RF-03 | O sistema deve calcular ρ, L, Lq, W, Wq e P0 conforme as fórmulas da seção 3.1 e retorná-las no resultado, com ρ identificável. | M | T | UC-02 | US-02, US-04 | 🚧 |
+| RF-03 | O sistema deve calcular ρ, L, Lq, W, Wq e P0 conforme as fórmulas da seção 3.1 e retorná-las no resultado, com ρ identificável. | M | T | UC-02 | US-02, US-04 | ✅ |
 | RF-04 | O sistema deve verificar ρ < 1 antes de calcular as métricas e, se ρ ≥ 1, retornar um erro de instabilidade, distinto do erro de validação, sem retornar métricas médias. | M | T | UC-10 | US-03 | ✅ |
 
 ### 4.3 Simulação
@@ -111,13 +112,13 @@ Com λ = taxa de chegada, μ = taxa de serviço e ρ = λ/μ, válidas apenas pa
 | ID | Requisito | Prior. | Verif. | UC | US | Status |
 |----|-----------|--------|--------|----|----|--------|
 | RF-05 | O sistema deve executar simulação de eventos discretos (SimPy) do M/M/1, conforme as premissas da seção 3.2. | M | T | UC-03 | US-05 | ✅ |
-| RF-06 | O sistema deve executar um número de réplicas independentes definido pelo usuário e rejeitar valores menores que 2, mínimo necessário para estimar variância. | M | T | UC-03 | US-06 | 🚧 |
+| RF-06 | O sistema deve executar um número de réplicas independentes definido pelo usuário e rejeitar valores menores que 2, mínimo necessário para estimar variância. | M | T | UC-03 | US-06 | ✅ |
 | RF-07 | O sistema deve calcular, para cada métrica simulada, a média entre as réplicas e o intervalo de confiança. | M | T | UC-03 | US-06 | ✅ |
 | RF-33 | O sistema deve permitir definir o nível de confiança do intervalo (valor entre 0 e 1, exclusivo), com padrão de 0,95 **(proposto)**. | S | T | UC-03 | US-06 | ✅ |
 | RF-08 | O sistema deve aceitar uma semente aleatória e produzir resultados idênticos para os mesmos parâmetros e a mesma semente. | M | T | UC-03 | US-07 | ✅ |
 | RF-09 | O sistema deve permitir configurar a duração da simulação e o período de aquecimento, excluindo do cálculo das métricas os eventos ocorridos durante o aquecimento. | S | T | UC-03 | US-08 | ✅ |
 | RF-30 | O sistema deve rejeitar configurações em que o período de aquecimento seja maior ou igual à duração da simulação. | S | T | UC-03 | US-08 | ✅ |
-| RF-31 | O sistema deve estimar na simulação as mesmas métricas do RF-03, com as mesmas definições e unidades, para permitir comparação direta. | M | T | UC-03, UC-04 | US-09 | 🚧 |
+| RF-31 | O sistema deve estimar na simulação as mesmas métricas do RF-03, com as mesmas definições e unidades, para permitir comparação direta. | M | T | UC-03, UC-04 | US-09 | ✅ |
 | RF-32 | O resultado da simulação deve incluir os parâmetros efetivamente usados (λ, μ, duração, aquecimento, réplicas, semente e nível de confiança). | S | T | UC-03 | US-07 | ✅ |
 
 ### 4.4 Comparação analítico × simulação
@@ -177,7 +178,7 @@ Com λ = taxa de chegada, μ = taxa de serviço e ρ = λ/μ, válidas apenas pa
 | ID | Requisito | Prior. | Verif. | UC | US | Status |
 |----|-----------|--------|--------|----|----|--------|
 | RF-27 | O sistema deve expor suas funcionalidades por uma API REST (FastAPI) com documentação interativa dos endpoints e dos esquemas. | M | D | UC-02, UC-03 | US-26 | ✅ |
-| RF-28 | A API deve retornar os erros de validação em formato estruturado, identificando o campo e o motivo de cada erro. | S | T | UC-01 | US-27 | 🚧 |
+| RF-28 | A API deve retornar os erros de validação em formato estruturado, identificando o campo e o motivo de cada erro. | S | T | UC-01 | US-27 | ✅ |
 
 ---
 
@@ -217,7 +218,7 @@ Medições feitas em máquina de referência com 4 núcleos e 8 GB de RAM, em ex
 | RNF-09 | O cálculo analítico deve responder rapidamente. | Tempo de resposta do servidor menor ou igual a 200 ms no percentil 95 **(proposto)**. | S | A | ✅ |
 | RNF-10 | Uma simulação com a configuração padrão deve terminar em poucos segundos. | Menor ou igual a 10 s **(proposto)**. | S | A | ✅ |
 | RNF-11 | As réplicas da simulação devem poder ser executadas em paralelo. | Com 4 processos, tempo total menor ou igual a 60 % do tempo sequencial **(proposto)**, com os mesmos resultados para a mesma semente. | C | A, T | 📋 |
-| RNF-12 | O sistema deve impor limites máximos de duração, de réplicas e de eventos por simulação. | Requisições acima dos limites da seção 6 são rejeitadas com erro de validação. | S | T | 🚧 |
+| RNF-12 | O sistema deve impor limites máximos de duração, de réplicas e de eventos por simulação. | Requisições acima dos limites da seção 6 são rejeitadas com erro de validação. | S | T | ✅ |
 
 ### 5.5 Usabilidade
 
@@ -294,7 +295,7 @@ Restrições de validação por parâmetro. Valores marcados como **(proposto)**
 |---|---------|---------|------------|
 | 1 | Método do intervalo de confiança | RF-07, RF-33 | Sugestão: t de Student com n − 1 graus de liberdade sobre as médias das réplicas. **No código:** t de Student com n − 1 graus de liberdade, sobre as médias das réplicas (confirmado). |
 | 2 | Disciplina de atendimento | RF-05, seção 3.2 | Premissa atual: FIFO. As métricas médias do M/M/1 não mudam com outras disciplinas sem preempção, mas as amostras sim. **No código:** FIFO, fila única do SimPy (confirmado). |
-| 3 | Valores padrão e limites dos parâmetros | RF-06, RNF-12, seção 6 | Conferir os padrões já usados no código. **No código:** padrões de 10 réplicas, aquecimento 0, semente aleatória e 95 %; limites de λ·duração·réplicas ≤ 5.000.000 chegadas, c ≤ 1.000 e K ≤ 100.000. **Divergem da proposta** (réplicas entre 2 e 100; 1.000.000 de eventos por réplica); ver seção 11. |
+| 3 | Valores padrão e limites dos parâmetros | RF-06, RNF-12, seção 6 | Conferir os padrões já usados no código. **No código:** padrões de 10 réplicas, aquecimento 0, semente aleatória e 95 %; limites de 2 a 100 réplicas, 1.000.000 de chegadas esperadas por réplica (λ·duração), c ≤ 1.000 e K ≤ 100.000, mais um teto de 5.000.000 de chegadas no total como proteção do servidor (100 réplicas de 1.000.000 levariam cerca de 20 minutos). |
 | 4 | Nível de confiança padrão | RF-33 | Sugestão: 95 %. **No código:** 0,95 (confirmado). |
 | 5 | Como estimar λ e μ a partir do CSV do JMeter | RF-23, RF-24 | Definir antes da Fase 7. |
 | 6 | Incluir o modelo M/M/1//N (população finita) | RF-24 | Hoje é só uma indicação; decidir se vira modelo implementado. |
@@ -348,7 +349,7 @@ Restrições de validação por parâmetro. Valores marcados como **(proposto)**
 
 ---
 
-## 11. Auditoria de conformidade (06/10/2026)
+## 11. Auditoria de conformidade (06/10/2026, atualizada em 08/10/2026)
 
 Os status deste documento foram conferidos **executando o sistema**: API real, testes, medições e um navegador de verdade. Esta seção registra a evidência e as divergências que ainda dependem de decisão.
 
@@ -356,23 +357,23 @@ Os status deste documento foram conferidos **executando o sistema**: API real, t
 
 | Requisito | Resultado | Meta |
 |-----------|-----------|------|
-| RNF-29 (cobertura) | `analytical` 100 %, `simulation` 100 %, `analysis` 100 %, `domain` 99,2 %, `api` 100 % | ≥ 85 % |
+| RNF-29 (cobertura) | `analytical` 100 %, `simulation` 99,6 %, `analysis` 100 %, `domain` 99,2 %, `api` 100 % (as duas linhas não cobertas são ramos defensivos que a API não alcança mais) | ≥ 85 % |
 | RNF-09 (latência do `/calculate`) | p50 1,2 ms, p95 1,5 ms, máximo 2,9 ms (200 chamadas, servidor real) | p95 ≤ 200 ms |
 | RNF-10 (simulação do exemplo da documentação: λ = 40, μ = 50, T = 2000, 10 réplicas) | 7,9 s e 8,5 s | ≤ 10 s |
 | RNF-19 (dependências entre módulos) | Sem ciclos: `domain` na base; `analytical` e `simulation` dependem só de `domain`; `analysis` de ambos; `api` de todos | Sem dependências circulares |
 | RNF-15 (acessibilidade) | axe-core (WCAG 2.1 A e AA, mais boas práticas): **0 violações** em 12 telas (6 estados, tema claro e escuro). Teste automatizado do contraste de todos os pares de cores (texto ≥ 4,5:1; bordas e elementos gráficos ≥ 3:1). Gráficos com eixos rotulados e unidade, legenda e séries distintas por cor **e** forma ou estilo | WCAG AA |
 | RNF-01 e RNF-02 | Fórmulas conferidas com aritmética exata de frações (erro relativo < 1e-14); intervalos de 95 % cobriram o valor analítico em 90 % a 100 % das 30 sementes, por métrica | Conforme seção 3.1 |
-| Testes | Backend 347; frontend 195 (mais 29 de contrato com a API real, que só rodam quando uma API é informada) | — |
+| Testes | Backend 432; frontend 220 (mais 33 de contrato com a API real, que só rodam quando uma API é informada) | — |
 
 ### 11.2 Divergências com a especificação
 
-| # | Requisito | Situação no código | Proposta |
-|---|-----------|--------------------|----------|
-| 1 | RF-03, RF-31, US-02 (**M**) | A API retorna ρ, L, Lq, W e Wq, mas **não P0**, nem na análise nem na simulação. A simulação devolve a vazão, que o RF-03 não lista | Incluir P0 no analítico, na simulação (fração do tempo com o sistema vazio) e na comparação |
-| 2 | RF-06, US-06 (**M**) | `replications = 1` é **aceito** (sem intervalo de confiança). A especificação manda rejeitar valores menores que 2 | Rejeitar réplicas < 2 e simplificar a interface, que hoje trata o caso de 1 réplica |
-| 3 | RF-28, US-27 | Erros de formato trazem `fields`. Erros de regra (`invalid_parameter`) trazem só a mensagem, e a interface descobre o campo pelo início do texto | Fazer os erros de domínio carregarem o campo e devolvê-lo em `fields` |
-| 4 | RNF-12, seção 6 | Só existe o limite de **5.000.000 chegadas no total** (λ · duração · réplicas). Não há máximo de réplicas (proposto: 100) nem de eventos por réplica (proposto: 1.000.000) | Adotar os limites propostos |
-| 5 | RNF-05 | O critério exige versões fixas, e `requirements.txt` usa apenas limites inferiores (`>=`) | Gerar um arquivo com versões fixas (`pip freeze`) |
+| # | Requisito | Situação | Como foi resolvida |
+|---|-----------|----------|--------------------|
+| 1 | RF-03, RF-31, US-02 (**M**) | ✅ Fechada em 08/10/2026 | O P0 sai no analítico dos quatro modelos, na simulação (fração do tempo com o sistema vazio) e na comparação, logo depois de Wq, como na especificação. Conferido com aritmética exata de frações, valores conhecidos e simulação |
+| 2 | RF-06, US-06 (**M**) | ✅ Fechada em 08/10/2026 | A API rejeita `replications` fora de 2 a 100, com o erro no campo `replications`. A interface perdeu o caso especial de 1 réplica, e o intervalo de confiança passou a existir sempre |
+| 3 | RF-28, US-27 | ✅ Fechada em 08/10/2026 | Cada erro de regra carrega o campo e a API o devolve em `fields`. A interface usa essa lista e não adivinha mais o campo pelo texto da mensagem |
+| 4 | RNF-12, seção 6 | ✅ Fechada em 08/10/2026 | Réplicas de 2 a 100 e no máximo 1.000.000 de chegadas esperadas por réplica. Foi mantido o teto de 5.000.000 no total, que não está na especificação, para proteger o servidor |
+| 5 | RNF-05 | 🚧 Em aberto | O critério exige versões fixas, e `requirements.txt` usa apenas limites inferiores (`>=`). Proposta: gerar um arquivo com versões fixas (`pip freeze`) |
 
 ### 11.3 Itens ainda pendentes
 

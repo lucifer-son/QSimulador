@@ -72,8 +72,8 @@ flowchart LR
 | ID | Caso de uso | Ator principal | Status |
 |----|-------------|----------------|--------|
 | UC-01 | Definir parâmetros do modelo M/M/1 | Usuário | ✅ |
-| UC-02 | Calcular métricas analíticas | Usuário, Cliente de API | 🚧 |
-| UC-03 | Executar simulação de eventos discretos | Usuário, Cliente de API | 🚧 |
+| UC-02 | Calcular métricas analíticas | Usuário, Cliente de API | ✅ |
+| UC-03 | Executar simulação de eventos discretos | Usuário, Cliente de API | ✅ |
 | UC-04 | Comparar resultado analítico × simulação | Usuário, Cliente de API | ✅ |
 | UC-05 | Visualizar resultados em gráficos | Usuário | ✅ |
 | UC-06 | Modelar M/M/c, M/M/1/K e M/M/c/K | Usuário | ✅ |
@@ -82,7 +82,7 @@ flowchart LR
 | UC-09 | Salvar e consultar modelos e resultados | Usuário | 📋 |
 | UC-10 | Verificar estabilidade do sistema | Sistema (incluído) | ✅ |
 
-> **Conferência de 06/10/2026:** UC-02 e UC-03 estão marcados como 🚧 por causa de divergências com a especificação (P0 não é retornado; a simulação aceita 1 réplica, e a regra alternativa 1a manda rejeitar menos de 2). Os detalhes estão na seção 11 de [`requisitos-do-sistema.md`](requisitos-do-sistema.md). O RF-31 (P0 também na simulação) liga o UC-04 a essa mesma lacuna, embora o fluxo descrito no UC-04 funcione. UC-04, UC-05 e UC-06 foram verificados executando o sistema.
+> **Conferência de 08/10/2026:** os casos de uso implementados (UC-01 a UC-06 e UC-10) foram verificados executando o sistema. As divergências encontradas na auditoria em UC-02 (P0 não retornado), UC-03 (a simulação aceitava 1 réplica) e UC-04 (P0 simulado) foram fechadas. Os detalhes estão na seção 11 de [`requisitos-do-sistema.md`](requisitos-do-sistema.md).
 
 ---
 
@@ -111,7 +111,7 @@ flowchart LR
 
 ---
 
-### UC-02 — Calcular métricas analíticas 🚧
+### UC-02 — Calcular métricas analíticas ✅
 
 | Campo | Descrição |
 |-------|-----------|
@@ -134,7 +134,7 @@ flowchart LR
 
 ---
 
-### UC-03 — Executar simulação de eventos discretos 🚧
+### UC-03 — Executar simulação de eventos discretos ✅
 
 | Campo | Descrição |
 |-------|-----------|

@@ -54,7 +54,7 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 - **Dado** λ e μ positivos, **quando** envio os parâmetros, **então** o sistema os aceita.
 - **Dado** um valor zero, negativo, ausente ou não numérico, **quando** envio os parâmetros, **então** o sistema rejeita a entrada e informa qual campo é inválido.
 
-#### US-02 — Calcular métricas analíticas 🚧 · M · UC-02
+#### US-02 — Calcular métricas analíticas ✅ · M · UC-02
 > Como **estudante**, quero obter utilização, número médio no sistema e na fila, tempos médios e probabilidade de sistema vazio, para conferir a teoria de filas sem fazer as contas à mão.
 
 **Critérios de aceitação**
@@ -83,7 +83,7 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 **Critérios de aceitação**
 - **Dado** λ, μ e parâmetros de simulação válidos, **quando** executo a simulação, **então** recebo as métricas estimadas.
 
-#### US-06 — Usar réplicas independentes e intervalo de confiança 🚧 · M · UC-03
+#### US-06 — Usar réplicas independentes e intervalo de confiança ✅ · M · UC-03
 > Como **estudante**, quero que a simulação rode várias réplicas e informe um intervalo de confiança, para saber o quanto posso confiar na estimativa.
 
 **Critérios de aceitação**
@@ -242,7 +242,7 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 **Critérios de aceitação**
 - **Dado** o servidor em execução, **quando** acesso a documentação interativa da API, **então** vejo os endpoints disponíveis e seus esquemas.
 
-#### US-27 — Receber erros de validação padronizados 🚧 · S
+#### US-27 — Receber erros de validação padronizados ✅ · S
 > Como **desenvolvedor**, quero respostas de erro consistentes, para tratá-las de forma previsível no meu código.
 
 **Critérios de aceitação**
@@ -276,18 +276,18 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 
 ## 5. Ordem sugerida de implementação
 
-1. **Concluído:** E1 a E5 (modelo analítico, simulação, comparação, interface web e os modelos M/M/c, M/M/1/K e M/M/c/K), além da base da API e dos testes (US-26 a US-28). Três histórias têm divergências conhecidas com os critérios de aceitação: US-02, US-06 e US-27 (seção 6).
+1. **Concluído:** E1 a E5 (modelo analítico, simulação, comparação, interface web e os modelos M/M/c, M/M/1/K e M/M/c/K), além da base da API e dos testes (US-26 a US-28). As divergências que a auditoria encontrou em US-02, US-06 e US-27 foram fechadas (seção 6).
 2. **Próximo:** E6 — experimentos (varredura de parâmetros).
 3. **Depois:** E7 (JMeter) e E8 (persistência e Docker).
 
 ---
 
-## 6. Divergências conhecidas (conferência de 06/10/2026)
+## 6. Divergências encontradas na auditoria (fechadas em 08/10/2026)
 
-| História | Critério de aceitação | Situação no código |
-|----------|-----------------------|--------------------|
-| US-02 | "recebo ρ, L, Lq, W, Wq **e P0**" | A API retorna ρ, L, Lq, W e Wq, mas não P0 |
-| US-06 | "menos de duas réplicas → o sistema rejeita e informa o motivo" | `replications = 1` é aceito e devolve a simulação sem intervalo de confiança |
-| US-27 | "erro estruturado que identifica o campo e o motivo" | Erros de formato trazem o campo (`fields`); erros de regra trazem só a mensagem |
+| História | Critério de aceitação | Como ficou |
+|----------|-----------------------|------------|
+| US-02 | "recebo ρ, L, Lq, W, Wq **e P0**" | A API retorna os seis valores, nessa ordem, em todos os modelos |
+| US-06 | "menos de duas réplicas → o sistema rejeita e informa o motivo" | `replications` fora de 2 a 100 é rejeitado, com o erro apontando o campo `replications` |
+| US-27 | "erro estruturado que identifica o campo e o motivo" | Os erros de regra também trazem `fields`, com o campo e o motivo |
 
 As demais histórias dos épicos E1 a E5 e E9 foram verificadas executando o sistema. Detalhes e medições na seção 11 de [`requisitos-do-sistema.md`](requisitos-do-sistema.md).
