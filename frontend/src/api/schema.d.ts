@@ -267,6 +267,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/experiments/sweep": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Experiment Sweep
+         * @description Fase 6: Varredura de parâmetros analíticos.
+         */
+        post: operations["run_experiment_sweep_api_experiments_sweep_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -316,6 +336,11 @@ export interface components {
             field: string;
             /** Message */
             message: string;
+        };
+        /** HTTPValidationError */
+        HTTPValidationError: {
+            /** Detail */
+            detail?: components["schemas"]["ValidationError"][];
         };
         /**
          * MM1CalculateRequest
@@ -912,6 +937,103 @@ export interface components {
                 [key: string]: components["schemas"]["MetricSummaryOut"];
             };
         };
+        /** SweepPointOut */
+        SweepPointOut: {
+            /**
+             * Sweep Value
+             * @description O valor da variável testada neste ponto
+             */
+            sweep_value: number;
+            /** Rho */
+            rho?: number | null;
+            /** L */
+            L?: number | null;
+            /** Lq */
+            Lq?: number | null;
+            /** W */
+            W?: number | null;
+            /** Wq */
+            Wq?: number | null;
+            /** P0 */
+            p0?: number | null;
+            /** Throughput */
+            throughput?: number | null;
+            /** P Wait */
+            p_wait?: number | null;
+            /** P Block */
+            p_block?: number | null;
+            /** Warning */
+            warning?: string | null;
+        };
+        /**
+         * SweepRequest
+         * @example {
+         *       "base_params": {
+         *         "mu": 50
+         *       },
+         *       "end": 45,
+         *       "model_type": "mm1",
+         *       "start": 10,
+         *       "step": 5,
+         *       "sweep_variable": "lambda"
+         *     }
+         */
+        SweepRequest: {
+            /**
+             * Model Type
+             * @description O modelo a usar: 'mm1', 'mmc', 'mm1k' ou 'mmck'
+             */
+            model_type: string;
+            /**
+             * Base Params
+             * @description Parâmetros fixos (ex: mu, servers, capacity)
+             */
+            base_params: {
+                [key: string]: number;
+            };
+            /**
+             * Sweep Variable
+             * @description Qual variável vai variar no eixo X (ex: 'lambda')
+             */
+            sweep_variable: string;
+            /**
+             * Start
+             * @description Valor inicial da variável
+             */
+            start: number;
+            /**
+             * End
+             * @description Valor final (inclusivo)
+             */
+            end: number;
+            /**
+             * Step
+             * @description Incremento entre os pontos
+             */
+            step: number;
+        };
+        /** SweepResponse */
+        SweepResponse: {
+            /** Model Type */
+            model_type: string;
+            /** Sweep Variable */
+            sweep_variable: string;
+            /** Points */
+            points: components["schemas"]["SweepPointOut"][];
+        };
+        /** ValidationError */
+        ValidationError: {
+            /** Location */
+            loc: (string | number)[];
+            /** Message */
+            msg: string;
+            /** Error Type */
+            type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
+        };
     };
     responses: never;
     parameters: never;
@@ -1335,6 +1457,39 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+        };
+    };
+    run_experiment_sweep_api_experiments_sweep_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SweepRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SweepResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

@@ -535,6 +535,48 @@
           }
         }
       }
+    },
+    "/api/experiments/sweep": {
+      "post": {
+        "tags": [
+          "experiments"
+        ],
+        "summary": "Run Experiment Sweep",
+        "description": "Fase 6: Varredura de parâmetros analíticos.",
+        "operationId": "run_experiment_sweep_api_experiments_sweep_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SweepRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SweepResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -668,6 +710,19 @@
           "message"
         ],
         "title": "FieldError"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
       },
       "MM1CalculateRequest": {
         "properties": {
@@ -1770,6 +1825,262 @@
           "summary"
         ],
         "title": "SimulationResponse"
+      },
+      "SweepPointOut": {
+        "properties": {
+          "sweep_value": {
+            "type": "number",
+            "title": "Sweep Value",
+            "description": "O valor da variável testada neste ponto"
+          },
+          "rho": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rho"
+          },
+          "L": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "L"
+          },
+          "Lq": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lq"
+          },
+          "W": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "W"
+          },
+          "Wq": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wq"
+          },
+          "p0": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P0"
+          },
+          "throughput": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Throughput"
+          },
+          "p_wait": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P Wait"
+          },
+          "p_block": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P Block"
+          },
+          "warning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warning"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sweep_value"
+        ],
+        "title": "SweepPointOut"
+      },
+      "SweepRequest": {
+        "properties": {
+          "model_type": {
+            "type": "string",
+            "title": "Model Type",
+            "description": "O modelo a usar: 'mm1', 'mmc', 'mm1k' ou 'mmck'"
+          },
+          "base_params": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Base Params",
+            "description": "Parâmetros fixos (ex: mu, servers, capacity)"
+          },
+          "sweep_variable": {
+            "type": "string",
+            "title": "Sweep Variable",
+            "description": "Qual variável vai variar no eixo X (ex: 'lambda')"
+          },
+          "start": {
+            "type": "number",
+            "title": "Start",
+            "description": "Valor inicial da variável"
+          },
+          "end": {
+            "type": "number",
+            "title": "End",
+            "description": "Valor final (inclusivo)"
+          },
+          "step": {
+            "type": "number",
+            "title": "Step",
+            "description": "Incremento entre os pontos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model_type",
+          "base_params",
+          "sweep_variable",
+          "start",
+          "end",
+          "step"
+        ],
+        "title": "SweepRequest",
+        "examples": [
+          {
+            "base_params": {
+              "mu": 50
+            },
+            "end": 45,
+            "model_type": "mm1",
+            "start": 10,
+            "step": 5,
+            "sweep_variable": "lambda"
+          }
+        ]
+      },
+      "SweepResponse": {
+        "properties": {
+          "model_type": {
+            "type": "string",
+            "title": "Model Type"
+          },
+          "sweep_variable": {
+            "type": "string",
+            "title": "Sweep Variable"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/SweepPointOut"
+            },
+            "type": "array",
+            "title": "Points"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model_type",
+          "sweep_variable",
+          "points"
+        ],
+        "title": "SweepResponse"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
       }
     }
   }

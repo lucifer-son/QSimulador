@@ -8,6 +8,8 @@ vi.mock("plotly.js-basic-dist-min", () => ({
   default: { react: vi.fn().mockResolvedValue(undefined), purge: vi.fn() },
 }));
 
+vi.mock("react-plotly.js", () => ({ default: () => null }));
+
 afterEach(() => vi.unstubAllGlobals());
 
 /** API de mentira: devolve a fixture da ação pedida, ou o que o teste sobrescrever. */

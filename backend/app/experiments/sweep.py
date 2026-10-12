@@ -2,6 +2,7 @@ import numpy as np
 from typing import List
 from app.analytical import mm1, mmck
 from app.api.schemas import SweepRequest, SweepPointOut
+from app.domain.validation.errors import UnstableSystemError
 
 def run_analytical_sweep(request: SweepRequest) -> List[SweepPointOut]:
     points = []
@@ -20,10 +21,22 @@ def run_analytical_sweep(request: SweepRequest) -> List[SweepPointOut]:
             # Chama a função correta dependendo do modelo
             if request.model_type == "mm1":
                 metrics_obj = mm1.mm1_metrics(lam=params["lambda"], mu=params["mu"])
+            elif request.model_type == "mmc":
+                servers = int(params.get("servers", 1))
+                metrics_obj = mmck.mmc_metrics(
+                    lam=params["lambda"], mu=params["mu"], servers=servers
+                )
+            elif request.model_type == "mm1k":
+                capacity = int(params.get("capacity", 1))
+                metrics_obj = mmck.mm1k_metrics(
+                    lam=params["lambda"], mu=params["mu"], capacity=capacity
+                )
             elif request.model_type == "mmck":
                 servers = int(params.get("servers", 1))
                 capacity = int(params.get("capacity", 1))
-                metrics_obj = mmck.mmck_metrics(lam=params["lambda"], mu=params["mu"], c=servers, k=capacity)
+                metrics_obj = mmck.mmck_metrics(
+                    lam=params["lambda"], mu=params["mu"], servers=servers, capacity=capacity
+                )
             else:
                 raise ValueError(f"Modelo {request.model_type} ainda não implementado na varredura.")
 
@@ -36,11 +49,10 @@ def run_analytical_sweep(request: SweepRequest) -> List[SweepPointOut]:
                 **metrics_dict
             ))
 
-        except Exception as e:
-            # Se der um erro de cálculo, regista o aviso para não estourar a API toda
+        except UnstableSystemError as e:
             points.append(SweepPointOut(
                 sweep_value=float(val),
-                warning=f"Erro de cálculo: {str(e)}"
+                warning=str(e)
             ))
 
     return points
