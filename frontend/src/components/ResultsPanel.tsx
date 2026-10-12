@@ -121,6 +121,7 @@ export function ResultsPanel({ state, estimate, onLoadRuns }: Props) {
         {tab === "charts" && <ChartsTab result={result} runsStatus={runs} onLoadRuns={onLoadRuns} />}
         {tab === "replications" && <ReplicationsTab result={result} runsStatus={runs} onLoadRuns={onLoadRuns} />}
         {tab === "details" && <DetailsTab result={result} />}
+      
       </div>
     </div>
   );
