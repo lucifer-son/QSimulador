@@ -269,3 +269,55 @@ class QueueComparisonResponse(BaseModel):
     metrics: dict[str, MetricComparisonOut]
     all_within_ci: bool | None
     max_relative_error_pct: float | None
+    
+# ======================================================================
+# Fase 6: Experimentos e Análise de Sensibilidade
+# ======================================================================
+
+# ---------- entrada ----------
+
+class SweepRequest(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "model_type": "mm1",
+                    "base_params": {"mu": 50},
+                    "sweep_variable": "lambda",
+                    "start": 10,
+                    "end": 45,
+                    "step": 5
+                }
+            ]
+        }
+    )
+
+    model_type: str = Field(description="O modelo a usar: 'mm1', 'mmc', 'mm1k' ou 'mmck'")
+    base_params: dict[str, float | int] = Field(description="Parâmetros fixos (ex: mu, servers, capacity)")
+    sweep_variable: str = Field(description="Qual variável vai variar no eixo X (ex: 'lambda')")
+    start: float = Field(description="Valor inicial da variável")
+    end: float = Field(description="Valor final (inclusivo)")
+    step: float = Field(description="Incremento entre os pontos")
+
+
+# ---------- saída ----------
+
+class SweepPointOut(BaseModel):
+    sweep_value: float = Field(description="O valor da variável testada neste ponto")
+    rho: float | None = None
+    L: float | None = None
+    Lq: float | None = None
+    W: float | None = None
+    Wq: float | None = None
+    p0: float | None = None
+    throughput: float | None = None
+    p_wait: float | None = None
+    p_block: float | None = None
+    # Campo opcional para avisos, útil se o ponto não puder ser calculado (ex: sistema instável)
+    warning: str | None = None
+
+
+class SweepResponse(BaseModel):
+    model_type: str
+    sweep_variable: str
+    points: list[SweepPointOut]
