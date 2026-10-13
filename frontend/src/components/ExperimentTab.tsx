@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Plot from 'react-plotly.js';
 import { runExperimentSweep } from '../api/experiments';
 import type { SweepRequest, SweepResponse } from '../api/experiments';
+import { useThemeColors } from '../hooks/useThemeColors';
 
 interface ExperimentTabProps {
   currentModel: string;
@@ -9,6 +10,7 @@ interface ExperimentTabProps {
 }
 
 export function ExperimentTab({ currentModel, baseParams }: ExperimentTabProps) {
+  const colors = useThemeColors();
   const [sweepVar, setSweepVar] = useState('lambda');
   const [start, setStart] = useState<number | string>(10);
   const [end, setEnd] = useState<number | string>(50);
@@ -44,12 +46,7 @@ export function ExperimentTab({ currentModel, baseParams }: ExperimentTabProps) 
 
   // Estilos melhorados e mais espaçosos
   const inputStyle = {
-    backgroundColor: '#1a1a1a',
-    border: '1px solid #444',
-    color: '#e0e0e0',
     padding: '0.6rem 0.8rem',
-    borderRadius: '6px',
-    outline: 'none',
     width: '130px',
     fontSize: '0.95rem'
   };
@@ -63,7 +60,6 @@ export function ExperimentTab({ currentModel, baseParams }: ExperimentTabProps) 
   const labelStyle = {
     display: 'block',
     fontSize: '0.85rem',
-    color: '#aaa',
     marginBottom: '0.4rem',
     fontWeight: '500'
   };
@@ -75,16 +71,16 @@ export function ExperimentTab({ currentModel, baseParams }: ExperimentTabProps) 
       {/* Cabeçalho e Painel de Contexto */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
         <div>
-          <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem', color: '#fff' }}>Análise de Sensibilidade</h2>
-          <p style={{ color: '#aaa', margin: 0 }}>Gere curvas de desempenho variando um parâmetro do sistema.</p>
+          <h2 className="experiment-title" style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem' }}>Análise de Sensibilidade</h2>
+          <p className="experiment-muted" style={{ margin: 0 }}>Gere curvas de desempenho variando um parâmetro do sistema.</p>
         </div>
         
         {/* Este painel mostra os valores que NÃO estão a variar */}
-        <div style={{ backgroundColor: '#1a1a1a', padding: '1rem 1.5rem', borderRadius: '8px', border: '1px solid #333' }}>
-          <div style={{ fontSize: '0.8rem', color: '#888', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+        <div className="experiment-fixed" style={{ padding: '1rem 1.5rem' }}>
+          <div className="experiment-fixed-label" style={{ fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
             Parâmetros Fixos ({currentModel.toUpperCase()})
           </div>
-          <div style={{ display: 'flex', gap: '1.5rem', fontSize: '1.1rem', fontWeight: 'bold', color: '#4a90e2' }}>
+          <div className="experiment-fixed-values" style={{ display: 'flex', gap: '1.5rem', fontSize: '1.1rem', fontWeight: 'bold' }}>
             {sweepVar !== 'lambda' && <span>λ = {baseParams.lambda}</span>}
             {sweepVar !== 'mu' && <span>μ = {baseParams.mu}</span>}
             {currentModel.includes('c') && sweepVar !== 'servers' && <span>c = {baseParams.servers}</span>}
@@ -94,10 +90,10 @@ export function ExperimentTab({ currentModel, baseParams }: ExperimentTabProps) 
       </div>
       
       {/* Caixa do Painel de Controlo */}
-      <div style={{ backgroundColor: '#242424', padding: '1.5rem', borderRadius: '8px', border: '1px solid #333', display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: '2rem' }}>
+      <div className="experiment-controls" style={{ padding: '1.5rem', display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: '2rem' }}>
         <div>
-          <label style={labelStyle}>O que deseja variar?</label>
-          <select style={selectStyle} value={sweepVar} onChange={e => setSweepVar(e.target.value)}>
+          <label className="experiment-muted" style={labelStyle}>O que deseja variar?</label>
+          <select className="experiment-input" style={selectStyle} value={sweepVar} onChange={e => setSweepVar(e.target.value)}>
             <option value="lambda">Taxa de Chegada (λ)</option>
             <option value="mu">Taxa de Serviço (μ)</option>
             {currentModel.includes('c') && <option value="servers">Nº de Servidores (c)</option>}
@@ -105,18 +101,18 @@ export function ExperimentTab({ currentModel, baseParams }: ExperimentTabProps) 
         </div>
         
         <div>
-          <label style={labelStyle}>Início {unit}</label>
-          <input style={inputStyle} type="number" value={start} onChange={e => setStart(e.target.value)} />
+          <label className="experiment-muted" style={labelStyle}>Início {unit}</label>
+          <input className="experiment-input" style={inputStyle} type="number" value={start} onChange={e => setStart(e.target.value)} />
         </div>
         
         <div>
-          <label style={labelStyle}>Fim {unit}</label>
-          <input style={inputStyle} type="number" value={end} onChange={e => setEnd(e.target.value)} />
+          <label className="experiment-muted" style={labelStyle}>Fim {unit}</label>
+          <input className="experiment-input" style={inputStyle} type="number" value={end} onChange={e => setEnd(e.target.value)} />
         </div>
         
         <div>
-          <label style={labelStyle}>Passo {unit}</label>
-          <input style={inputStyle} type="number" value={step} onChange={e => setStep(e.target.value)} />
+          <label className="experiment-muted" style={labelStyle}>Passo {unit}</label>
+          <input className="experiment-input" style={inputStyle} type="number" value={step} onChange={e => setStep(e.target.value)} />
         </div>
         
         <button 
@@ -126,8 +122,8 @@ export function ExperimentTab({ currentModel, baseParams }: ExperimentTabProps) 
             padding: '0 1.5rem', 
             height: '42px',
             cursor: loading ? 'not-allowed' : 'pointer',
-            backgroundColor: '#4a90e2',
-            color: 'white',
+            backgroundColor: 'var(--accent)',
+            color: 'var(--on-accent)',
             border: 'none',
             borderRadius: '6px',
             fontWeight: 'bold',
@@ -139,13 +135,13 @@ export function ExperimentTab({ currentModel, baseParams }: ExperimentTabProps) 
       </div>
 
       {error && (
-        <div style={{ color: '#ff6b6b', marginBottom: '2rem', padding: '1rem', backgroundColor: 'rgba(255, 107, 107, 0.1)', border: '1px solid #ff6b6b', borderRadius: '6px' }}>
+        <div className="experiment-error">
           {error}
         </div>
       )}
 
       {result && result.points.some(p => p.warning) && (
-        <div style={{ color: '#ffcc00', marginBottom: '2rem', padding: '1rem', backgroundColor: 'rgba(255, 204, 0, 0.1)', border: '1px solid #ffcc00', borderRadius: '6px' }}>
+        <div className="experiment-warning">
           <strong>Aviso:</strong> O sistema atingiu instabilidade (demanda supera a capacidade) nos valores mais altos. Esses pontos foram omitidos do gráfico.
         </div>
       )}
@@ -159,7 +155,7 @@ export function ExperimentTab({ currentModel, baseParams }: ExperimentTabProps) 
                 y: validPoints.map(p => p.W),
                 type: 'scatter',
                 mode: 'lines+markers',
-                marker: { color: '#ff4757', size: 6 },
+                marker: { color: colors.danger, size: 6 },
                 line: { width: 3 },
                 name: 'Tempo Médio no Sistema (W)'
               },
@@ -168,7 +164,7 @@ export function ExperimentTab({ currentModel, baseParams }: ExperimentTabProps) 
                 y: validPoints.map(p => p.rho),
                 type: 'scatter',
                 mode: 'lines',
-                line: { dash: 'dash', color: '#4a90e2', width: 2 },
+                line: { dash: 'dash', color: colors.accent, width: 2 },
                 name: 'Utilização (ρ) [Eixo Direito]',
                 yaxis: 'y2'
               }
@@ -177,23 +173,23 @@ export function ExperimentTab({ currentModel, baseParams }: ExperimentTabProps) 
               title: `Comportamento do Sistema variando ${sweepVar === 'lambda' ? 'Taxa de Chegada' : sweepVar === 'mu' ? 'Taxa de Serviço' : 'Servidores'}`,
               paper_bgcolor: 'transparent',
               plot_bgcolor: 'transparent',
-              font: { color: '#e0e0e0', family: 'inherit' },
+              font: { color: colors.text, family: 'inherit' },
               xaxis: { 
                 title: `Valor de ${sweepVar}`, 
-                gridcolor: '#333',
-                zerolinecolor: '#555'
+                gridcolor: colors.border,
+                zerolinecolor: colors.border
               },
               yaxis: { 
                 title: 'Tempo no Sistema (W)', 
-                titlefont: {color: '#ff4757'}, 
-                tickfont: {color: '#ff4757'},
-                gridcolor: '#333',
-                zerolinecolor: '#555'
+                titlefont: {color: colors.danger},
+                tickfont: {color: colors.danger},
+                gridcolor: colors.border,
+                zerolinecolor: colors.border
               },
               yaxis2: {
                 title: 'Utilização (ρ)',
-                titlefont: {color: '#4a90e2'},
-                tickfont: {color: '#4a90e2'},
+                titlefont: {color: colors.accent},
+                tickfont: {color: colors.accent},
                 overlaying: 'y',
                 side: 'right',
                 range: [0, 1]

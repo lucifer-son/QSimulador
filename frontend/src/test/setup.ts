@@ -5,7 +5,7 @@ import { afterEach } from "vitest";
 // Sem `globals: true`, o Testing Library não limpa a tela sozinho entre os testes.
 afterEach(() => cleanup());
 
-// O jsdom não implementa matchMedia (usado por useThemeColors).
+// O jsdom não implementa matchMedia.
 if (typeof window.matchMedia !== "function") {
   window.matchMedia = ((query: string) => ({
     matches: false,

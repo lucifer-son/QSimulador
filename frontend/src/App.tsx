@@ -14,8 +14,14 @@ import { useRunner } from "./hooks/useRunner";
 
 type SystemValues = Pick<FormValues, "lambda" | "mu" | "servers" | "capacity">;
 type SimValues = Pick<FormValues, "simulationTime" | "replications" | "warmupTime" | "seed">;
+type Theme = "light" | "dark";
 
 const INITIAL_SIM: SimValues = { simulationTime: "2000", replications: "10", warmupTime: "100", seed: "2026" };
+const THEME_STORAGE_KEY = "qsimulador-theme";
+
+function initialTheme(): Theme {
+  return window.localStorage.getItem(THEME_STORAGE_KEY) === "dark" ? "dark" : "light";
+}
 
 /** Cada modelo guarda os próprios valores: trocar de modelo não apaga o que foi digitado. */
 function initialSystems(): Record<ModelKey, SystemValues> {
@@ -28,6 +34,7 @@ export default function App() {
   const [sim, setSim] = useState<SimValues>(INITIAL_SIM);
   const [localErrors, setLocalErrors] = useState<FieldErrors>({});
   const [apiErrors, setApiErrors] = useState<FieldErrors>({});
+  const [theme, setTheme] = useState<Theme>(initialTheme);
   
   // O nosso "interruptor" para mudar de ecrã
   const [activeTab, setActiveTab] = useState<"laboratorio" | "experimentos">("laboratorio");
@@ -37,6 +44,11 @@ export default function App() {
   useEffect(() => {
     setApiErrors(state.status === "error" ? fieldErrorsFromApi(state.error) : {});
   }, [state]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  }, [theme]);
 
   const values: FormValues = { ...systems[model], ...sim };
   const errors: FieldErrors = { ...apiErrors, ...localErrors };
@@ -97,6 +109,18 @@ export default function App() {
           
           <span className="nav-item soon" aria-disabled="true">Dados reais <small>em breve</small></span>
         </nav>
+        <label className="theme-control">
+          <span>Tema</span>
+          <select
+            className="theme-select"
+            aria-label="Tema"
+            value={theme}
+            onChange={(event) => setTheme(event.target.value === "dark" ? "dark" : "light")}
+          >
+            <option value="light">Claro</option>
+            <option value="dark">Escuro</option>
+          </select>
+        </label>
       </header>
       
       <main className="layout" style={{ display: activeTab === "experimentos" ? "block" : undefined }}>
@@ -116,7 +140,7 @@ export default function App() {
             <ResultsPanel state={state} estimate={estimate} onLoadRuns={() => void loadRuns()} />
           </>
         ) : (
-          <div style={{ backgroundColor: "#1e1e1e", borderRadius: "8px", border: "1px solid #333", minHeight: "80vh" }}>
+          <div className="experiment-panel">
             <ExperimentTab 
               currentModel={model} 
               baseParams={{

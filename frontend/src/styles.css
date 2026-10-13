@@ -2,7 +2,7 @@
    Os gráficos (Plotly) leem --text-*, --border e --chart-* de :root via
    useThemeColors; mantenha esses nomes. */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   --bg: #f5f5f3;
   --surface: #ffffff;
   --surface-2: #f1f0ec;
@@ -29,31 +29,30 @@
   --radius-lg: 12px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #161614;
-    --surface: #1f1f1d;
-    --surface-2: #2a2a27;
-    --text-primary: #f0efe9;
-    --text-secondary: #b5b4ac;
-    --text-muted: #9a9991;
-    --border: #3a3a36;
-    --border-strong: #78776f;
-    --accent: #5b9bf0;
-    --accent-bg: #1f3350;
-    --accent-text: #a9c9f7;
-    --on-accent: #0f1b2d;
-    --chart-accent: #5b9bf0;
-    --chart-danger: #ee7a7a;
-    --success-bg: #1b3a24;
-    --success-text: #8fd6a0;
-    --warning-bg: #3d3014;
-    --warning-text: #f0cf85;
-    --info-bg: #1f3350;
-    --info-text: #a9c9f7;
-    --danger-bg: #4a2020;
-    --danger-text: #f0a3a3;
-  }
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #161614;
+  --surface: #1f1f1d;
+  --surface-2: #2a2a27;
+  --text-primary: #f0efe9;
+  --text-secondary: #b5b4ac;
+  --text-muted: #9a9991;
+  --border: #3a3a36;
+  --border-strong: #78776f;
+  --accent: #5b9bf0;
+  --accent-bg: #1f3350;
+  --accent-text: #a9c9f7;
+  --on-accent: #0f1b2d;
+  --chart-accent: #5b9bf0;
+  --chart-danger: #ee7a7a;
+  --success-bg: #1b3a24;
+  --success-text: #8fd6a0;
+  --warning-bg: #3d3014;
+  --warning-text: #f0cf85;
+  --info-bg: #1f3350;
+  --info-text: #a9c9f7;
+  --danger-bg: #4a2020;
+  --danger-text: #f0a3a3;
 }
 
 /* ---------- Base ---------- */
@@ -88,6 +87,11 @@ button, input, select { font: inherit; color: inherit; }
 }
 .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 1.05rem; }
 .topbar nav { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.9rem; }
+.theme-control { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 0.85rem; }
+.theme-select {
+  height: 32px; padding: 0 8px; background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: var(--radius); cursor: pointer;
+}
 .nav-item { padding-bottom: 2px; border-bottom: 2px solid transparent; }
 .nav-item[aria-current="page"] { border-bottom-color: var(--accent); }
 .nav-item.soon { color: var(--text-muted); }
@@ -197,6 +201,28 @@ button, input, select { font: inherit; color: inherit; }
 .banner-success { background: var(--success-bg); color: var(--success-text); }
 .banner-warning { background: var(--warning-bg); color: var(--warning-text); }
 .banner-info { background: var(--info-bg); color: var(--info-text); }
+.banner-danger { background: var(--danger-bg); color: var(--danger-text); }
+
+.experiment-panel {
+  min-height: 80vh; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.experiment-fixed, .experiment-controls {
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.experiment-title { color: var(--text-primary); }
+.experiment-muted { color: var(--text-secondary); }
+.experiment-fixed-label { color: var(--text-muted); }
+.experiment-fixed-values { color: var(--accent); }
+.experiment-input {
+  height: 36px; padding: 0 10px; background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: var(--radius); color: var(--text-primary);
+}
+.experiment-controls select { cursor: pointer; }
+.experiment-error, .experiment-warning {
+  margin-bottom: 2rem; padding: 1rem; border: 1px solid currentColor; border-radius: var(--radius);
+}
+.experiment-error { color: var(--danger-text); background: var(--danger-bg); }
+.experiment-warning { color: var(--warning-text); background: var(--warning-bg); }
 
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 18px; }
 .card { background: var(--surface-2); border-radius: var(--radius); padding: 10px 12px; }
