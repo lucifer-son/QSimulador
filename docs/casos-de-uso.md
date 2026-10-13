@@ -77,7 +77,7 @@ flowchart LR
 | UC-04 | Comparar resultado analítico × simulação | Usuário, Cliente de API | ✅ |
 | UC-05 | Visualizar resultados em gráficos | Usuário | ✅ |
 | UC-06 | Modelar M/M/c, M/M/1/K e M/M/c/K | Usuário | ✅ |
-| UC-07 | Executar experimentos (varredura de parâmetros) | Usuário | 📋 |
+| UC-07 | Executar experimentos (varredura de parâmetros) | Usuário | ✅ |
 | UC-08 | Importar CSV do JMeter e comparar com o modelo | Usuário | 📋 |
 | UC-09 | Salvar e consultar modelos e resultados | Usuário | 📋 |
 | UC-10 | Verificar estabilidade do sistema | Sistema (incluído) | ✅ |
@@ -224,7 +224,7 @@ flowchart LR
 
 ---
 
-### UC-07 — Executar experimentos (varredura de parâmetros) 📋
+### UC-07 — Executar experimentos (varredura de parâmetros) ✅
 
 | Campo | Descrição |
 |-------|-----------|

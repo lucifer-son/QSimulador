@@ -155,9 +155,9 @@ Com λ = taxa de chegada, μ = taxa de serviço e ρ = λ/μ, válidas apenas pa
 
 | ID | Requisito | Prior. | Verif. | UC | US | Status |
 |----|-----------|--------|--------|----|----|--------|
-| RF-21 | O sistema deve executar um experimento que varie um parâmetro numérico escolhido em uma faixa [início, fim] com passo definido pelo usuário. | S | T | UC-07 | US-19 | 📋 |
-| RF-22 | O sistema deve sinalizar os pontos da faixa que tornam o sistema instável e continuar calculando os demais. | S | T | UC-07 | US-19 | 📋 |
-| RF-38 | O sistema deve consolidar os resultados do experimento em uma tabela e em um gráfico de tendência por métrica. | S | D | UC-07 | US-19, US-20 | 📋 |
+| RF-21 | O sistema deve executar um experimento que varie um parâmetro numérico escolhido em uma faixa [início, fim] com passo definido pelo usuário. | S | T | UC-07 | US-19 | ✅ |
+| RF-22 | O sistema deve sinalizar os pontos da faixa que tornam o sistema instável e continuar calculando os demais. | S | T | UC-07 | US-19 | ✅ |
+| RF-38 | O sistema deve consolidar os resultados do experimento em uma tabela e em um gráfico de tendência por métrica. | S | D | UC-07 | US-19, US-20 | ✅ |
 
 ### 4.8 Validação com JMeter
 

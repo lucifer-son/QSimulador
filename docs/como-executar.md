@@ -172,6 +172,9 @@ Abra **http://127.0.0.1:8000/docs** no navegador. A página lista os endpoints, 
 | `POST /api/models/mmc/calculate` · `/simulate` · `/compare` | M/M/c (fila ilimitada). Entrada extra: `servers` |
 | `POST /api/models/mm1k/calculate` · `/simulate` · `/compare` | M/M/1/K. Entrada extra: `capacity` |
 | `POST /api/models/mmck/calculate` · `/simulate` · `/compare` | M/M/c/K. Entradas extras: `servers` e `capacity` |
+| `POST /api/experiments/sweep` | Varredura de λ, μ, c ou K ([detalhes](#experimentos-fase-6)) |
+| `POST /api/experiments/servers` | Comparação de números de servidores |
+| `POST /api/experiments/sensitivity` | Análise de sensibilidade |
 
 ### Chamadas de exemplo
 
@@ -248,9 +251,36 @@ A resposta de `/compare` traz, para cada métrica (`rho`, `L`, `Lq`, `W`, `Wq`, 
 
 Nos modelos M/M/c, M/M/1/K e M/M/c/K as respostas seguem o mesmo formato, com dois campos a mais (`servers` e `capacity`, este `null` quando a fila é ilimitada), o `model` em notação de Kendall (por exemplo, `"M/M/3/6"`) e **nove métricas** em vez de sete: além das anteriores, `p_wait` e `p_block` (veja [Interpretando os resultados](#6-interpretando-os-resultados)).
 
+### Experimentos (Fase 6)
+
+Os experimentos respondem às perguntas do tipo "e se...". O corpo usa as mesmas chaves de modelo das rotas (`mm1`, `mmc`, `mm1k`, `mmck`) e os mesmos nomes de campo (`lambda`, `mu`, `servers`, `capacity`).
+
+**Varredura** (`/api/experiments/sweep`): varia um parâmetro (`variable`) de `start` a `end`, com `step`; os demais são os valores fixos do modelo (o parâmetro varrido, se enviado, é ignorado). `servers` e `capacity` exigem faixa inteira. A faixa tem no máximo 200 pontos.
+
+```json
+// POST /api/experiments/sweep: W do M/M/1 conforme λ se aproxima de μ
+{ "model": "mm1", "variable": "lambda", "start": 10, "end": 60, "step": 10, "mu": 50 }
+```
+
+Cada ponto da resposta traz `value`, `status`, `offered_utilization` (λ/(c·μ)), `metrics` e, com simulação, `simulation` (média e intervalo de confiança por métrica). O `status` é `ok`, `unstable` (λ ≥ c·μ em fila ilimitada) ou `invalid` (combinação fora do modelo, como `servers` maior que `capacity`). Esses pontos são **sinalizados e a faixa continua**: a resposta é 200 com `metrics: null` neles.
+
+Para simular cada ponto estável, acrescente `"simulate": true` e `simulation_time` (e, se quiser, `replications`, `warmup_time`, `seed` e `confidence_level`). Todos os pontos usam a mesma semente, que vem na resposta. Além dos limites da simulação individual, a soma das chegadas esperadas de todos os pontos tem teto de 5.000.000 (veja [Desempenho](#7-desempenho)).
+
+**Comparação de servidores** (`/api/experiments/servers`): uma série por número de servidores, todas na mesma faixa de λ e com a mesma taxa μ por servidor. Sem `capacity`, compara M/M/c; com ela, M/M/c/K (um `c` maior que `K` sai como série inválida).
+
+```json
+{ "servers_list": [1, 2, 3], "mu": 10, "start": 5, "end": 30, "step": 5 }
+```
+
+**Sensibilidade** (`/api/experiments/sensitivity`): parte de um ponto base estável e perturba um parâmetro por vez: λ e μ em ±`delta_pct` % (padrão 10, até 50) e c e K em ±1. Para cada métrica, devolve a variação percentual dos dois lados e a **elasticidade** (quantos % a métrica muda para 1% de mudança no parâmetro). Um lado que fica instável ou inválido é sinalizado, e o outro continua. Se o próprio ponto base for instável, o erro é o mesmo do `/calculate` (`unstable_system`).
+
+```json
+{ "model": "mmck", "lambda": 25, "mu": 10, "servers": 3, "capacity": 6, "delta_pct": 10 }
+```
+
 ### Erros da API
 
-Qualquer requisição inválida (nos três endpoints de modelo) devolve HTTP 422 com o formato `{"code", "message", "fields"?}`. `fields` lista o campo e o motivo de cada erro, tanto nos de formato quanto nos de regra, e a interface usa essa lista para marcar o campo certo:
+Qualquer requisição inválida (nos endpoints de modelo e de experimentos) devolve HTTP 422 com o formato `{"code", "message", "fields"?}`. `fields` lista o campo e o motivo de cada erro, tanto nos de formato quanto nos de regra, e a interface usa essa lista para marcar o campo certo:
 
 | `code` | Quando acontece | O que fazer |
 | --- | --- | --- |
@@ -441,6 +471,7 @@ VITE_DEV_API=http://127.0.0.1:8001 npm run dev              # bash
 3. **Clique em Comparar.** Aparecem o veredito (se o valor analítico está dentro do intervalo de confiança de cada métrica), quatro números de destaque, o gráfico de diferenças e a tabela completa. **Só calcular** mostra apenas o analítico, e **Só simular** apenas a simulação.
 4. **Explore as abas.** Gráficos mostra o valor de cada réplica, a média simulada e o analítico, e permite escolher a métrica. Réplicas traz a tabela por réplica. Detalhes mostra os parâmetros, a semente (com botão de copiar) e a resposta completa da API. Como o Comparar não devolve as réplicas individuais, as abas Gráficos e Réplicas têm o botão **Carregar réplicas**, que repete a simulação com a mesma semente e reproduz exatamente os mesmos números.
 5. **Cancele** uma execução demorada com o botão que substitui o Comparar enquanto ela roda.
+6. **Experimente a aba Experimentos.** Ela parte do modelo e dos valores do Laboratório e tem três modos: **Varredura de parâmetro** (curva e tabela de todas as métricas, com faixa sugerida, simulação opcional por ponto, trecho instável sombreado e alta utilização marcada), **Comparar servidores** (uma curva por número de servidores) e **Sensibilidade** (gráfico de barras e elasticidade por parâmetro). Os resultados de cada modo permanecem ao alternar entre abas.
 
 Como ler o gráfico de diferenças: cada linha é uma métrica, mostrada como a diferença percentual da média simulada em relação ao analítico, com a barra do intervalo de confiança. Se a barra **cruza o zero**, o valor analítico está dentro do intervalo. Métricas com valor analítico igual a 0 (como a probabilidade de recusa no M/M/c) não têm diferença relativa e aparecem em uma nota abaixo do gráfico.
 

@@ -179,14 +179,14 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 
 ### E6 — Experimentos
 
-#### US-19 — Variar um parâmetro em uma faixa 📋 · S · UC-07
+#### US-19 — Variar um parâmetro em uma faixa ✅ · S · UC-07
 > Como **pesquisador**, quero varrer uma faixa de valores de um parâmetro, para observar como as métricas mudam com a carga.
 
 **Critérios de aceitação**
 - **Dado** uma faixa e um passo, **quando** executo o experimento, **então** recebo uma tabela e um gráfico de tendência.
 - **Dado** valores da faixa que tornam o sistema instável, **quando** o experimento roda, **então** esses pontos são sinalizados e os demais continuam sendo calculados.
 
-#### US-20 — Demonstrar o crescimento não linear do tempo de espera 📋 · C · UC-07
+#### US-20 — Demonstrar o crescimento não linear do tempo de espera ✅ · C · UC-07
 > Como **professor**, quero um experimento que mostre o tempo de espera disparando quando ρ tende a 1, para ilustrar o conceito em aula.
 
 **Critérios de aceitação**
@@ -276,9 +276,9 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 
 ## 5. Ordem sugerida de implementação
 
-1. **Concluído:** E1 a E5 (modelo analítico, simulação, comparação, interface web e os modelos M/M/c, M/M/1/K e M/M/c/K), além da base da API e dos testes (US-26 a US-28). As divergências que a auditoria encontrou em US-02, US-06 e US-27 foram fechadas (seção 6).
-2. **Próximo:** E6 — experimentos (varredura de parâmetros).
-3. **Depois:** E7 (JMeter) e E8 (persistência e Docker).
+1. **Concluído:** E1 a E6 (modelo analítico, simulação, comparação, interface web, os modelos M/M/c, M/M/1/K e M/M/c/K e os experimentos), além da base da API e dos testes (US-26 a US-28). As divergências que a auditoria encontrou em US-02, US-06 e US-27 foram fechadas (seção 6).
+2. **Próximo:** E7 (JMeter).
+3. **Depois:** E8 (persistência e Docker).
 
 ---
 

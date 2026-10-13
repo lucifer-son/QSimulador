@@ -13,7 +13,7 @@ Mais do que uma calculadora de teoria das filas, a proposta é uma **plataforma 
 
 ## Status
 
-O projeto está em desenvolvimento. Os modelos **M/M/1**, **M/M/c**, **M/M/1/K** e **M/M/c/K** (cálculo analítico, simulação e comparação) e a API já funcionam; a interface web também já está disponível; os experimentos e a validação com dados reais estão planejados.
+O projeto está em desenvolvimento. Os modelos **M/M/1**, **M/M/c**, **M/M/1/K** e **M/M/c/K** (cálculo analítico, simulação e comparação) e a API já funcionam; a interface web também já está disponível; os experimentos (varredura de parâmetros, comparação de servidores e análise de sensibilidade) também já estão disponíveis; a validação com dados reais está planejada.
 
 | Componente | Situação |
 | --- | --- |
@@ -22,7 +22,8 @@ O projeto está em desenvolvimento. Os modelos **M/M/1**, **M/M/c**, **M/M/1/K**
 | API REST (`/calculate`, `/simulate` e `/compare` para cada modelo) | ✅ Implementado |
 | Comparação analítico × simulação (erro relativo e verificação do intervalo de confiança) | ✅ Implementado (módulo, endpoints e scripts de demonstração) |
 | Interface web (React + TypeScript): formulário, comparação, gráficos, abas de réplicas e detalhes, tema claro e escuro | ✅ Implementado |
-| Experimentos (varredura de parâmetros), importação do JMeter, persistência | 📋 Planejado |
+| Experimentos: varredura de λ, μ, c e K (analítica, com simulação opcional), comparação de servidores e análise de sensibilidade (`/api/experiments`, aba Experimentos) | ✅ Implementado |
+| Importação do JMeter, persistência | 📋 Planejado |
 
 ---
 
@@ -88,8 +89,8 @@ O QSimulador permite (ou permitirá) ao usuário:
 2. obter métricas analíticas ✅
 3. executar uma simulação de eventos discretos com múltiplas replicações ✅
 4. comparar resultados analíticos e simulados, com erro relativo ✅
-5. realizar experimentos do tipo *"e se..."* (varredura de λ, μ e número de servidores) 📋
-6. identificar regiões de alta utilização e aproximação da saturação 📋
+5. realizar experimentos do tipo *"e se..."* (varredura de λ, μ e número de servidores) ✅
+6. identificar regiões de alta utilização e aproximação da saturação ✅
 7. visualizar resultados em tabelas e gráficos ✅
 8. importar dados reais, por exemplo do Apache JMeter, e compará-los com o modelo e a simulação 📋
 
@@ -263,7 +264,7 @@ flowchart TD
     API["API<br/>FastAPI"]
     AN["Analítico<br/>M/M/1 ✅ · M/M/c ✅ · M/M/1/K ✅ · M/M/c/K ✅"]
     SIM["Simulação<br/>SimPy (DES) ✅"]
-    ANL["Análise<br/>Comparação ✅ · Sensibilidade · Validação"]
+    ANL["Análise<br/>Comparação ✅ · Experimentos ✅ · Validação"]
     DB[("PostgreSQL<br/>(planejado)")]
 
     FE -->|HTTP / JSON| API
@@ -321,7 +322,7 @@ qsimulador/
     │   │   ├── metrics/           # estruturas de métricas
     │   │   ├── models/            # nome do modelo em notação de Kendall
     │   │   └── validation/        # validação de parâmetros e erros de domínio
-    │   ├── experiments/           # (planejado)
+    │   ├── experiments/           # varredura, comparação de servidores e sensibilidade
     │   ├── analysis/
     │   │   └── comparison.py      # comparação analítico × simulação
     │   └── persistence/           # (planejado)
@@ -340,7 +341,7 @@ frontend/
     ├── styles.css             # tema claro e escuro por variáveis CSS
     ├── api/                   # cliente HTTP, erros por campo, tipos gerados (schema.d.ts)
     ├── domain/                # modelos, métricas, formatação, estimativa de custo
-    ├── charts/                # dados e layout dos gráficos (diferenças e réplicas)
+    ├── charts/                # dados e layout dos gráficos (diferenças, réplicas e experimentos)
     ├── components/            # painel de parâmetros, resultados, tabelas e abas
     ├── hooks/                 # execução com cancelamento, cores do tema
     └── test/                  # fixtures com respostas reais da API e testes de contrato
@@ -363,6 +364,9 @@ Com o servidor no ar (`python -m uvicorn app.main:app --reload`), a documentaç�
 | `POST /api/models/mmc/calculate` · `/simulate` · `/compare` | M/M/c (fila ilimitada) |
 | `POST /api/models/mm1k/calculate` · `/simulate` · `/compare` | M/M/1/K |
 | `POST /api/models/mmck/calculate` · `/simulate` · `/compare` | M/M/c/K |
+| `POST /api/experiments/sweep` | Varre λ, μ, c ou K em uma faixa (analítico e, opcionalmente, simulação em cada ponto) |
+| `POST /api/experiments/servers` | Compara números de servidores (M/M/c ou M/M/c/K) ao longo de uma faixa de λ |
+| `POST /api/experiments/sensitivity` | Mede quanto cada métrica muda ao perturbar cada parâmetro |
 
 ### `POST /api/models/mm1/calculate`
 
@@ -570,7 +574,7 @@ users,avg_ms,p90_ms,throughput,error_rate
 - [x] **Fase 3 — Interface:** React + TypeScript, seleção do modelo, formulário de parâmetros com estimativa de custo, painel de resultados com veredito, gráfico de diferenças e tabela, abas de gráficos, réplicas e detalhes, cancelamento, erros por campo e tema claro e escuro.
 - [x] **Fase 4 — Comparação:** módulo e endpoint de comparação analítico × simulação, com erro absoluto, erro relativo e verificação do intervalo de confiança. Os gráficos comparativos virão com a interface (Fase 3).
 - [x] **Fase 5 — Novos modelos:** M/M/c, M/M/1/K e M/M/c/K, com cálculo analítico, simulação, comparação e endpoints, incluindo as probabilidades de espera e de bloqueio.
-- [ ] **Fase 6 — Experimentação:** varredura de λ e μ, comparação de servidores e análise de sensibilidade.
+- [x] **Fase 6 — Experimentação:** varredura de λ, μ, c e K (com simulação opcional por ponto), comparação de servidores e análise de sensibilidade.
 - [ ] **Fase 7 — Dados reais:** importação de CSV e de resultados do JMeter, comparação com o modelo e relatórios experimentais.
 - [ ] **Fase 8 — Persistência e publicação:** PostgreSQL, Docker, deploy e documentação acadêmica.
 
