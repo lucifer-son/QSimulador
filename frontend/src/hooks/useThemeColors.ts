@@ -33,7 +33,6 @@ export function useThemeColors(): ThemeColors {
     const update = () => setColors(read());
     const observer = new MutationObserver(update);
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    update();
     return () => observer.disconnect();
   }, []);
   return colors;

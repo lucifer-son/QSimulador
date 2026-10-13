@@ -11,7 +11,7 @@ function tokens(block: string): Record<string, string> {
   return Object.fromEntries([...block.matchAll(/--([a-z0-9-]+):\s*(#[0-9a-fA-F]{6})/g)].map((m) => [m[1], m[2]]));
 }
 const lightBlock = /:root \{([\s\S]*?)\n\}/.exec(css)![1];
-const darkBlock = /\[data-theme="dark"\] \{([\s\S]*?)\n\}/.exec(css)![1];
+const darkBlock = /:root\[data-theme="dark"\] \{([\s\S]*?)\n\}/.exec(css)![1];
 const light = tokens(lightBlock);
 const dark = { ...light, ...tokens(darkBlock) };
 

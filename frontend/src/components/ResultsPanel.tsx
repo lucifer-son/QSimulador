@@ -20,7 +20,7 @@ const TABS: { key: TabKey; label: string }[] = [
 
 const ACTION_VERB = { compare: "Comparando", simulate: "Simulando", calculate: "Calculando" } as const;
 
-const ERROR_TITLES: Record<ApiError["code"], string> = {
+export const ERROR_TITLES: Record<ApiError["code"], string> = {
   unstable_system: "Sistema instável",
   invalid_parameter: "Parâmetro inválido",
   invalid_request: "Requisição inválida",

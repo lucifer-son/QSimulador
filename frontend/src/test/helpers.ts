@@ -1,4 +1,7 @@
 import { vi } from "vitest";
+import experimentSensitivityMm1 from "./fixtures/experiment-sensitivity-mm1.json";
+import experimentServersMmc from "./fixtures/experiment-servers-mmc.json";
+import experimentSweepMm1 from "./fixtures/experiment-sweep-mm1.json";
 import errorInvalidParameter from "./fixtures/error-invalid-parameter.json";
 import errorInvalidRequest from "./fixtures/error-invalid-request.json";
 import errorReplications from "./fixtures/error-replications.json";
@@ -17,6 +20,7 @@ import type { ThemeColors } from "../hooks/useThemeColors";
 /** Respostas reais da API, gravadas em arquivos (ver src/test/fixtures). */
 export const fixtures = {
   errorInvalidParameter, errorInvalidRequest, errorReplications, errorUnstable,
+  experimentSensitivityMm1, experimentServersMmc, experimentSweepMm1,
   mm1Calculate, mm1Compare, mm1Simulate,
   mmcCalculate, mmcCompare, mmcSimulate,
   mmckCalculate, mmckCompare, mmckSimulate,

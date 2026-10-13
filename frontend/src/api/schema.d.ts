@@ -247,6 +247,69 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/experiments/sweep": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sweep
+         * @description Varre λ, μ, c ou K em uma faixa e devolve as métricas de cada ponto.
+         *
+         *     Pontos instáveis ou fora do domínio do modelo são sinalizados (`status`) e os demais
+         *     continuam sendo calculados. Com `simulate`, cada ponto estável também é simulado.
+         */
+        post: operations["sweep_api_experiments_sweep_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/experiments/servers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compare Servers
+         * @description Compara o desempenho com números diferentes de servidores, variando λ na mesma faixa.
+         */
+        post: operations["compare_servers_api_experiments_servers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/experiments/sensitivity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sensitivity
+         * @description Mede quanto cada métrica muda ao perturbar cada parâmetro em torno do ponto base.
+         */
+        post: operations["sensitivity_api_experiments_sensitivity_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -261,26 +324,6 @@ export interface paths {
         get: operations["health_api_health_get"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/experiments/sweep": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Run Experiment Sweep
-         * @description Fase 6: Varredura de parâmetros analíticos.
-         */
-        post: operations["run_experiment_sweep_api_experiments_sweep_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -336,11 +379,6 @@ export interface components {
             field: string;
             /** Message */
             message: string;
-        };
-        /** HTTPValidationError */
-        HTTPValidationError: {
-            /** Detail */
-            detail?: components["schemas"]["ValidationError"][];
         };
         /**
          * MM1CalculateRequest
@@ -759,6 +797,24 @@ export interface components {
             /** Within Ci */
             within_ci: boolean | null;
         };
+        /** MetricEffectOut */
+        MetricEffectOut: {
+            /**
+             * Low Change Pct
+             * @description Variação % da métrica quando o parâmetro diminui.
+             */
+            low_change_pct: number | null;
+            /**
+             * High Change Pct
+             * @description Variação % da métrica quando o parâmetro aumenta.
+             */
+            high_change_pct: number | null;
+            /**
+             * Elasticity
+             * @description Variação % da métrica para 1% de variação do parâmetro (nulo se um lado é inválido).
+             */
+            elasticity: number | null;
+        };
         /** MetricSummaryOut */
         MetricSummaryOut: {
             /** Mean */
@@ -771,6 +827,28 @@ export interface components {
             ci_high: number | null;
             /** N */
             n: number;
+        };
+        /** ParameterSensitivityOut */
+        ParameterSensitivityOut: {
+            /**
+             * Name
+             * @enum {string}
+             */
+            name: "lambda" | "mu" | "servers" | "capacity";
+            /** Base Value */
+            base_value: number;
+            /**
+             * Perturbation
+             * @description percent (λ e μ) ou units (c e K, ±1).
+             * @enum {string}
+             */
+            perturbation: "percent" | "units";
+            low: components["schemas"]["SensitivitySideOut"];
+            high: components["schemas"]["SensitivitySideOut"];
+            /** Effects */
+            effects: {
+                [key: string]: components["schemas"]["MetricEffectOut"];
+            };
         };
         /** QueueCalculateResponse */
         QueueCalculateResponse: {
@@ -909,6 +987,151 @@ export interface components {
             /** Observation Time */
             observation_time: number;
         };
+        /**
+         * SensitivityRequest
+         * @example {
+         *       "capacity": 6,
+         *       "delta_pct": 10,
+         *       "lambda": 25,
+         *       "model": "mmck",
+         *       "mu": 10,
+         *       "servers": 3
+         *     }
+         */
+        SensitivityRequest: {
+            /**
+             * Model
+             * @description Modelo: mm1, mmc, mm1k ou mmck (as mesmas chaves das rotas /api/models).
+             * @enum {string}
+             */
+            model: "mm1" | "mmc" | "mm1k" | "mmck";
+            /**
+             * Lambda
+             * @description Taxa média de chegada (λ) do ponto base.
+             */
+            lambda: number;
+            /**
+             * Mu
+             * @description Taxa média de serviço (μ) do ponto base.
+             */
+            mu: number;
+            /**
+             * Servers
+             * @description Servidores (c). Obrigatório em mmc e mmck.
+             */
+            servers?: number | null;
+            /**
+             * Capacity
+             * @description Capacidade total (K). Obrigatório em mm1k e mmck.
+             */
+            capacity?: number | null;
+            /**
+             * Delta Pct
+             * @description Perturbação de λ e μ, em % (maior que 0 e até 50). c e K variam ±1 unidade.
+             * @default 10
+             */
+            delta_pct: number;
+        };
+        /** SensitivityResponse */
+        SensitivityResponse: {
+            /** Model */
+            model: string;
+            /** Delta Pct */
+            delta_pct: number;
+            /** Base */
+            base: {
+                [key: string]: number;
+            };
+            /** Base Metrics */
+            base_metrics: {
+                [key: string]: number;
+            };
+            /** Parameters */
+            parameters: components["schemas"]["ParameterSensitivityOut"][];
+        };
+        /** SensitivitySideOut */
+        SensitivitySideOut: {
+            /** Value */
+            value: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "unstable" | "invalid";
+            /** Message */
+            message: string | null;
+            /** Metrics */
+            metrics: {
+                [key: string]: number;
+            } | null;
+        };
+        /**
+         * ServerComparisonRequest
+         * @example {
+         *       "end": 30,
+         *       "mu": 10,
+         *       "servers_list": [
+         *         1,
+         *         2,
+         *         3
+         *       ],
+         *       "start": 5,
+         *       "step": 5
+         *     }
+         */
+        ServerComparisonRequest: {
+            /**
+             * Servers List
+             * @description Números de servidores a comparar (de 2 a 8 valores distintos).
+             */
+            servers_list: number[];
+            /**
+             * Mu
+             * @description Taxa de serviço de cada servidor (μ).
+             */
+            mu: number;
+            /**
+             * Capacity
+             * @description Capacidade total (K). Se omitida, a fila é ilimitada (M/M/c).
+             */
+            capacity?: number | null;
+            /**
+             * Start
+             * @description Primeiro valor de λ.
+             */
+            start: number;
+            /**
+             * End
+             * @description Último valor de λ.
+             */
+            end: number;
+            /**
+             * Step
+             * @description Incremento de λ entre os pontos.
+             */
+            step: number;
+        };
+        /** ServerComparisonResponse */
+        ServerComparisonResponse: {
+            /**
+             * Model
+             * @description mmc (fila ilimitada) ou mmck (capacidade finita).
+             */
+            model: string;
+            /** Mu */
+            mu: number;
+            /** Capacity */
+            capacity: number | null;
+            /** Series */
+            series: components["schemas"]["ServerSeriesOut"][];
+        };
+        /** ServerSeriesOut */
+        ServerSeriesOut: {
+            /** Servers */
+            servers: number;
+            /** Points */
+            points: components["schemas"]["SweepPointOut"][];
+        };
         /** SimulationResponse */
         SimulationResponse: {
             /**
@@ -940,99 +1163,179 @@ export interface components {
         /** SweepPointOut */
         SweepPointOut: {
             /**
-             * Sweep Value
-             * @description O valor da variável testada neste ponto
+             * Value
+             * @description Valor do parâmetro varrido neste ponto.
              */
-            sweep_value: number;
-            /** Rho */
-            rho?: number | null;
-            /** L */
-            L?: number | null;
-            /** Lq */
-            Lq?: number | null;
-            /** W */
-            W?: number | null;
-            /** Wq */
-            Wq?: number | null;
-            /** P0 */
-            p0?: number | null;
-            /** Throughput */
-            throughput?: number | null;
-            /** P Wait */
-            p_wait?: number | null;
-            /** P Block */
-            p_block?: number | null;
-            /** Warning */
-            warning?: string | null;
+            value: number;
+            /**
+             * Status
+             * @description ok, unstable (fora do regime estacionário) ou invalid (fora do domínio do modelo).
+             * @enum {string}
+             */
+            status: "ok" | "unstable" | "invalid";
+            /**
+             * Message
+             * @description Motivo do status, ou aviso da simulação do ponto.
+             */
+            message: string | null;
+            /**
+             * Offered Utilization
+             * @description Carga oferecida por servidor, λ/(c·μ). Em 1 ou mais, a fila ilimitada é instável.
+             */
+            offered_utilization: number;
+            /**
+             * Metrics
+             * @description Métricas analíticas (nulo se o ponto não é válido).
+             */
+            metrics: {
+                [key: string]: number;
+            } | null;
+            /**
+             * Simulation
+             * @description Resumo da simulação por métrica (só com simulate).
+             */
+            simulation: {
+                [key: string]: components["schemas"]["MetricSummaryOut"];
+            } | null;
         };
         /**
          * SweepRequest
          * @example {
-         *       "base_params": {
-         *         "mu": 50
-         *       },
          *       "end": 45,
-         *       "model_type": "mm1",
+         *       "model": "mm1",
+         *       "mu": 50,
          *       "start": 10,
          *       "step": 5,
-         *       "sweep_variable": "lambda"
+         *       "variable": "lambda"
+         *     }
+         * @example {
+         *       "capacity": 6,
+         *       "end": 40,
+         *       "model": "mmck",
+         *       "mu": 10,
+         *       "replications": 5,
+         *       "seed": 2026,
+         *       "servers": 3,
+         *       "simulate": true,
+         *       "simulation_time": 500,
+         *       "start": 5,
+         *       "step": 5,
+         *       "variable": "lambda"
          *     }
          */
         SweepRequest: {
             /**
-             * Model Type
-             * @description O modelo a usar: 'mm1', 'mmc', 'mm1k' ou 'mmck'
+             * Model
+             * @description Modelo: mm1, mmc, mm1k ou mmck (as mesmas chaves das rotas /api/models).
+             * @enum {string}
              */
-            model_type: string;
+            model: "mm1" | "mmc" | "mm1k" | "mmck";
             /**
-             * Base Params
-             * @description Parâmetros fixos (ex: mu, servers, capacity)
+             * Variable
+             * @description Parâmetro varrido (servers e capacity só nos modelos que os têm).
+             * @enum {string}
              */
-            base_params: {
-                [key: string]: number;
-            };
-            /**
-             * Sweep Variable
-             * @description Qual variável vai variar no eixo X (ex: 'lambda')
-             */
-            sweep_variable: string;
+            variable: "lambda" | "mu" | "servers" | "capacity";
             /**
              * Start
-             * @description Valor inicial da variável
+             * @description Primeiro valor da faixa.
              */
             start: number;
             /**
              * End
-             * @description Valor final (inclusivo)
+             * @description Último valor da faixa (incluído quando start + n·step = end).
              */
             end: number;
             /**
              * Step
-             * @description Incremento entre os pontos
+             * @description Incremento entre os pontos (maior que zero; inteiro para servers e capacity).
              */
             step: number;
+            /**
+             * Lambda
+             * @description Taxa de chegada (λ). Obrigatório para o modelo, a menos que seja o parâmetro varrido (então é ignorado).
+             */
+            lambda?: number | null;
+            /**
+             * Mu
+             * @description Taxa de serviço (μ). Obrigatório para o modelo, a menos que seja o parâmetro varrido (então é ignorado).
+             */
+            mu?: number | null;
+            /**
+             * Servers
+             * @description Servidores (c). Obrigatório para o modelo, a menos que seja o parâmetro varrido (então é ignorado).
+             */
+            servers?: number | null;
+            /**
+             * Capacity
+             * @description Capacidade total (K). Obrigatório para o modelo, a menos que seja o parâmetro varrido (então é ignorado).
+             */
+            capacity?: number | null;
+            /**
+             * Simulate
+             * @description Se verdadeiro, simula também cada ponto estável (exige simulation_time).
+             * @default false
+             */
+            simulate: boolean;
+            /**
+             * Simulation Time
+             * @description Tempo simulado por replicação, em cada ponto.
+             */
+            simulation_time?: number | null;
+            /**
+             * Replications
+             * @description Número de replicações por ponto.
+             * @default 10
+             */
+            replications: number;
+            /**
+             * Warmup Time
+             * @description Período inicial descartado.
+             * @default 0
+             */
+            warmup_time: number;
+            /**
+             * Seed
+             * @description Semente aleatória, a mesma em todos os pontos. Se omitida, uma é sorteada e devolvida.
+             */
+            seed?: number | null;
+            /**
+             * Confidence Level
+             * @description Nível do intervalo de confiança (0 a 1).
+             * @default 0.95
+             */
+            confidence_level: number;
         };
         /** SweepResponse */
         SweepResponse: {
-            /** Model Type */
-            model_type: string;
-            /** Sweep Variable */
-            sweep_variable: string;
+            /** Model */
+            model: string;
+            /** Variable */
+            variable: string;
+            /**
+             * Fixed
+             * @description Parâmetros mantidos fixos, com os nomes da API.
+             */
+            fixed: {
+                [key: string]: number;
+            };
             /** Points */
             points: components["schemas"]["SweepPointOut"][];
+            /** @description Configuração efetiva da simulação, com a semente usada. */
+            simulation: components["schemas"]["SweepSimulationOut"] | null;
         };
-        /** ValidationError */
-        ValidationError: {
-            /** Location */
-            loc: (string | number)[];
-            /** Message */
-            msg: string;
-            /** Error Type */
-            type: string;
-            /** Input */
-            input?: unknown;
-            /** Context */
-            ctx?: Record<string, never>;
+        /** SweepSimulationOut */
+        SweepSimulationOut: {
+            /** Simulation Time */
+            simulation_time: number;
+            /** Replications */
+            replications: number;
+            /** Warmup Time */
+            warmup_time: number;
+            /** Seed */
+            seed: number;
+            /** Confidence Level */
+            confidence_level: number;
         };
     };
     responses: never;
@@ -1439,29 +1742,7 @@ export interface operations {
             };
         };
     };
-    health_api_health_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: string;
-                    };
-                };
-            };
-        };
-    };
-    run_experiment_sweep_api_experiments_sweep_post: {
+    sweep_api_experiments_sweep_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -1483,13 +1764,101 @@ export interface operations {
                     "application/json": components["schemas"]["SweepResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Parâmetros inválidos */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    compare_servers_api_experiments_servers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServerComparisonRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServerComparisonResponse"];
+                };
+            };
+            /** @description Parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    sensitivity_api_experiments_sensitivity_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SensitivityRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SensitivityResponse"];
+                };
+            };
+            /** @description Parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    health_api_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
                 };
             };
         };

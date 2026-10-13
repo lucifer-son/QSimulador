@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { fixtures as fx, mockFetch, mockPendingFetch, type FakeHandler } from "./test/helpers";
 
@@ -8,13 +8,7 @@ vi.mock("plotly.js-basic-dist-min", () => ({
   default: { react: vi.fn().mockResolvedValue(undefined), purge: vi.fn() },
 }));
 
-vi.mock("react-plotly.js", () => ({ default: () => null }));
-
 afterEach(() => vi.unstubAllGlobals());
-beforeEach(() => {
-  window.localStorage.clear();
-  delete document.documentElement.dataset.theme;
-});
 
 /** API de mentira: devolve a fixture da ação pedida, ou o que o teste sobrescrever. */
 const happyPath: FakeHandler = (url) => {
@@ -26,7 +20,8 @@ const happyPath: FakeHandler = (url) => {
 const setup = (handler: FakeHandler = happyPath) => {
   const fetchMock = mockFetch(handler);
   const user = userEvent.setup();
-  return { user, fetchMock, ...render(<App />) };
+  render(<App />);
+  return { user, fetchMock };
 };
 const button = (name: string) => screen.getByRole("button", { name });
 const lambda = () => screen.getByLabelText(/Chegadas λ/);
@@ -35,23 +30,6 @@ describe("estrutura da página", () => {
   it("tem um título de nível 1 com o nome do produto", () => {
     setup();
     expect(screen.getByRole("heading", { level: 1, name: "QSimulador" })).toBeInTheDocument();
-  });
-
-  it("permite escolher o tema sem depender da aparência do sistema e mantém a escolha", async () => {
-    vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
-    const { user, unmount } = setup();
-    const theme = screen.getByRole("combobox", { name: "Tema" });
-
-    expect(theme).toHaveValue("light");
-    expect(document.documentElement).toHaveAttribute("data-theme", "light");
-
-    await user.selectOptions(theme, "dark");
-    expect(document.documentElement).toHaveAttribute("data-theme", "dark");
-    expect(window.localStorage.getItem("qsimulador-theme")).toBe("dark");
-
-    unmount();
-    render(<App />);
-    expect(screen.getByRole("combobox", { name: "Tema" })).toHaveValue("dark");
   });
 });
 

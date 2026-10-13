@@ -8,6 +8,7 @@
 import { describe, expect, it } from "vitest";
 import { fetchRuns, runAction } from "../api/actions";
 import { ApiError } from "../api/client";
+import { runSensitivity, runServerComparison, runSweep } from "../api/experiments";
 import { fieldErrorsFromApi } from "../api/fieldErrors";
 import { MODEL_ORDER, MODELS } from "../domain/models";
 import type { Action, ModelKey, Params } from "../domain/types";
@@ -157,6 +158,44 @@ describe.skipIf(!live)("contrato com a API real", () => {
         }
       }
       if ("runs" in raw) expect(keys((raw.runs as unknown[])[0])).toEqual(keys((saved.runs as unknown[])[0]));
+    });
+  });
+
+  describe("experimentos (Fase 6)", () => {
+    it("varredura: formato igual ao das fixtures, instáveis sinalizados", async () => {
+      const r = await runSweep({ model: "mm1", variable: "lambda", mu: 50, start: 10, end: 60, step: 10 });
+      expect(keys(r)).toEqual(keys(fixtures.experimentSweepMm1));
+      expect(keys(r.points[0])).toEqual(keys(fixtures.experimentSweepMm1.points[0]));
+      expect(r.points.map((p) => p.status)).toEqual(["ok", "ok", "ok", "ok", "unstable", "unstable"]);
+    });
+
+    it("varredura com simulação devolve a semente e o resumo por ponto", async () => {
+      const r = await runSweep({
+        model: "mmck", variable: "lambda", mu: 10, servers: 3, capacity: 6, start: 5, end: 15, step: 5,
+        simulate: true, simulation_time: 100, replications: 3, warmup_time: 10, seed: 7,
+      });
+      expect(r.simulation?.seed).toBe(7);
+      expect(keys(r.points[0].simulation)).toEqual(keys(r.points[0].metrics));
+    });
+
+    it("comparação de servidores: uma série por c", async () => {
+      const r = await runServerComparison({ servers_list: [1, 2, 3], mu: 10, start: 5, end: 25, step: 5 });
+      expect(keys(r)).toEqual(keys(fixtures.experimentServersMmc));
+      expect(r.series.map((s) => s.servers)).toEqual([1, 2, 3]);
+    });
+
+    it("sensibilidade: formato igual ao das fixtures", async () => {
+      const r = await runSensitivity({ model: "mm1", lambda: 40, mu: 50, delta_pct: 25 });
+      expect(keys(r)).toEqual(keys(fixtures.experimentSensitivityMm1));
+      expect(r.parameters[0].high.status).toBe("unstable");
+    });
+
+    it("parâmetro inválido volta no formato de erro do projeto, com o campo", async () => {
+      const error = await runSweep({ model: "mm1", variable: "lambda", mu: 50, start: 1, end: 5, step: 0 })
+        .catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(ApiError);
+      expect((error as ApiError).code).toBe("invalid_parameter");
+      expect((error as ApiError).fields?.[0].field).toBe("step");
     });
   });
 });

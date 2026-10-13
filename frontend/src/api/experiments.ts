@@ -1,50 +1,20 @@
-// Tipagem dos dados que vamos enviar para a API
-export interface SweepRequest {
-  model_type: string;
-  base_params: Record<string, number>;
-  sweep_variable: string;
-  start: number;
-  end: number;
-  step: number;
-}
+import type { components } from "./schema";
+import { postJson } from "./client";
+import type { Body } from "../domain/experiments";
 
-// Tipagem de cada ponto que a API devolve
-export interface SweepPoint {
-  sweep_value: number;
-  rho?: number;
-  L?: number;
-  Lq?: number;
-  W?: number;
-  Wq?: number;
-  p0?: number;
-  throughput?: number;
-  p_wait?: number;
-  p_block?: number;
-  warning?: string;
-}
+type S = components["schemas"];
 
-// Tipagem da resposta completa
-export interface SweepResponse {
-  model_type: string;
-  sweep_variable: string;
-  points: SweepPoint[];
-}
+export type SweepResponse = S["SweepResponse"];
+export type SweepPoint = S["SweepPointOut"];
+export type ServerComparisonResponse = S["ServerComparisonResponse"];
+export type SensitivityResponse = S["SensitivityResponse"];
+export type ParameterSensitivity = S["ParameterSensitivityOut"];
 
-// Função que faz a requisição HTTP para o nosso novo endpoint
-export async function runExperimentSweep(request: SweepRequest): Promise<SweepResponse> {
-  // Ajuste a URL base se você usar alguma variável de ambiente ou Axios configurado
-  const response = await fetch('/api/experiments/sweep', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  });
+export const runSweep = (body: Body, signal?: AbortSignal) =>
+  postJson<SweepResponse>("/api/experiments/sweep", body, signal);
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || 'Erro ao gerar curva de sensibilidade.');
-  }
+export const runServerComparison = (body: Body, signal?: AbortSignal) =>
+  postJson<ServerComparisonResponse>("/api/experiments/servers", body, signal);
 
-  return response.json();
-}
+export const runSensitivity = (body: Body, signal?: AbortSignal) =>
+  postJson<SensitivityResponse>("/api/experiments/sensitivity", body, signal);

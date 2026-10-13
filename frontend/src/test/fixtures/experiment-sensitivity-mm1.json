@@ -1,0 +1,143 @@
+{
+  "model": "mm1",
+  "delta_pct": 25.0,
+  "base": {
+    "lambda": 40.0,
+    "mu": 50.0
+  },
+  "base_metrics": {
+    "rho": 0.8,
+    "L": 4.0,
+    "Lq": 3.2,
+    "W": 0.1,
+    "Wq": 0.08,
+    "p0": 0.2,
+    "throughput": 40.0
+  },
+  "parameters": [
+    {
+      "name": "lambda",
+      "base_value": 40.0,
+      "perturbation": "percent",
+      "low": {
+        "value": 30.0,
+        "status": "ok",
+        "message": null,
+        "metrics": {
+          "rho": 0.6,
+          "L": 1.5,
+          "Lq": 0.9,
+          "W": 0.05,
+          "Wq": 0.03,
+          "p0": 0.4,
+          "throughput": 30.0
+        }
+      },
+      "high": {
+        "value": 50.0,
+        "status": "unstable",
+        "message": "O modelo não está em condição estável. Para M/M/1, é necessário que λ < μ.",
+        "metrics": null
+      },
+      "effects": {
+        "rho": {
+          "low_change_pct": -25.000000000000007,
+          "high_change_pct": null,
+          "elasticity": null
+        },
+        "L": {
+          "low_change_pct": -62.5,
+          "high_change_pct": null,
+          "elasticity": null
+        },
+        "Lq": {
+          "low_change_pct": -71.875,
+          "high_change_pct": null,
+          "elasticity": null
+        },
+        "W": {
+          "low_change_pct": -50.0,
+          "high_change_pct": null,
+          "elasticity": null
+        },
+        "Wq": {
+          "low_change_pct": -62.5,
+          "high_change_pct": null,
+          "elasticity": null
+        },
+        "p0": {
+          "low_change_pct": 100.0,
+          "high_change_pct": null,
+          "elasticity": null
+        },
+        "throughput": {
+          "low_change_pct": -25.0,
+          "high_change_pct": null,
+          "elasticity": null
+        }
+      }
+    },
+    {
+      "name": "mu",
+      "base_value": 50.0,
+      "perturbation": "percent",
+      "low": {
+        "value": 37.5,
+        "status": "unstable",
+        "message": "O modelo não está em condição estável. Para M/M/1, é necessário que λ < μ.",
+        "metrics": null
+      },
+      "high": {
+        "value": 62.5,
+        "status": "ok",
+        "message": null,
+        "metrics": {
+          "rho": 0.64,
+          "L": 1.7777777777777777,
+          "Lq": 1.1377777777777778,
+          "W": 0.044444444444444446,
+          "Wq": 0.028444444444444446,
+          "p0": 0.36,
+          "throughput": 40.0
+        }
+      },
+      "effects": {
+        "rho": {
+          "low_change_pct": null,
+          "high_change_pct": -20.000000000000004,
+          "elasticity": null
+        },
+        "L": {
+          "low_change_pct": null,
+          "high_change_pct": -55.55555555555556,
+          "elasticity": null
+        },
+        "Lq": {
+          "low_change_pct": null,
+          "high_change_pct": -64.44444444444444,
+          "elasticity": null
+        },
+        "W": {
+          "low_change_pct": null,
+          "high_change_pct": -55.55555555555556,
+          "elasticity": null
+        },
+        "Wq": {
+          "low_change_pct": null,
+          "high_change_pct": -64.44444444444444,
+          "elasticity": null
+        },
+        "p0": {
+          "low_change_pct": null,
+          "high_change_pct": 79.99999999999999,
+          "elasticity": null
+        },
+        "throughput": {
+          "low_change_pct": null,
+          "high_change_pct": 0.0,
+          "elasticity": null
+        }
+      }
+    }
+  ]
+}

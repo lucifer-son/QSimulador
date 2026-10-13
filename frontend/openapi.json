@@ -510,40 +510,14 @@
         }
       }
     },
-    "/api/health": {
-      "get": {
-        "tags": [
-          "infra"
-        ],
-        "summary": "Health",
-        "description": "Verifica se a API está no ar.",
-        "operationId": "health_api_health_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "type": "object",
-                  "title": "Response Health Api Health Get"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/experiments/sweep": {
       "post": {
         "tags": [
-          "experiments"
+          "Experimentos"
         ],
-        "summary": "Run Experiment Sweep",
-        "description": "Fase 6: Varredura de parâmetros analíticos.",
-        "operationId": "run_experiment_sweep_api_experiments_sweep_post",
+        "summary": "Sweep",
+        "description": "Varre λ, μ, c ou K em uma faixa e devolve as métricas de cada ponto.\n\nPontos instáveis ou fora do domínio do modelo são sinalizados (`status`) e os demais\ncontinuam sendo calculados. Com `simulate`, cada ponto estável também é simulado.",
+        "operationId": "sweep_api_experiments_sweep_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -566,11 +540,121 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Parâmetros inválidos",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/experiments/servers": {
+      "post": {
+        "tags": [
+          "Experimentos"
+        ],
+        "summary": "Compare Servers",
+        "description": "Compara o desempenho com números diferentes de servidores, variando λ na mesma faixa.",
+        "operationId": "compare_servers_api_experiments_servers_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServerComparisonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerComparisonResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/experiments/sensitivity": {
+      "post": {
+        "tags": [
+          "Experimentos"
+        ],
+        "summary": "Sensitivity",
+        "description": "Mede quanto cada métrica muda ao perturbar cada parâmetro em torno do ponto base.",
+        "operationId": "sensitivity_api_experiments_sensitivity_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SensitivityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SensitivityResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "tags": [
+          "infra"
+        ],
+        "summary": "Health",
+        "description": "Verifica se a API está no ar.",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Health Api Health Get"
                 }
               }
             }
@@ -710,19 +794,6 @@
           "message"
         ],
         "title": "FieldError"
-      },
-      "HTTPValidationError": {
-        "properties": {
-          "detail": {
-            "items": {
-              "$ref": "#/components/schemas/ValidationError"
-            },
-            "type": "array",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "title": "HTTPValidationError"
       },
       "MM1CalculateRequest": {
         "properties": {
@@ -1329,6 +1400,53 @@
         ],
         "title": "MetricComparisonOut"
       },
+      "MetricEffectOut": {
+        "properties": {
+          "low_change_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Low Change Pct",
+            "description": "Variação % da métrica quando o parâmetro diminui."
+          },
+          "high_change_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "High Change Pct",
+            "description": "Variação % da métrica quando o parâmetro aumenta."
+          },
+          "elasticity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elasticity",
+            "description": "Variação % da métrica para 1% de variação do parâmetro (nulo se um lado é inválido)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "low_change_pct",
+          "high_change_pct",
+          "elasticity"
+        ],
+        "title": "MetricEffectOut"
+      },
       "MetricSummaryOut": {
         "properties": {
           "mean": {
@@ -1382,6 +1500,56 @@
           "n"
         ],
         "title": "MetricSummaryOut"
+      },
+      "ParameterSensitivityOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "enum": [
+              "lambda",
+              "mu",
+              "servers",
+              "capacity"
+            ],
+            "title": "Name"
+          },
+          "base_value": {
+            "type": "number",
+            "title": "Base Value"
+          },
+          "perturbation": {
+            "type": "string",
+            "enum": [
+              "percent",
+              "units"
+            ],
+            "title": "Perturbation",
+            "description": "percent (λ e μ) ou units (c e K, ±1)."
+          },
+          "low": {
+            "$ref": "#/components/schemas/SensitivitySideOut"
+          },
+          "high": {
+            "$ref": "#/components/schemas/SensitivitySideOut"
+          },
+          "effects": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MetricEffectOut"
+            },
+            "type": "object",
+            "title": "Effects"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "base_value",
+          "perturbation",
+          "low",
+          "high",
+          "effects"
+        ],
+        "title": "ParameterSensitivityOut"
       },
       "QueueCalculateResponse": {
         "properties": {
@@ -1762,6 +1930,296 @@
         ],
         "title": "ReplicationOut"
       },
+      "SensitivityRequest": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "enum": [
+              "mm1",
+              "mmc",
+              "mm1k",
+              "mmck"
+            ],
+            "title": "Model",
+            "description": "Modelo: mm1, mmc, mm1k ou mmck (as mesmas chaves das rotas /api/models)."
+          },
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa média de chegada (λ) do ponto base."
+          },
+          "mu": {
+            "type": "number",
+            "title": "Mu",
+            "description": "Taxa média de serviço (μ) do ponto base."
+          },
+          "servers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Servers",
+            "description": "Servidores (c). Obrigatório em mmc e mmck."
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity",
+            "description": "Capacidade total (K). Obrigatório em mm1k e mmck."
+          },
+          "delta_pct": {
+            "type": "number",
+            "title": "Delta Pct",
+            "description": "Perturbação de λ e μ, em % (maior que 0 e até 50). c e K variam ±1 unidade.",
+            "default": 10.0
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "lambda",
+          "mu"
+        ],
+        "title": "SensitivityRequest",
+        "examples": [
+          {
+            "capacity": 6,
+            "delta_pct": 10,
+            "lambda": 25,
+            "model": "mmck",
+            "mu": 10,
+            "servers": 3
+          }
+        ]
+      },
+      "SensitivityResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "delta_pct": {
+            "type": "number",
+            "title": "Delta Pct"
+          },
+          "base": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Base"
+          },
+          "base_metrics": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Base Metrics"
+          },
+          "parameters": {
+            "items": {
+              "$ref": "#/components/schemas/ParameterSensitivityOut"
+            },
+            "type": "array",
+            "title": "Parameters"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "delta_pct",
+          "base",
+          "base_metrics",
+          "parameters"
+        ],
+        "title": "SensitivityResponse"
+      },
+      "SensitivitySideOut": {
+        "properties": {
+          "value": {
+            "type": "number",
+            "title": "Value"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "unstable",
+              "invalid"
+            ],
+            "title": "Status"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "metrics": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metrics"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value",
+          "status",
+          "message",
+          "metrics"
+        ],
+        "title": "SensitivitySideOut"
+      },
+      "ServerComparisonRequest": {
+        "properties": {
+          "servers_list": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Servers List",
+            "description": "Números de servidores a comparar (de 2 a 8 valores distintos)."
+          },
+          "mu": {
+            "type": "number",
+            "title": "Mu",
+            "description": "Taxa de serviço de cada servidor (μ)."
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity",
+            "description": "Capacidade total (K). Se omitida, a fila é ilimitada (M/M/c)."
+          },
+          "start": {
+            "type": "number",
+            "title": "Start",
+            "description": "Primeiro valor de λ."
+          },
+          "end": {
+            "type": "number",
+            "title": "End",
+            "description": "Último valor de λ."
+          },
+          "step": {
+            "type": "number",
+            "title": "Step",
+            "description": "Incremento de λ entre os pontos."
+          }
+        },
+        "type": "object",
+        "required": [
+          "servers_list",
+          "mu",
+          "start",
+          "end",
+          "step"
+        ],
+        "title": "ServerComparisonRequest",
+        "examples": [
+          {
+            "end": 30,
+            "mu": 10,
+            "servers_list": [
+              1,
+              2,
+              3
+            ],
+            "start": 5,
+            "step": 5
+          }
+        ]
+      },
+      "ServerComparisonResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "mmc (fila ilimitada) ou mmck (capacidade finita)."
+          },
+          "mu": {
+            "type": "number",
+            "title": "Mu"
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity"
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/ServerSeriesOut"
+            },
+            "type": "array",
+            "title": "Series"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "mu",
+          "capacity",
+          "series"
+        ],
+        "title": "ServerComparisonResponse"
+      },
+      "ServerSeriesOut": {
+        "properties": {
+          "servers": {
+            "type": "integer",
+            "title": "Servers"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/SweepPointOut"
+            },
+            "type": "array",
+            "title": "Points"
+          }
+        },
+        "type": "object",
+        "required": [
+          "servers",
+          "points"
+        ],
+        "title": "ServerSeriesOut"
+      },
       "SimulationResponse": {
         "properties": {
           "model": {
@@ -1828,111 +2286,22 @@
       },
       "SweepPointOut": {
         "properties": {
-          "sweep_value": {
+          "value": {
             "type": "number",
-            "title": "Sweep Value",
-            "description": "O valor da variável testada neste ponto"
+            "title": "Value",
+            "description": "Valor do parâmetro varrido neste ponto."
           },
-          "rho": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "unstable",
+              "invalid"
             ],
-            "title": "Rho"
+            "title": "Status",
+            "description": "ok, unstable (fora do regime estacionário) ou invalid (fora do domínio do modelo)."
           },
-          "L": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "L"
-          },
-          "Lq": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Lq"
-          },
-          "W": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "W"
-          },
-          "Wq": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Wq"
-          },
-          "p0": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "P0"
-          },
-          "throughput": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Throughput"
-          },
-          "p_wait": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "P Wait"
-          },
-          "p_block": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "P Block"
-          },
-          "warning": {
+          "message": {
             "anyOf": [
               {
                 "type": "string"
@@ -1941,63 +2310,196 @@
                 "type": "null"
               }
             ],
-            "title": "Warning"
+            "title": "Message",
+            "description": "Motivo do status, ou aviso da simulação do ponto."
+          },
+          "offered_utilization": {
+            "type": "number",
+            "title": "Offered Utilization",
+            "description": "Carga oferecida por servidor, λ/(c·μ). Em 1 ou mais, a fila ilimitada é instável."
+          },
+          "metrics": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metrics",
+            "description": "Métricas analíticas (nulo se o ponto não é válido)."
+          },
+          "simulation": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/MetricSummaryOut"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Simulation",
+            "description": "Resumo da simulação por métrica (só com simulate)."
           }
         },
         "type": "object",
         "required": [
-          "sweep_value"
+          "value",
+          "status",
+          "message",
+          "offered_utilization",
+          "metrics",
+          "simulation"
         ],
         "title": "SweepPointOut"
       },
       "SweepRequest": {
         "properties": {
-          "model_type": {
+          "model": {
             "type": "string",
-            "title": "Model Type",
-            "description": "O modelo a usar: 'mm1', 'mmc', 'mm1k' ou 'mmck'"
+            "enum": [
+              "mm1",
+              "mmc",
+              "mm1k",
+              "mmck"
+            ],
+            "title": "Model",
+            "description": "Modelo: mm1, mmc, mm1k ou mmck (as mesmas chaves das rotas /api/models)."
           },
-          "base_params": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "type": "object",
-            "title": "Base Params",
-            "description": "Parâmetros fixos (ex: mu, servers, capacity)"
-          },
-          "sweep_variable": {
+          "variable": {
             "type": "string",
-            "title": "Sweep Variable",
-            "description": "Qual variável vai variar no eixo X (ex: 'lambda')"
+            "enum": [
+              "lambda",
+              "mu",
+              "servers",
+              "capacity"
+            ],
+            "title": "Variable",
+            "description": "Parâmetro varrido (servers e capacity só nos modelos que os têm)."
           },
           "start": {
             "type": "number",
             "title": "Start",
-            "description": "Valor inicial da variável"
+            "description": "Primeiro valor da faixa."
           },
           "end": {
             "type": "number",
             "title": "End",
-            "description": "Valor final (inclusivo)"
+            "description": "Último valor da faixa (incluído quando start + n·step = end)."
           },
           "step": {
             "type": "number",
             "title": "Step",
-            "description": "Incremento entre os pontos"
+            "description": "Incremento entre os pontos (maior que zero; inteiro para servers e capacity)."
+          },
+          "lambda": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lambda",
+            "description": "Taxa de chegada (λ). Obrigatório para o modelo, a menos que seja o parâmetro varrido (então é ignorado)."
+          },
+          "mu": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mu",
+            "description": "Taxa de serviço (μ). Obrigatório para o modelo, a menos que seja o parâmetro varrido (então é ignorado)."
+          },
+          "servers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Servers",
+            "description": "Servidores (c). Obrigatório para o modelo, a menos que seja o parâmetro varrido (então é ignorado)."
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity",
+            "description": "Capacidade total (K). Obrigatório para o modelo, a menos que seja o parâmetro varrido (então é ignorado)."
+          },
+          "simulate": {
+            "type": "boolean",
+            "title": "Simulate",
+            "description": "Se verdadeiro, simula também cada ponto estável (exige simulation_time).",
+            "default": false
+          },
+          "simulation_time": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Simulation Time",
+            "description": "Tempo simulado por replicação, em cada ponto."
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications",
+            "description": "Número de replicações por ponto.",
+            "default": 10
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time",
+            "description": "Período inicial descartado.",
+            "default": 0.0
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Semente aleatória, a mesma em todos os pontos. Se omitida, uma é sorteada e devolvida."
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level",
+            "description": "Nível do intervalo de confiança (0 a 1).",
+            "default": 0.95
           }
         },
         "type": "object",
         "required": [
-          "model_type",
-          "base_params",
-          "sweep_variable",
+          "model",
+          "variable",
           "start",
           "end",
           "step"
@@ -2005,26 +2507,46 @@
         "title": "SweepRequest",
         "examples": [
           {
-            "base_params": {
-              "mu": 50
-            },
             "end": 45,
-            "model_type": "mm1",
+            "model": "mm1",
+            "mu": 50,
             "start": 10,
             "step": 5,
-            "sweep_variable": "lambda"
+            "variable": "lambda"
+          },
+          {
+            "capacity": 6,
+            "end": 40,
+            "model": "mmck",
+            "mu": 10,
+            "replications": 5,
+            "seed": 2026,
+            "servers": 3,
+            "simulate": true,
+            "simulation_time": 500,
+            "start": 5,
+            "step": 5,
+            "variable": "lambda"
           }
         ]
       },
       "SweepResponse": {
         "properties": {
-          "model_type": {
+          "model": {
             "type": "string",
-            "title": "Model Type"
+            "title": "Model"
           },
-          "sweep_variable": {
+          "variable": {
             "type": "string",
-            "title": "Sweep Variable"
+            "title": "Variable"
+          },
+          "fixed": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Fixed",
+            "description": "Parâmetros mantidos fixos, com os nomes da API."
           },
           "points": {
             "items": {
@@ -2032,55 +2554,61 @@
             },
             "type": "array",
             "title": "Points"
+          },
+          "simulation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SweepSimulationOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Configuração efetiva da simulação, com a semente usada."
           }
         },
         "type": "object",
         "required": [
-          "model_type",
-          "sweep_variable",
-          "points"
+          "model",
+          "variable",
+          "fixed",
+          "points",
+          "simulation"
         ],
         "title": "SweepResponse"
       },
-      "ValidationError": {
+      "SweepSimulationOut": {
         "properties": {
-          "loc": {
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "type": "array",
-            "title": "Location"
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time"
           },
-          "msg": {
-            "type": "string",
-            "title": "Message"
+          "replications": {
+            "type": "integer",
+            "title": "Replications"
           },
-          "type": {
-            "type": "string",
-            "title": "Error Type"
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time"
           },
-          "input": {
-            "title": "Input"
+          "seed": {
+            "type": "integer",
+            "title": "Seed"
           },
-          "ctx": {
-            "type": "object",
-            "title": "Context"
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level"
           }
         },
         "type": "object",
         "required": [
-          "loc",
-          "msg",
-          "type"
+          "simulation_time",
+          "replications",
+          "warmup_time",
+          "seed",
+          "confidence_level"
         ],
-        "title": "ValidationError"
+        "title": "SweepSimulationOut"
       }
     }
   }

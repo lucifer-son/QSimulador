@@ -1,0 +1,90 @@
+{
+  "model": "mm1",
+  "variable": "lambda",
+  "fixed": {
+    "mu": 50.0
+  },
+  "points": [
+    {
+      "value": 10.0,
+      "status": "ok",
+      "message": null,
+      "offered_utilization": 0.2,
+      "metrics": {
+        "rho": 0.2,
+        "L": 0.25,
+        "Lq": 0.05,
+        "W": 0.025,
+        "Wq": 0.005,
+        "p0": 0.8,
+        "throughput": 10.0
+      },
+      "simulation": null
+    },
+    {
+      "value": 20.0,
+      "status": "ok",
+      "message": null,
+      "offered_utilization": 0.4,
+      "metrics": {
+        "rho": 0.4,
+        "L": 0.6666666666666666,
+        "Lq": 0.26666666666666666,
+        "W": 0.03333333333333333,
+        "Wq": 0.013333333333333334,
+        "p0": 0.6,
+        "throughput": 20.0
+      },
+      "simulation": null
+    },
+    {
+      "value": 30.0,
+      "status": "ok",
+      "message": null,
+      "offered_utilization": 0.6,
+      "metrics": {
+        "rho": 0.6,
+        "L": 1.5,
+        "Lq": 0.9,
+        "W": 0.05,
+        "Wq": 0.03,
+        "p0": 0.4,
+        "throughput": 30.0
+      },
+      "simulation": null
+    },
+    {
+      "value": 40.0,
+      "status": "ok",
+      "message": null,
+      "offered_utilization": 0.8,
+      "metrics": {
+        "rho": 0.8,
+        "L": 4.0,
+        "Lq": 3.2,
+        "W": 0.1,
+        "Wq": 0.08,
+        "p0": 0.2,
+        "throughput": 40.0
+      },
+      "simulation": null
+    },
+    {
+      "value": 50.0,
+      "status": "unstable",
+      "message": "O modelo não está em condição estável. Para M/M/1, é necessário que λ < μ.",
+      "offered_utilization": 1.0,
+      "metrics": null,
+      "simulation": null
+    },
+    {
+      "value": 60.0,
+      "status": "unstable",
+      "message": "O modelo não está em condição estável. Para M/M/1, é necessário que λ < μ.",
+      "offered_utilization": 1.2,
+      "metrics": null,
+      "simulation": null
+    }
+  ],
+  "simulation": null
+}
