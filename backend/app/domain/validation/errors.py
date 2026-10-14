@@ -19,3 +19,7 @@ class UnstableSystemError(QueueValidationError):
 
 class InsufficientSampleError(QueueValidationError):
     """A simulação terminou sem clientes suficientes para estimar as métricas."""
+
+
+class InvalidDatasetError(QueueValidationError):
+    """O arquivo enviado (CSV do JMeter) é inválido: formato, colunas ou valores."""

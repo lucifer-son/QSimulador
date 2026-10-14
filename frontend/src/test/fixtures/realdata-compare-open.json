@@ -1,0 +1,65 @@
+{
+  "mode": "open",
+  "model": "M/M/1",
+  "mu": 6.0,
+  "mu_source": "informed",
+  "servers": 1,
+  "users": null,
+  "think_time": null,
+  "think_time_source": null,
+  "arrival_rate": 4.860550781377896,
+  "metrics": {
+    "throughput": {
+      "measured": 4.860550781377896,
+      "analytical": 4.860550781377896,
+      "analytical_error_pct": 0.0,
+      "simulated_mean": null,
+      "ci_low": null,
+      "ci_high": null,
+      "simulated_error_pct": null,
+      "measured_within_ci": null,
+      "role": "input",
+      "measured_derived": false
+    },
+    "W": {
+      "measured": 1.0747852760736196,
+      "analytical": 0.8776169957001372,
+      "analytical_error_pct": 18.34489965230757,
+      "simulated_mean": null,
+      "ci_low": null,
+      "ci_high": null,
+      "simulated_error_pct": null,
+      "measured_within_ci": null,
+      "role": "prediction",
+      "measured_derived": false
+    },
+    "L": {
+      "measured": 5.224048413433089,
+      "analytical": 4.265701974200823,
+      "analytical_error_pct": 18.344899652307575,
+      "simulated_mean": null,
+      "ci_low": null,
+      "ci_high": null,
+      "simulated_error_pct": null,
+      "measured_within_ci": null,
+      "role": "prediction",
+      "measured_derived": true
+    },
+    "rho": {
+      "measured": 0.8100917968963159,
+      "analytical": 0.8100917968963159,
+      "analytical_error_pct": 0.0,
+      "simulated_mean": null,
+      "ci_low": null,
+      "ci_high": null,
+      "simulated_error_pct": null,
+      "measured_within_ci": null,
+      "role": "prediction",
+      "measured_derived": true
+    }
+  },
+  "simulation": null,
+  "warnings": [
+    "Um teste de carga com N usuários simultâneos é um sistema fechado: cada usuário só envia o próximo pedido depois de receber a resposta, então a taxa de chegada depende do estado do sistema. O M/M/c aberto assume chegadas independentes; diferenças entre modelo e medição podem vir dessa diferença estrutural. A alternativa é o modelo de população finita M/M/c//N (modo \"closed\")."
+  ]
+}

@@ -17,6 +17,22 @@ class QueueMetrics:
 
 
 @dataclass(frozen=True)
+class ClosedMetrics:
+    """Métricas de um sistema de filas fechado com população finita."""
+
+    rho: float         # utilização média dos servidores
+    L: float           # número médio de clientes no sistema
+    Lq: float          # número médio de clientes na fila
+    W: float           # tempo médio de resposta
+    Wq: float          # tempo médio de espera na fila
+    p0: float          # probabilidade de sistema vazio
+    throughput: float  # taxa efetiva de conclusão
+
+    def as_dict(self) -> dict[str, float]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
 class QueueModelMetrics:
     """Métricas dos modelos M/M/c, M/M/1/K e M/M/c/K.
 

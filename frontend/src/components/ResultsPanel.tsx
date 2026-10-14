@@ -25,6 +25,8 @@ export const ERROR_TITLES: Record<ApiError["code"], string> = {
   invalid_parameter: "Parâmetro inválido",
   invalid_request: "Requisição inválida",
   insufficient_sample: "Simulação curta demais",
+  invalid_dataset: "Arquivo inválido",
+  file_too_large: "Arquivo grande demais",
   network: "Sem conexão com a API",
   http: "Erro na API",
   aborted: "Execução cancelada",

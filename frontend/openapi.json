@@ -636,6 +636,110 @@
         }
       }
     },
+    "/api/realdata/analyze": {
+      "post": {
+        "tags": [
+          "Dados reais"
+        ],
+        "summary": "Analyze Csv",
+        "description": "Valida o CSV, calcula as métricas medidas, verifica os dados e recomenda o modelo de melhor ajuste.",
+        "operationId": "analyze_csv_api_realdata_analyze_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_analyze_csv_api_realdata_analyze_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Arquivo ou parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Arquivo acima do limite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/realdata/compare": {
+      "post": {
+        "tags": [
+          "Dados reais"
+        ],
+        "summary": "Compare",
+        "description": "Compara as medições com o modelo escolhido pelo usuário, sem reenviar o arquivo.",
+        "operationId": "compare_api_realdata_compare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompareResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Arquivo ou parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Arquivo acima do limite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health": {
       "get": {
         "tags": [
@@ -665,6 +769,313 @@
   },
   "components": {
     "schemas": {
+      "AnalysisResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "recommended",
+              "no_good_fit"
+            ],
+            "title": "Status"
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "alta",
+              "media",
+              "baixa"
+            ],
+            "title": "Confidence"
+          },
+          "recommended": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelPickOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nearest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelPickOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ranking": {
+            "items": {
+              "$ref": "#/components/schemas/RankingOut"
+            },
+            "type": "array",
+            "title": "Ranking"
+          },
+          "rationale": {
+            "type": "string",
+            "title": "Rationale"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "diagnostics": {
+            "items": {
+              "$ref": "#/components/schemas/DiagnosticOut"
+            },
+            "type": "array",
+            "title": "Diagnostics"
+          },
+          "system_type": {
+            "type": "string",
+            "enum": [
+              "open",
+              "closed"
+            ],
+            "title": "System Type"
+          },
+          "estimates": {
+            "$ref": "#/components/schemas/EstimatesOut"
+          },
+          "overall": {
+            "$ref": "#/components/schemas/EmpiricalMetricsModel"
+          },
+          "levels": {
+            "items": {
+              "$ref": "#/components/schemas/LevelModel"
+            },
+            "type": "array",
+            "title": "Levels"
+          },
+          "comparison": {
+            "items": {
+              "$ref": "#/components/schemas/LevelComparisonOut"
+            },
+            "type": "array",
+            "title": "Comparison"
+          },
+          "dataset": {
+            "$ref": "#/components/schemas/DatasetOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "confidence",
+          "recommended",
+          "nearest",
+          "ranking",
+          "rationale",
+          "warnings",
+          "diagnostics",
+          "system_type",
+          "estimates",
+          "overall",
+          "levels",
+          "comparison",
+          "dataset"
+        ],
+        "title": "AnalysisResponse"
+      },
+      "Body_analyze_csv_api_realdata_analyze_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "description": "CSV (JTL) exportado pelo JMeter, com cabeçalho."
+          },
+          "system_type": {
+            "type": "string",
+            "title": "System Type",
+            "description": "auto, open ou closed.",
+            "default": "auto"
+          },
+          "servers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Servers",
+            "description": "Número de servidores, se conhecido."
+          },
+          "service_time_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Time S",
+            "description": "Tempo médio de serviço (s), se conhecido."
+          },
+          "think_time_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Think Time S",
+            "description": "Tempo de reflexão Z (s), se conhecido."
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity",
+            "description": "Capacidade total K, se conhecida."
+          },
+          "labels": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Labels",
+            "description": "Rótulos (label) a analisar, separados por vírgula."
+          },
+          "trim_start_pct": {
+            "type": "number",
+            "title": "Trim Start Pct",
+            "description": "% do início descartado (aquecimento).",
+            "default": 10.0
+          },
+          "trim_end_pct": {
+            "type": "number",
+            "title": "Trim End Pct",
+            "description": "% do fim descartado (encerramento).",
+            "default": 10.0
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level",
+            "default": 0.95
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_analyze_csv_api_realdata_analyze_post"
+      },
+      "CompareRequest": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "enum": [
+              "mm1",
+              "mmc",
+              "mm1k",
+              "mmck",
+              "mm1n",
+              "mmcn"
+            ],
+            "title": "Model"
+          },
+          "mu": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Mu",
+            "description": "Taxa de serviço por servidor (req/s)."
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers",
+            "default": 1
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity"
+          },
+          "think_time": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Think Time"
+          },
+          "levels": {
+            "items": {
+              "$ref": "#/components/schemas/LevelModel"
+            },
+            "type": "array",
+            "title": "Levels",
+            "description": "Os níveis devolvidos por /analyze."
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "mu",
+          "levels"
+        ],
+        "title": "CompareRequest",
+        "examples": [
+          {
+            "levels": [],
+            "model": "mm1n",
+            "mu": 10.0,
+            "servers": 1,
+            "think_time": 1.0
+          }
+        ]
+      },
+      "CompareResponse": {
+        "properties": {
+          "notation": {
+            "type": "string",
+            "title": "Notation"
+          },
+          "comparison": {
+            "items": {
+              "$ref": "#/components/schemas/LevelComparisonOut"
+            },
+            "type": "array",
+            "title": "Comparison"
+          }
+        },
+        "type": "object",
+        "required": [
+          "notation",
+          "comparison"
+        ],
+        "title": "CompareResponse"
+      },
       "ComparisonResponse": {
         "properties": {
           "model": {
@@ -702,7 +1113,7 @@
           },
           "metrics": {
             "additionalProperties": {
-              "$ref": "#/components/schemas/MetricComparisonOut"
+              "$ref": "#/components/schemas/app__api__schemas__MetricComparisonOut"
             },
             "type": "object",
             "title": "Metrics"
@@ -745,6 +1156,289 @@
         ],
         "title": "ComparisonResponse"
       },
+      "CriterionOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "estrutura",
+              "capacidade",
+              "servidores",
+              "dados",
+              "estabilidade",
+              "calibracao",
+              "previsao"
+            ],
+            "title": "Id"
+          },
+          "passed": {
+            "type": "boolean",
+            "title": "Passed"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "passed",
+          "reason"
+        ],
+        "title": "CriterionOut"
+      },
+      "DatasetOut": {
+        "properties": {
+          "rows": {
+            "type": "integer",
+            "title": "Rows"
+          },
+          "rows_analyzed": {
+            "type": "integer",
+            "title": "Rows Analyzed"
+          },
+          "labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Labels"
+          },
+          "start": {
+            "type": "number",
+            "title": "Start"
+          },
+          "end": {
+            "type": "number",
+            "title": "End"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rows",
+          "rows_analyzed",
+          "labels",
+          "start",
+          "end"
+        ],
+        "title": "DatasetOut"
+      },
+      "DiagnosticOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "atencao",
+              "critico",
+              "info"
+            ],
+            "title": "Status"
+          },
+          "evidence": {
+            "type": "string",
+            "title": "Evidence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "status",
+          "evidence"
+        ],
+        "title": "DiagnosticOut"
+      },
+      "EmpiricalMetricsModel": {
+        "properties": {
+          "window_start": {
+            "type": "number",
+            "title": "Window Start"
+          },
+          "window_end": {
+            "type": "number",
+            "title": "Window End"
+          },
+          "duration": {
+            "type": "number",
+            "title": "Duration"
+          },
+          "samples": {
+            "type": "integer",
+            "title": "Samples"
+          },
+          "successes": {
+            "type": "integer",
+            "title": "Successes"
+          },
+          "rejections": {
+            "type": "integer",
+            "title": "Rejections"
+          },
+          "other_failures": {
+            "type": "integer",
+            "title": "Other Failures"
+          },
+          "arrival_rate": {
+            "type": "number",
+            "title": "Arrival Rate",
+            "description": "λ̂: requisições iniciadas por segundo (inclui rejeitadas)."
+          },
+          "throughput": {
+            "type": "number",
+            "title": "Throughput",
+            "description": "X̂: respostas bem-sucedidas por segundo."
+          },
+          "mean_response": {
+            "type": "number",
+            "title": "Mean Response",
+            "description": "W̄: tempo médio de resposta (s)."
+          },
+          "p50": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P50"
+          },
+          "p90": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P90"
+          },
+          "p95": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P95"
+          },
+          "p99": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P99"
+          },
+          "mean_in_flight": {
+            "type": "number",
+            "title": "Mean In Flight",
+            "description": "L̂: requisições em andamento, em média."
+          },
+          "peak_in_flight": {
+            "type": "integer",
+            "title": "Peak In Flight"
+          },
+          "mean_users": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean Users",
+            "description": "N̄: usuários ativos (allThreads)."
+          },
+          "think_time": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Think Time",
+            "description": "Ẑ = N̄/X̂ − W̄ (s)."
+          },
+          "p_block": {
+            "type": "number",
+            "title": "P Block"
+          },
+          "p_error": {
+            "type": "number",
+            "title": "P Error"
+          },
+          "arrival_cv": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arrival Cv"
+          },
+          "response_cv": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Cv"
+          },
+          "summaries": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/SummaryOut"
+            },
+            "type": "object",
+            "title": "Summaries"
+          }
+        },
+        "type": "object",
+        "required": [
+          "window_start",
+          "window_end",
+          "duration",
+          "samples",
+          "successes",
+          "rejections",
+          "other_failures",
+          "arrival_rate",
+          "throughput",
+          "mean_response",
+          "mean_in_flight",
+          "peak_in_flight",
+          "p_block",
+          "p_error",
+          "summaries"
+        ],
+        "title": "EmpiricalMetricsModel",
+        "description": "Métricas medidas em uma janela (segundos e req/s)."
+      },
       "ErrorResponse": {
         "properties": {
           "code": {
@@ -777,6 +1471,117 @@
         ],
         "title": "ErrorResponse"
       },
+      "EstimatesOut": {
+        "properties": {
+          "mu": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mu",
+            "description": "null = não identificável (resultado autoconsistente)."
+          },
+          "mu_source": {
+            "type": "string",
+            "enum": [
+              "informado",
+              "menor_nivel",
+              "autoconsistente"
+            ],
+            "title": "Mu Source"
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers"
+          },
+          "servers_source": {
+            "type": "string",
+            "enum": [
+              "informado",
+              "estimado",
+              "assumido"
+            ],
+            "title": "Servers Source"
+          },
+          "think_time": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Think Time"
+          },
+          "think_source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "informado",
+                  "estimado"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Think Source"
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity"
+          },
+          "capacity_source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "informado",
+                  "estimado"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity Source"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          },
+          "autoconsistent": {
+            "type": "boolean",
+            "title": "Autoconsistent"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mu",
+          "mu_source",
+          "servers",
+          "servers_source",
+          "notes",
+          "autoconsistent"
+        ],
+        "title": "EstimatesOut"
+      },
       "FieldError": {
         "properties": {
           "field": {
@@ -794,6 +1599,59 @@
           "message"
         ],
         "title": "FieldError"
+      },
+      "LevelComparisonOut": {
+        "properties": {
+          "users": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Users"
+          },
+          "metrics": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/app__api__schemas_realdata__MetricComparisonOut"
+            },
+            "type": "object",
+            "title": "Metrics"
+          }
+        },
+        "type": "object",
+        "required": [
+          "users",
+          "metrics"
+        ],
+        "title": "LevelComparisonOut"
+      },
+      "LevelModel": {
+        "properties": {
+          "users": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Users",
+            "description": "Usuários do patamar de carga (null se o arquivo não tem allThreads)."
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/EmpiricalMetricsModel"
+          }
+        },
+        "type": "object",
+        "required": [
+          "users",
+          "metrics"
+        ],
+        "title": "LevelModel"
       },
       "MM1CalculateRequest": {
         "properties": {
@@ -1329,77 +2187,6 @@
           }
         ]
       },
-      "MetricComparisonOut": {
-        "properties": {
-          "analytical": {
-            "type": "number",
-            "title": "Analytical"
-          },
-          "simulated_mean": {
-            "type": "number",
-            "title": "Simulated Mean"
-          },
-          "ci_low": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Ci Low"
-          },
-          "ci_high": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Ci High"
-          },
-          "absolute_error": {
-            "type": "number",
-            "title": "Absolute Error"
-          },
-          "relative_error_pct": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Relative Error Pct"
-          },
-          "within_ci": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Within Ci"
-          }
-        },
-        "type": "object",
-        "required": [
-          "analytical",
-          "simulated_mean",
-          "ci_low",
-          "ci_high",
-          "absolute_error",
-          "relative_error_pct",
-          "within_ci"
-        ],
-        "title": "MetricComparisonOut"
-      },
       "MetricEffectOut": {
         "properties": {
           "low_change_pct": {
@@ -1500,6 +2287,86 @@
           "n"
         ],
         "title": "MetricSummaryOut"
+      },
+      "ModelPickOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "notation": {
+            "type": "string",
+            "title": "Notation"
+          },
+          "score_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score Pct"
+          },
+          "mu": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mu"
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers"
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity"
+          },
+          "population": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Population"
+          },
+          "think_time": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Think Time"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "notation",
+          "score_pct",
+          "mu",
+          "servers"
+        ],
+        "title": "ModelPickOut"
       },
       "ParameterSensitivityOut": {
         "properties": {
@@ -1677,7 +2544,7 @@
           },
           "metrics": {
             "additionalProperties": {
-              "$ref": "#/components/schemas/MetricComparisonOut"
+              "$ref": "#/components/schemas/app__api__schemas__MetricComparisonOut"
             },
             "type": "object",
             "title": "Metrics"
@@ -1871,6 +2738,98 @@
           "summary"
         ],
         "title": "QueueSimulationResponse"
+      },
+      "RankingOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "notation": {
+            "type": "string",
+            "title": "Notation"
+          },
+          "eligible": {
+            "type": "boolean",
+            "title": "Eligible"
+          },
+          "score_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score Pct",
+            "description": "Erro relativo médio (%) nas métricas de validação, mais penalidade por parâmetro."
+          },
+          "scored_metrics": {
+            "type": "integer",
+            "title": "Scored Metrics"
+          },
+          "mu": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mu"
+          },
+          "recommended": {
+            "type": "boolean",
+            "title": "Recommended"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "error_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Pct",
+            "description": "Erro relativo médio (%) nas métricas de validação."
+          },
+          "penalty_pp": {
+            "type": "number",
+            "title": "Penalty Pp",
+            "description": "Penalidade de parcimônia (pontos percentuais).",
+            "default": 0.0
+          },
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/CriterionOut"
+            },
+            "type": "array",
+            "title": "Criteria"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "notation",
+          "eligible",
+          "score_pct",
+          "scored_metrics",
+          "mu",
+          "recommended",
+          "reasons",
+          "criteria"
+        ],
+        "title": "RankingOut"
       },
       "ReplicationOut": {
         "properties": {
@@ -2284,6 +3243,64 @@
         ],
         "title": "SimulationResponse"
       },
+      "SummaryOut": {
+        "properties": {
+          "mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean"
+          },
+          "std": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Std"
+          },
+          "ci_low": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ci Low"
+          },
+          "ci_high": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ci High"
+          },
+          "n": {
+            "type": "integer",
+            "title": "N"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mean",
+          "n"
+        ],
+        "title": "SummaryOut"
+      },
       "SweepPointOut": {
         "properties": {
           "value": {
@@ -2609,6 +3626,146 @@
           "confidence_level"
         ],
         "title": "SweepSimulationOut"
+      },
+      "app__api__schemas__MetricComparisonOut": {
+        "properties": {
+          "analytical": {
+            "type": "number",
+            "title": "Analytical"
+          },
+          "simulated_mean": {
+            "type": "number",
+            "title": "Simulated Mean"
+          },
+          "ci_low": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ci Low"
+          },
+          "ci_high": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ci High"
+          },
+          "absolute_error": {
+            "type": "number",
+            "title": "Absolute Error"
+          },
+          "relative_error_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relative Error Pct"
+          },
+          "within_ci": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Within Ci"
+          }
+        },
+        "type": "object",
+        "required": [
+          "analytical",
+          "simulated_mean",
+          "ci_low",
+          "ci_high",
+          "absolute_error",
+          "relative_error_pct",
+          "within_ci"
+        ],
+        "title": "MetricComparisonOut"
+      },
+      "app__api__schemas_realdata__MetricComparisonOut": {
+        "properties": {
+          "model": {
+            "type": "number",
+            "title": "Model"
+          },
+          "observed": {
+            "type": "number",
+            "title": "Observed"
+          },
+          "observed_ci_low": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed Ci Low"
+          },
+          "observed_ci_high": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed Ci High"
+          },
+          "absolute_error": {
+            "type": "number",
+            "title": "Absolute Error"
+          },
+          "relative_error_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relative Error Pct",
+            "description": "|modelo − observado| / observado × 100."
+          },
+          "model_within_observed_ci": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Within Observed Ci"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "observed",
+          "absolute_error",
+          "relative_error_pct"
+        ],
+        "title": "MetricComparisonOut"
       }
     }
   }

@@ -4,7 +4,7 @@ Laboratório interativo de modelagem, simulação e análise de sistemas de fila
 
 Este documento especifica os **requisitos funcionais (RF)** e **não funcionais (RNF)** do sistema e os relaciona aos [Casos de Uso](casos-de-uso.md) e às [Histórias de Usuário](historias-de-usuario.md). Para instruções de execução, veja [`como-executar.md`](como-executar.md).
 
-**Versão:** 1.3 (divergências 1 a 4 fechadas em 08/10/2026)
+**Versão:** 1.4 (Fase 7: backend da recomendação de modelo, em 13/10/2026)
 
 ---
 
@@ -16,6 +16,7 @@ Este documento especifica os **requisitos funcionais (RF)** e **não funcionais 
 | 1.1 | Requisitos compostos desdobrados; redundância entre RF-02 e RF-28 eliminada; termos vagos substituídos por critérios mensuráveis; incluída a coluna **Verificação**; incluídos glossário com fórmulas, premissas do modelo e tabela de parâmetros; incluídos 10 novos RF (RF-29 a RF-38) e 4 novos RNF (RNF-29 a RNF-32); incluída a seção **Decisões em aberto**. Os IDs da v1.0 foram preservados. |
 | 1.2 | Status de todos os requisitos conferido executando o sistema (ver seção 11); resolvidos os ❓; decisões em aberto 1 a 4 e 7 confirmadas pelo código; incluída a seção **Auditoria de conformidade**. |
 | 1.3 | Fechadas as divergências 1 a 4 da auditoria: P0 em todos os modelos, no analítico e na simulação (RF-03, RF-31); réplicas entre 2 e 100 (RF-06, RNF-12); limite de 1.000.000 de chegadas esperadas por réplica (RNF-12); e campo identificado em cada erro de regra (RF-28). Segue em aberto a divergência 5 (versões fixas, RNF-05). |
+| 1.4 | Fase 7 (backend): incluídos RF-39 a RF-44 e RNF-33 e RNF-34; RF-23 e RF-24 passam de **C** para **M** (requisito da disciplina); decisões em aberto 5 e 6 resolvidas. Interface e relatório (RF-44) seguem pendentes. Ver `docs/plano-fase-7.md`. |
 
 ---
 
@@ -163,8 +164,14 @@ Com λ = taxa de chegada, μ = taxa de serviço e ρ = λ/μ, válidas apenas pa
 
 | ID | Requisito | Prior. | Verif. | UC | US | Status |
 |----|-----------|--------|--------|----|----|--------|
-| RF-23 | O sistema deve importar o CSV de resultados do JMeter, validar a presença das colunas padrão necessárias (como `timeStamp`, `elapsed`, `label` e `success`) e extrair tempos de resposta e vazão. | C | T | UC-08 | US-21 | 📋 |
-| RF-24 | O sistema deve comparar as métricas empíricas com as do modelo escolhido e exibir o aviso de que o teste de carga representa um sistema fechado, indicando o modelo M/M/1//N como alternativa. | C | D | UC-08 | US-22 | 📋 |
+| RF-23 | O sistema deve importar o CSV de resultados do JMeter, validar a presença das colunas padrão necessárias (como `timeStamp`, `elapsed`, `label` e `success`) e extrair tempos de resposta e vazão. | M | T | UC-08 | US-21 | 🚧 |
+| RF-24 | O sistema deve comparar as métricas empíricas com as do modelo escolhido e exibir o aviso de que o teste de carga representa um sistema fechado, indicando o modelo M/M/1//N como alternativa. | M | D | UC-08 | US-22 | 🚧 |
+| RF-39 | O sistema deve verificar o CSV do JMeter e recomendar o modelo de melhor ajuste entre os do catálogo, com ranking, justificativa e nível de confiança. | M | T | UC-08 | US-29 | 🚧 |
+| RF-40 | O sistema deve classificar o teste como sistema aberto ou fechado e exibir a evidência. | M | T | UC-08 | US-29 | 🚧 |
+| RF-41 | O sistema deve estimar μ, c, Z e K a partir do CSV e aceitar valores informados pelo usuário no lugar das estimativas. | S | T | UC-08 | US-29 | 🚧 |
+| RF-42 | O sistema deve calcular os modelos de população finita M/M/1//N e M/M/c//N. | M | T | UC-08 | US-22 | ✅ |
+| RF-43 | O sistema deve aceitar o CSV agregado por nível de carga (`users,avg_ms,p90_ms,throughput,error_rate`). | S | T | UC-08 | US-21 | 📋 |
+| RF-44 | O sistema deve gerar um relatório experimental a partir do resultado estruturado da análise. | S | D | UC-08 | US-22 | 📋 |
 
 ### 4.9 Persistência
 
@@ -252,7 +259,7 @@ Medições feitas em máquina de referência com 4 núcleos e 8 GB de RAM, em ex
 |----|-----------|-----------------------|--------|--------|--------|
 | RNF-23 | Toda entrada deve ser validada no backend, independentemente do frontend. | Requisições inválidas enviadas diretamente à API são rejeitadas. | M | T | ✅ |
 | RNF-24 | O CORS deve permitir apenas as origens configuradas. | Origem não configurada é bloqueada; não há liberação irrestrita em produção. | S | T | ✅ |
-| RNF-25 | O upload de CSV deve ser validado antes do processamento. | Rejeição de extensão ou tipo diferente de CSV, de arquivo acima de 10 MB **(proposto)** e de estrutura inválida. | S | T | 📋 |
+| RNF-25 | O upload de CSV deve ser validado antes do processamento. | Rejeição de extensão ou tipo diferente de CSV, de arquivo acima de 10 MB **(proposto)** e de estrutura inválida. | S | T | 🚧 |
 | RNF-26 | Credenciais e configurações sensíveis devem ficar em variáveis de ambiente. | Nenhuma credencial no código ou no repositório. | M | I | 📋 |
 
 ### 5.9 Compatibilidade e interoperabilidade
@@ -267,6 +274,8 @@ Medições feitas em máquina de referência com 4 núcleos e 8 GB de RAM, em ex
 | ID | Requisito | Critério de aceitação | Prior. | Verif. | Status |
 |----|-----------|-----------------------|--------|--------|--------|
 | RNF-32 | A API deve registrar logs de erros e de requisições rejeitadas, com nível de severidade. | Erros inesperados geram registro com nível e causa; os logs não contêm dados sensíveis. | C | I | 📋 |
+| RNF-33 | A análise de dados reais deve ser determinística. | Mesma entrada e mesmos parâmetros produzem a mesma saída. | S | T | ✅ |
+| RNF-34 | A análise de um CSV deve terminar em tempo razoável. | 1 milhão de linhas em até 10 s **(proposto)**. | C | A | 📋 |
 
 ---
 
@@ -297,8 +306,8 @@ Restrições de validação por parâmetro. Valores marcados como **(proposto)**
 | 2 | Disciplina de atendimento | RF-05, seção 3.2 | Premissa atual: FIFO. As métricas médias do M/M/1 não mudam com outras disciplinas sem preempção, mas as amostras sim. **No código:** FIFO, fila única do SimPy (confirmado). |
 | 3 | Valores padrão e limites dos parâmetros | RF-06, RNF-12, seção 6 | Conferir os padrões já usados no código. **No código:** padrões de 10 réplicas, aquecimento 0, semente aleatória e 95 %; limites de 2 a 100 réplicas, 1.000.000 de chegadas esperadas por réplica (λ·duração), c ≤ 1.000 e K ≤ 100.000, mais um teto de 5.000.000 de chegadas no total como proteção do servidor (100 réplicas de 1.000.000 levariam cerca de 20 minutos). |
 | 4 | Nível de confiança padrão | RF-33 | Sugestão: 95 %. **No código:** 0,95 (confirmado). |
-| 5 | Como estimar λ e μ a partir do CSV do JMeter | RF-23, RF-24 | Definir antes da Fase 7. |
-| 6 | Incluir o modelo M/M/1//N (população finita) | RF-24 | Hoje é só uma indicação; decidir se vira modelo implementado. |
+| 5 | Como estimar λ e μ a partir do CSV do JMeter | RF-23, RF-24, RF-41 | **Decidido:** λ̂ = vazão medida na janela estável; μ̂ = 1 / tempo médio de resposta do menor nível de carga, ou informado pelo usuário; sem isso, μ é calibrado pelo próprio tempo de resposta e o resultado é marcado como autoconsistente (confiança baixa). Ver `docs/plano-fase-7.md`. |
+| 6 | Incluir o modelo M/M/1//N (população finita) | RF-24, RF-42 | **Decidido:** sim, M/M/1//N e M/M/c//N, só analíticos (`analytical/finite_population.py`). Simulação de população finita fica opcional. |
 | 7 | Unidade de tempo adotada na interface | RF-14, RNF-13 | Exibir a unidade em todos os campos e resultados. **Na interface:** tempo em segundos (s) e taxas em req/s, exibidos nos campos e nos resultados. |
 
 ---
@@ -326,7 +335,7 @@ Restrições de validação por parâmetro. Valores marcados como **(proposto)**
 | 4 | Comparação analítico × simulação | RF-10 a RF-13 |
 | 5 | M/M/c, M/M/1/K, M/M/c/K | RF-18 a RF-20, RF-35, RF-37, RNF-20 |
 | 6 | Experimentos | RF-21, RF-22, RF-38 |
-| 7 | JMeter | RF-23, RF-24, RNF-25 |
+| 7 | JMeter | RF-23, RF-24, RF-39 a RF-44, RNF-25, RNF-33, RNF-34 |
 | 8 | PostgreSQL, Docker, deploy | RF-25, RF-26, RNF-17, RNF-26 |
 | Transversal | Qualidade, desempenho, segurança, observabilidade | RNF-05, RNF-06, RNF-08 a RNF-12, RNF-14, RNF-16, RNF-18, RNF-19, RNF-21 a RNF-23, RNF-27 a RNF-32 |
 

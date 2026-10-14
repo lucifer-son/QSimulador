@@ -265,3 +265,21 @@ span.nav-item { cursor: default; }
 .check { display: flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 0.9rem; }
 .exp-controls { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-bottom: 8px; }
 .cell-sim { display: block; font-size: 0.72rem; color: var(--text-muted); }
+
+/* ---------- Dados reais (Fase 7) ---------- */
+.tag-warn { background: var(--warning-bg); color: var(--warning-text); }
+.tag-info { background: var(--info-bg); color: var(--info-text); }
+.notes { margin: 6px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 0.9rem; }
+.diag { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.diag li { display: flex; align-items: flex-start; gap: 10px; font-size: 0.9rem; }
+.diag li > .tag { flex: none; margin-top: 2px; min-width: 76px; justify-content: center; }
+.diag-evidence { display: block; color: var(--text-secondary); font-size: 0.84rem; }
+.criteria th, .criteria td { white-space: normal; }
+.criteria thead th { vertical-align: bottom; max-width: 120px; }
+.criteria td { text-align: center; }
+.criteria td.num { text-align: right; }
+.criteria .cell-reason { text-align: left; min-width: 220px; color: var(--text-secondary); font-size: 0.82rem; }
+.row-picked { background: var(--surface-2); }
+.context { margin-top: 14px; }
+.context summary { cursor: pointer; color: var(--text-secondary); font-size: 0.9rem; }
+input[type="file"] { max-width: 100%; font-size: 0.85rem; }

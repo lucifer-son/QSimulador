@@ -1,0 +1,10 @@
+{
+ "code": "invalid_dataset",
+ "message": "Colunas obrigatórias ausentes: timeStamp. O JTL precisa de cabeçalho com timeStamp, elapsed, label, success (no JMeter, ative 'Save field names').",
+ "fields": [
+  {
+   "field": "file",
+   "message": "Colunas obrigatórias ausentes: timeStamp."
+  }
+ ]
+}

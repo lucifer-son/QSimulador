@@ -4,6 +4,7 @@ import { fieldErrorsFromApi } from "./api/fieldErrors";
 import { ParametersPanel } from "./components/ParametersPanel";
 import { ResultsPanel } from "./components/ResultsPanel";
 import { ExperimentTab } from "./components/ExperimentTab";
+import { RealDataTab } from "./components/RealDataTab";
 import { estimateText } from "./domain/estimate";
 import { MODEL_ORDER, MODELS } from "./domain/models";
 import { parseForm } from "./domain/request";
@@ -35,9 +36,10 @@ export default function App() {
   const [apiErrors, setApiErrors] = useState<FieldErrors>({});
   const [theme, setTheme] = useState<Theme>(initialTheme);
   
-  const [activeTab, setActiveTab] = useState<"laboratorio" | "experimentos">("laboratorio");
+  const [activeTab, setActiveTab] = useState<"laboratorio" | "experimentos" | "dados">("laboratorio");
   // Os experimentos só são montados na primeira visita; depois ficam montados para manter os resultados.
   const [experimentsOpened, setExperimentsOpened] = useState(false);
+  const [realDataOpened, setRealDataOpened] = useState(false);
 
   const { state, run, cancel, loadRuns } = useRunner();
 
@@ -106,7 +108,14 @@ export default function App() {
           >
             Experimentos
           </button>
-          <span className="nav-item soon" aria-disabled="true">Dados reais <small>em breve</small></span>
+          <button
+            type="button"
+            className="nav-item"
+            aria-current={activeTab === "dados" ? "page" : undefined}
+            onClick={() => { setActiveTab("dados"); setRealDataOpened(true); }}
+          >
+            Dados reais
+          </button>
           <button
             type="button"
             className="nav-item theme-toggle"
@@ -137,6 +146,12 @@ export default function App() {
       {experimentsOpened && (
         <main className="layout layout-wide" hidden={activeTab !== "experimentos"}>
           <ExperimentTab model={model} system={systems[model]} sim={sim} />
+        </main>
+      )}
+
+      {realDataOpened && (
+        <main className="layout layout-wide" hidden={activeTab !== "dados"}>
+          <RealDataTab />
         </main>
       )}
     </div>

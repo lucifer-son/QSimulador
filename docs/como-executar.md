@@ -534,3 +534,15 @@ O teste `tests/test_openapi_snapshot.py` do backend falha se o `openapi.json` fi
 | A tela fica em "Comparando…" por muito tempo | Simulação grande (veja a estimativa abaixo do formulário) | Cancele e reduza o tempo simulado ou o número de réplicas |
 | O primeiro gráfico demora um instante | O Plotly (cerca de 380 KB comprimido) é carregado só quando o primeiro gráfico aparece | É o esperado; nas próximas vezes já está em cache |
 | Erro de CORS ao publicar | A API não liberou a origem do frontend | Defina `QSIMULADOR_CORS_ORIGINS` com o endereço do frontend |
+
+## Dados reais (Fase 7)
+
+Gerar um CSV sintético e analisá-lo pela API (com o backend rodando):
+
+```bash
+cd backend
+python -m examples.make_jtl closed --users 20 --think 1.0 --mu 10 --servers 1 > teste.csv
+curl -F "file=@teste.csv" http://localhost:8000/api/realdata/analyze
+```
+
+Dependência nova: `python-multipart` (já em `requirements.txt`). Rode `pip install -r requirements.txt` de novo.

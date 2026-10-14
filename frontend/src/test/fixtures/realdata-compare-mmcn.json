@@ -1,0 +1,133 @@
+{
+ "notation": "M/M/2//N",
+ "comparison": [
+  {
+   "users": 1,
+   "metrics": {
+    "W": {
+     "model": 0.20000000000000004,
+     "observed": 0.10032926829268295,
+     "observed_ci_low": 0.06687126608892302,
+     "observed_ci_high": 0.13817659105393415,
+     "absolute_error": 0.09967073170731709,
+     "relative_error_pct": 99.3436246505409,
+     "model_within_observed_ci": false
+    },
+    "throughput": {
+     "model": 0.8333333333333333,
+     "observed": 0.8645849173531427,
+     "observed_ci_low": 0.7369058296552575,
+     "observed_ci_high": 0.9922640010222699,
+     "absolute_error": 0.03125158401980943,
+     "relative_error_pct": 3.6146344208135908,
+     "model_within_observed_ci": true
+    },
+    "L": {
+     "model": 0.16666666666666669,
+     "observed": 0.08674316457336485,
+     "observed_ci_low": null,
+     "observed_ci_high": null,
+     "absolute_error": 0.07992350209330183,
+     "relative_error_pct": 92.13809812726494,
+     "model_within_observed_ci": null
+    }
+   }
+  },
+  {
+   "users": 6,
+   "metrics": {
+    "W": {
+     "model": 0.2283380458686774,
+     "observed": 0.18244798301486198,
+     "observed_ci_low": 0.15703808812045017,
+     "observed_ci_high": 0.2024731565388757,
+     "absolute_error": 0.045890062853815416,
+     "relative_error_pct": 25.152408974604707,
+     "model_within_observed_ci": false
+    },
+    "throughput": {
+     "model": 4.884648831142258,
+     "observed": 4.930389583989455,
+     "observed_ci_low": 4.541352893869075,
+     "observed_ci_high": 5.319426269531256,
+     "absolute_error": 0.04574075284719736,
+     "relative_error_pct": 0.9277310051873418,
+     "model_within_observed_ci": true
+    },
+    "L": {
+     "model": 1.1153511688577422,
+     "observed": 0.8977946928953934,
+     "observed_ci_low": null,
+     "observed_ci_high": null,
+     "absolute_error": 0.21755647596234884,
+     "relative_error_pct": 24.232319224424,
+     "model_within_observed_ci": null
+    }
+   }
+  },
+  {
+   "users": 24,
+   "metrics": {
+    "W": {
+     "model": 1.400298607001095,
+     "observed": 1.4803193717277485,
+     "observed_ci_low": 1.3773045042482546,
+     "observed_ci_high": 1.622337747141718,
+     "absolute_error": 0.08002076472665354,
+     "relative_error_pct": 5.405641934770984,
+     "model_within_observed_ci": true
+    },
+    "throughput": {
+     "model": 9.998755958945175,
+     "observed": 10.00116679770621,
+     "observed_ci_low": 9.397555247467032,
+     "observed_ci_high": 10.604778342770175,
+     "absolute_error": 0.0024108387610350945,
+     "relative_error_pct": 0.024105574977391894,
+     "model_within_observed_ci": true
+    },
+    "L": {
+     "model": 14.001244041054825,
+     "observed": 14.909751950471662,
+     "observed_ci_low": null,
+     "observed_ci_high": null,
+     "absolute_error": 0.9085079094168371,
+     "relative_error_pct": 6.093380442778573,
+     "model_within_observed_ci": null
+    }
+   }
+  },
+  {
+   "users": 60,
+   "metrics": {
+    "W": {
+     "model": 4.999999999999996,
+     "observed": 5.039655391120507,
+     "observed_ci_low": 4.7755716894095634,
+     "observed_ci_high": 5.413951465625814,
+     "absolute_error": 0.03965539112051175,
+     "relative_error_pct": 0.7868671177474071,
+     "model_within_observed_ci": true
+    },
+    "throughput": {
+     "model": 10.000000000000007,
+     "observed": 9.979144932724866,
+     "observed_ci_low": 9.300495904987393,
+     "observed_ci_high": 10.657793976950042,
+     "absolute_error": 0.02085506727514108,
+     "relative_error_pct": 0.20898651553551972,
+     "model_within_observed_ci": true
+    },
+    "L": {
+     "model": 49.99999999999999,
+     "observed": 50.22926484931446,
+     "observed_ci_low": null,
+     "observed_ci_high": null,
+     "absolute_error": 0.22926484931446822,
+     "relative_error_pct": 0.4564368003438881,
+     "model_within_observed_ci": null
+    }
+   }
+  }
+ ]
+}

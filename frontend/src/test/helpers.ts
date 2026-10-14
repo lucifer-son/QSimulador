@@ -6,6 +6,9 @@ import errorInvalidParameter from "./fixtures/error-invalid-parameter.json";
 import errorInvalidRequest from "./fixtures/error-invalid-request.json";
 import errorReplications from "./fixtures/error-replications.json";
 import errorUnstable from "./fixtures/error-unstable.json";
+import errorInvalidDataset from "./fixtures/error-invalid-dataset.json";
+import realdataAnalyzeClosed from "./fixtures/realdata-analyze-closed.json";
+import realdataCompareMmcn from "./fixtures/realdata-compare-mmcn.json";
 import mm1Calculate from "./fixtures/mm1-calculate.json";
 import mm1Compare from "./fixtures/mm1-compare.json";
 import mm1Simulate from "./fixtures/mm1-simulate.json";
@@ -19,7 +22,8 @@ import type { ThemeColors } from "../hooks/useThemeColors";
 
 /** Respostas reais da API, gravadas em arquivos (ver src/test/fixtures). */
 export const fixtures = {
-  errorInvalidParameter, errorInvalidRequest, errorReplications, errorUnstable,
+  errorInvalidParameter, errorInvalidRequest, errorReplications, errorUnstable, errorInvalidDataset,
+  realdataAnalyzeClosed, realdataCompareMmcn,
   experimentSensitivityMm1, experimentServersMmc, experimentSweepMm1,
   mm1Calculate, mm1Compare, mm1Simulate,
   mmcCalculate, mmcCompare, mmcSimulate,
@@ -42,7 +46,8 @@ export type FakeHandler = (url: string, body: Record<string, unknown>) => FakeRe
 /** Substitui o fetch global; devolve o mock para inspecionar as chamadas. */
 export function mockFetch(handler: FakeHandler) {
   const fn = vi.fn(async (url: string, init?: RequestInit) => {
-    const body = init?.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : {};
+    // Envios de arquivo (FormData) não são JSON: o corpo chega vazio ao handler.
+    const body = typeof init?.body === "string" ? (JSON.parse(init.body) as Record<string, unknown>) : {};
     const reply = await handler(url, body);
     return new Response(JSON.stringify(reply.body), {
       status: reply.status ?? 200,

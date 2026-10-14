@@ -1,0 +1,69 @@
+{
+  "mode": "closed",
+  "model": "M/M/1//10",
+  "mu": 5.0,
+  "mu_source": "informed",
+  "servers": 1,
+  "users": 10,
+  "think_time": 0.9825947307998286,
+  "think_time_source": "interactive_law",
+  "arrival_rate": null,
+  "metrics": {
+    "throughput": {
+      "measured": 4.860550781377896,
+      "analytical": 4.915996335753401,
+      "analytical_error_pct": 1.1407257504217914,
+      "simulated_mean": 4.952421052631579,
+      "ci_low": 4.877410476070709,
+      "ci_high": 5.027431629192449,
+      "simulated_error_pct": 1.890120593033692,
+      "measured_within_ci": false,
+      "role": "prediction",
+      "measured_derived": false
+    },
+    "W": {
+      "measured": 1.0747852760736196,
+      "analytical": 1.0515809107219738,
+      "analytical_error_pct": 2.1589768550249846,
+      "simulated_mean": 1.0307659788458612,
+      "ci_low": 1.0089077412560736,
+      "ci_high": 1.0526242164356487,
+      "simulated_error_pct": 4.095636422241352,
+      "measured_within_ci": false,
+      "role": "prediction",
+      "measured_derived": false
+    },
+    "L": {
+      "measured": 5.224048413433089,
+      "analytical": 5.169567903857447,
+      "analytical_error_pct": 1.0428791095341137,
+      "simulated_mean": 5.105959431313784,
+      "ci_low": 5.0649330238139525,
+      "ci_high": 5.146985838813616,
+      "simulated_error_pct": 2.260487897004397,
+      "measured_within_ci": false,
+      "role": "prediction",
+      "measured_derived": true
+    },
+    "rho": {
+      "measured": 0.9721101562755792,
+      "analytical": 0.9831992671506801,
+      "analytical_error_pct": 1.1407257504217754,
+      "simulated_mean": 0.9815843343268076,
+      "ci_low": 0.9789675333414781,
+      "ci_high": 0.984201135312137,
+      "simulated_error_pct": 0.9745992252078289,
+      "measured_within_ci": false,
+      "role": "prediction",
+      "measured_derived": true
+    }
+  },
+  "simulation": {
+    "simulation_time": 1000.0,
+    "replications": 5,
+    "warmup_time": 50.0,
+    "seed": 2026,
+    "confidence_level": 0.95
+  },
+  "warnings": []
+}

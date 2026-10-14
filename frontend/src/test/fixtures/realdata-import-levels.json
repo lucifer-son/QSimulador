@@ -1,0 +1,53 @@
+{
+  "levels": [
+    {
+      "users": 1,
+      "avg_ms": 195.8,
+      "throughput": 0.81,
+      "p90_ms": 460.0,
+      "error_rate": 0.0
+    },
+    {
+      "users": 2,
+      "avg_ms": 231.4,
+      "throughput": 1.59,
+      "p90_ms": 536.7,
+      "error_rate": 0.0
+    },
+    {
+      "users": 5,
+      "avg_ms": 384.5,
+      "throughput": 3.55,
+      "p90_ms": 916.2,
+      "error_rate": 0.0
+    },
+    {
+      "users": 10,
+      "avg_ms": 1072.1,
+      "throughput": 5.0,
+      "p90_ms": 2386.2,
+      "error_rate": 0.0
+    },
+    {
+      "users": 15,
+      "avg_ms": 2042.9,
+      "throughput": 4.92,
+      "p90_ms": 4601.1,
+      "error_rate": 0.0
+    },
+    {
+      "users": 20,
+      "avg_ms": 3008.8,
+      "throughput": 4.93,
+      "p90_ms": 6900.0,
+      "error_rate": 0.0
+    },
+    {
+      "users": 30,
+      "avg_ms": 4869.1,
+      "throughput": 4.88,
+      "p90_ms": 11500.0,
+      "error_rate": 0.0
+    }
+  ]
+}

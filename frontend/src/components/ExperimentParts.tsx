@@ -1,5 +1,6 @@
 import { IconAlertCircle, IconChartLine, IconPlayerPlay, IconPlayerStop } from "@tabler/icons-react";
 import { useEffect, useState, type ReactNode } from "react";
+import type { ApiError } from "../api/client";
 import { MODELS } from "../domain/models";
 import { VARIABLE_INFO, type SweepVariable, type SystemText } from "../domain/experiments";
 import type { MetricName, ModelKey } from "../domain/types";
@@ -61,11 +62,13 @@ interface ResultAreaProps<T> {
   idleTitle: string;
   idleText: string;
   loadingText: string;
+  /** Títulos de erro que substituem os padrões (ex.: o CSV tem "amostras", não "simulação"). */
+  errorTitles?: Partial<Record<ApiError["code"], string>>;
   children: (result: T) => ReactNode;
 }
 
 /** Os quatro estados do painel de resultados: vazio, executando, erro e resultado. */
-export function ResultArea<T>({ state, idleTitle, idleText, loadingText, children }: ResultAreaProps<T>) {
+export function ResultArea<T>({ state, idleTitle, idleText, loadingText, errorTitles, children }: ResultAreaProps<T>) {
   if (state.status === "idle") {
     return (
       <div className="panel state">
@@ -80,7 +83,7 @@ export function ResultArea<T>({ state, idleTitle, idleText, loadingText, childre
     return (
       <div className="panel state state-error" role="alert">
         <IconAlertCircle size={32} aria-hidden="true" />
-        <h2>{ERROR_TITLES[state.error.code]}</h2>
+        <h2>{errorTitles?.[state.error.code] ?? ERROR_TITLES[state.error.code]}</h2>
         <p>{state.error.message}</p>
         {state.error.code === "unstable_system" && (
           <p>O ponto de partida precisa ser estável: reduza λ, aumente μ ou o número de servidores no Laboratório.</p>

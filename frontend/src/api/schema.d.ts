@@ -310,6 +310,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/realdata/analyze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Analyze Csv
+         * @description Valida o CSV, calcula as métricas medidas, verifica os dados e recomenda o modelo de melhor ajuste.
+         */
+        post: operations["analyze_csv_api_realdata_analyze_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/realdata/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compare
+         * @description Compara as medições com o modelo escolhido pelo usuário, sem reenviar o arquivo.
+         */
+        post: operations["compare_api_realdata_compare_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -334,6 +374,140 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AnalysisResponse */
+        AnalysisResponse: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "recommended" | "no_good_fit";
+            /**
+             * Confidence
+             * @enum {string}
+             */
+            confidence: "alta" | "media" | "baixa";
+            recommended: components["schemas"]["ModelPickOut"] | null;
+            nearest: components["schemas"]["ModelPickOut"] | null;
+            /** Ranking */
+            ranking: components["schemas"]["RankingOut"][];
+            /** Rationale */
+            rationale: string;
+            /** Warnings */
+            warnings: string[];
+            /** Diagnostics */
+            diagnostics: components["schemas"]["DiagnosticOut"][];
+            /**
+             * System Type
+             * @enum {string}
+             */
+            system_type: "open" | "closed";
+            estimates: components["schemas"]["EstimatesOut"];
+            overall: components["schemas"]["EmpiricalMetricsModel"];
+            /** Levels */
+            levels: components["schemas"]["LevelModel"][];
+            /** Comparison */
+            comparison: components["schemas"]["LevelComparisonOut"][];
+            dataset: components["schemas"]["DatasetOut"];
+        };
+        /** Body_analyze_csv_api_realdata_analyze_post */
+        Body_analyze_csv_api_realdata_analyze_post: {
+            /**
+             * File
+             * @description CSV (JTL) exportado pelo JMeter, com cabeçalho.
+             */
+            file: string;
+            /**
+             * System Type
+             * @description auto, open ou closed.
+             * @default auto
+             */
+            system_type: string;
+            /**
+             * Servers
+             * @description Número de servidores, se conhecido.
+             */
+            servers?: number | null;
+            /**
+             * Service Time S
+             * @description Tempo médio de serviço (s), se conhecido.
+             */
+            service_time_s?: number | null;
+            /**
+             * Think Time S
+             * @description Tempo de reflexão Z (s), se conhecido.
+             */
+            think_time_s?: number | null;
+            /**
+             * Capacity
+             * @description Capacidade total K, se conhecida.
+             */
+            capacity?: number | null;
+            /**
+             * Labels
+             * @description Rótulos (label) a analisar, separados por vírgula.
+             */
+            labels?: string | null;
+            /**
+             * Trim Start Pct
+             * @description % do início descartado (aquecimento).
+             * @default 10
+             */
+            trim_start_pct: number;
+            /**
+             * Trim End Pct
+             * @description % do fim descartado (encerramento).
+             * @default 10
+             */
+            trim_end_pct: number;
+            /**
+             * Confidence Level
+             * @default 0.95
+             */
+            confidence_level: number;
+        };
+        /**
+         * CompareRequest
+         * @example {
+         *       "levels": [],
+         *       "model": "mm1n",
+         *       "mu": 10,
+         *       "servers": 1,
+         *       "think_time": 1
+         *     }
+         */
+        CompareRequest: {
+            /**
+             * Model
+             * @enum {string}
+             */
+            model: "mm1" | "mmc" | "mm1k" | "mmck" | "mm1n" | "mmcn";
+            /**
+             * Mu
+             * @description Taxa de serviço por servidor (req/s).
+             */
+            mu: number;
+            /**
+             * Servers
+             * @default 1
+             */
+            servers: number;
+            /** Capacity */
+            capacity?: number | null;
+            /** Think Time */
+            think_time?: number | null;
+            /**
+             * Levels
+             * @description Os níveis devolvidos por /analyze.
+             */
+            levels: components["schemas"]["LevelModel"][];
+        };
+        /** CompareResponse */
+        CompareResponse: {
+            /** Notation */
+            notation: string;
+            /** Comparison */
+            comparison: components["schemas"]["LevelComparisonOut"][];
+        };
         /** ComparisonResponse */
         ComparisonResponse: {
             /**
@@ -357,12 +531,123 @@ export interface components {
             confidence_level: number;
             /** Metrics */
             metrics: {
-                [key: string]: components["schemas"]["MetricComparisonOut"];
+                [key: string]: components["schemas"]["app__api__schemas__MetricComparisonOut"];
             };
             /** All Within Ci */
             all_within_ci: boolean | null;
             /** Max Relative Error Pct */
             max_relative_error_pct: number | null;
+        };
+        /** CriterionOut */
+        CriterionOut: {
+            /**
+             * Id
+             * @enum {string}
+             */
+            id: "estrutura" | "capacidade" | "servidores" | "dados" | "estabilidade" | "calibracao" | "previsao";
+            /** Passed */
+            passed: boolean;
+            /** Reason */
+            reason: string;
+        };
+        /** DatasetOut */
+        DatasetOut: {
+            /** Rows */
+            rows: number;
+            /** Rows Analyzed */
+            rows_analyzed: number;
+            /** Labels */
+            labels: string[];
+            /** Start */
+            start: number;
+            /** End */
+            end: number;
+        };
+        /** DiagnosticOut */
+        DiagnosticOut: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "atencao" | "critico" | "info";
+            /** Evidence */
+            evidence: string;
+        };
+        /**
+         * EmpiricalMetricsModel
+         * @description Métricas medidas em uma janela (segundos e req/s).
+         */
+        EmpiricalMetricsModel: {
+            /** Window Start */
+            window_start: number;
+            /** Window End */
+            window_end: number;
+            /** Duration */
+            duration: number;
+            /** Samples */
+            samples: number;
+            /** Successes */
+            successes: number;
+            /** Rejections */
+            rejections: number;
+            /** Other Failures */
+            other_failures: number;
+            /**
+             * Arrival Rate
+             * @description λ̂: requisições iniciadas por segundo (inclui rejeitadas).
+             */
+            arrival_rate: number;
+            /**
+             * Throughput
+             * @description X̂: respostas bem-sucedidas por segundo.
+             */
+            throughput: number;
+            /**
+             * Mean Response
+             * @description W̄: tempo médio de resposta (s).
+             */
+            mean_response: number;
+            /** P50 */
+            p50?: number | null;
+            /** P90 */
+            p90?: number | null;
+            /** P95 */
+            p95?: number | null;
+            /** P99 */
+            p99?: number | null;
+            /**
+             * Mean In Flight
+             * @description L̂: requisições em andamento, em média.
+             */
+            mean_in_flight: number;
+            /** Peak In Flight */
+            peak_in_flight: number;
+            /**
+             * Mean Users
+             * @description N̄: usuários ativos (allThreads).
+             */
+            mean_users?: number | null;
+            /**
+             * Think Time
+             * @description Ẑ = N̄/X̂ − W̄ (s).
+             */
+            think_time?: number | null;
+            /** P Block */
+            p_block: number;
+            /** P Error */
+            p_error: number;
+            /** Arrival Cv */
+            arrival_cv?: number | null;
+            /** Response Cv */
+            response_cv?: number | null;
+            /** Summaries */
+            summaries: {
+                [key: string]: components["schemas"]["SummaryOut"];
+            };
         };
         /** ErrorResponse */
         ErrorResponse: {
@@ -373,12 +658,62 @@ export interface components {
             /** Fields */
             fields?: components["schemas"]["FieldError"][] | null;
         };
+        /** EstimatesOut */
+        EstimatesOut: {
+            /**
+             * Mu
+             * @description null = não identificável (resultado autoconsistente).
+             */
+            mu: number | null;
+            /**
+             * Mu Source
+             * @enum {string}
+             */
+            mu_source: "informado" | "menor_nivel" | "autoconsistente";
+            /** Servers */
+            servers: number;
+            /**
+             * Servers Source
+             * @enum {string}
+             */
+            servers_source: "informado" | "estimado" | "assumido";
+            /** Think Time */
+            think_time?: number | null;
+            /** Think Source */
+            think_source?: ("informado" | "estimado") | null;
+            /** Capacity */
+            capacity?: number | null;
+            /** Capacity Source */
+            capacity_source?: ("informado" | "estimado") | null;
+            /** Notes */
+            notes: string[];
+            /** Autoconsistent */
+            autoconsistent: boolean;
+        };
         /** FieldError */
         FieldError: {
             /** Field */
             field: string;
             /** Message */
             message: string;
+        };
+        /** LevelComparisonOut */
+        LevelComparisonOut: {
+            /** Users */
+            users: number | null;
+            /** Metrics */
+            metrics: {
+                [key: string]: components["schemas"]["app__api__schemas_realdata__MetricComparisonOut"];
+            };
+        };
+        /** LevelModel */
+        LevelModel: {
+            /**
+             * Users
+             * @description Usuários do patamar de carga (null se o arquivo não tem allThreads).
+             */
+            users: number | null;
+            metrics: components["schemas"]["EmpiricalMetricsModel"];
         };
         /**
          * MM1CalculateRequest
@@ -780,23 +1115,6 @@ export interface components {
              */
             servers: number;
         };
-        /** MetricComparisonOut */
-        MetricComparisonOut: {
-            /** Analytical */
-            analytical: number;
-            /** Simulated Mean */
-            simulated_mean: number;
-            /** Ci Low */
-            ci_low: number | null;
-            /** Ci High */
-            ci_high: number | null;
-            /** Absolute Error */
-            absolute_error: number;
-            /** Relative Error Pct */
-            relative_error_pct: number | null;
-            /** Within Ci */
-            within_ci: boolean | null;
-        };
         /** MetricEffectOut */
         MetricEffectOut: {
             /**
@@ -827,6 +1145,25 @@ export interface components {
             ci_high: number | null;
             /** N */
             n: number;
+        };
+        /** ModelPickOut */
+        ModelPickOut: {
+            /** Key */
+            key: string;
+            /** Notation */
+            notation: string;
+            /** Score Pct */
+            score_pct: number | null;
+            /** Mu */
+            mu: number | null;
+            /** Servers */
+            servers: number;
+            /** Capacity */
+            capacity?: number | null;
+            /** Population */
+            population?: number | null;
+            /** Think Time */
+            think_time?: number | null;
         };
         /** ParameterSensitivityOut */
         ParameterSensitivityOut: {
@@ -901,7 +1238,7 @@ export interface components {
             confidence_level: number;
             /** Metrics */
             metrics: {
-                [key: string]: components["schemas"]["MetricComparisonOut"];
+                [key: string]: components["schemas"]["app__api__schemas__MetricComparisonOut"];
             };
             /** All Within Ci */
             all_within_ci: boolean | null;
@@ -963,6 +1300,41 @@ export interface components {
             summary: {
                 [key: string]: components["schemas"]["MetricSummaryOut"];
             };
+        };
+        /** RankingOut */
+        RankingOut: {
+            /** Key */
+            key: string;
+            /** Notation */
+            notation: string;
+            /** Eligible */
+            eligible: boolean;
+            /**
+             * Score Pct
+             * @description Erro relativo médio (%) nas métricas de validação, mais penalidade por parâmetro.
+             */
+            score_pct: number | null;
+            /** Scored Metrics */
+            scored_metrics: number;
+            /** Mu */
+            mu: number | null;
+            /** Recommended */
+            recommended: boolean;
+            /** Reasons */
+            reasons: string[];
+            /**
+             * Error Pct
+             * @description Erro relativo médio (%) nas métricas de validação.
+             */
+            error_pct?: number | null;
+            /**
+             * Penalty Pp
+             * @description Penalidade de parcimônia (pontos percentuais).
+             * @default 0
+             */
+            penalty_pp: number;
+            /** Criteria */
+            criteria: components["schemas"]["CriterionOut"][];
         };
         /** ReplicationOut */
         ReplicationOut: {
@@ -1160,6 +1532,19 @@ export interface components {
                 [key: string]: components["schemas"]["MetricSummaryOut"];
             };
         };
+        /** SummaryOut */
+        SummaryOut: {
+            /** Mean */
+            mean: number | null;
+            /** Std */
+            std?: number | null;
+            /** Ci Low */
+            ci_low?: number | null;
+            /** Ci High */
+            ci_high?: number | null;
+            /** N */
+            n: number;
+        };
         /** SweepPointOut */
         SweepPointOut: {
             /**
@@ -1336,6 +1721,43 @@ export interface components {
             seed: number;
             /** Confidence Level */
             confidence_level: number;
+        };
+        /** MetricComparisonOut */
+        app__api__schemas__MetricComparisonOut: {
+            /** Analytical */
+            analytical: number;
+            /** Simulated Mean */
+            simulated_mean: number;
+            /** Ci Low */
+            ci_low: number | null;
+            /** Ci High */
+            ci_high: number | null;
+            /** Absolute Error */
+            absolute_error: number;
+            /** Relative Error Pct */
+            relative_error_pct: number | null;
+            /** Within Ci */
+            within_ci: boolean | null;
+        };
+        /** MetricComparisonOut */
+        app__api__schemas_realdata__MetricComparisonOut: {
+            /** Model */
+            model: number;
+            /** Observed */
+            observed: number;
+            /** Observed Ci Low */
+            observed_ci_low?: number | null;
+            /** Observed Ci High */
+            observed_ci_high?: number | null;
+            /** Absolute Error */
+            absolute_error: number;
+            /**
+             * Relative Error Pct
+             * @description |modelo − observado| / observado × 100.
+             */
+            relative_error_pct: number | null;
+            /** Model Within Observed Ci */
+            model_within_observed_ci?: boolean | null;
         };
     };
     responses: never;
@@ -1831,6 +2253,90 @@ export interface operations {
                 };
             };
             /** @description Parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    analyze_csv_api_realdata_analyze_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_analyze_csv_api_realdata_analyze_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisResponse"];
+                };
+            };
+            /** @description Arquivo acima do limite */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Arquivo ou parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    compare_api_realdata_compare_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompareRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompareResponse"];
+                };
+            };
+            /** @description Arquivo acima do limite */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Arquivo ou parâmetros inválidos */
             422: {
                 headers: {
                     [name: string]: unknown;

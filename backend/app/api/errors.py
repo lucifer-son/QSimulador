@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 
 from app.domain.validation.errors import (
     InsufficientSampleError,
+    InvalidDatasetError,
     QueueValidationError,
     UnstableSystemError,
 )
@@ -21,6 +22,8 @@ def _domain_code(exc: QueueValidationError) -> str:
         return "unstable_system"
     if isinstance(exc, InsufficientSampleError):
         return "insufficient_sample"
+    if isinstance(exc, InvalidDatasetError):
+        return "invalid_dataset"
     return "invalid_parameter"
 
 

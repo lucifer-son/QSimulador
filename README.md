@@ -13,7 +13,7 @@ Mais do que uma calculadora de teoria das filas, a proposta é uma **plataforma 
 
 ## Status
 
-O projeto está em desenvolvimento. Os modelos **M/M/1**, **M/M/c**, **M/M/1/K** e **M/M/c/K** (cálculo analítico, simulação e comparação) e a API já funcionam; a interface web também já está disponível; os experimentos (varredura de parâmetros, comparação de servidores e análise de sensibilidade) também já estão disponíveis; a validação com dados reais está planejada.
+O projeto está em desenvolvimento. Os modelos **M/M/1**, **M/M/c**, **M/M/1/K** e **M/M/c/K** (cálculo analítico, simulação e comparação) e a API já funcionam; a interface web também já está disponível, com os experimentos "e se..." e a validação com dados reais (importação de CSV e do JMeter, comparação com o modelo e relatórios).
 
 | Componente | Situação |
 | --- | --- |
@@ -22,8 +22,7 @@ O projeto está em desenvolvimento. Os modelos **M/M/1**, **M/M/c**, **M/M/1/K**
 | API REST (`/calculate`, `/simulate` e `/compare` para cada modelo) | ✅ Implementado |
 | Comparação analítico × simulação (erro relativo e verificação do intervalo de confiança) | ✅ Implementado (módulo, endpoints e scripts de demonstração) |
 | Interface web (React + TypeScript): formulário, comparação, gráficos, abas de réplicas e detalhes, tema claro e escuro | ✅ Implementado |
-| Experimentos: varredura de λ, μ, c e K (analítica, com simulação opcional), comparação de servidores e análise de sensibilidade (`/api/experiments`, aba Experimentos) | ✅ Implementado |
-| Importação do JMeter, persistência | 📋 Planejado |
+| Experimentos (varredura de parâmetros), importação do JMeter, persistência | 📋 Planejado |
 
 ---
 
@@ -41,7 +40,7 @@ O projeto está em desenvolvimento. Os modelos **M/M/1**, **M/M/c**, **M/M/1/K**
 - [Estrutura do projeto](#estrutura-do-projeto)
 - [API](#api)
 - [Validação do software](#validação-do-software)
-- [Validação com dados reais](#validação-com-dados-reais-planejado)
+- [Validação com dados reais](#validação-com-dados-reais)
 - [Princípios de desenvolvimento](#princípios-de-desenvolvimento)
 - [Roadmap](#roadmap)
 - [Contexto acadêmico](#contexto-acadêmico)
@@ -92,7 +91,7 @@ O QSimulador permite (ou permitirá) ao usuário:
 5. realizar experimentos do tipo *"e se..."* (varredura de λ, μ e número de servidores) ✅
 6. identificar regiões de alta utilização e aproximação da saturação ✅
 7. visualizar resultados em tabelas e gráficos ✅
-8. importar dados reais, por exemplo do Apache JMeter, e compará-los com o modelo e a simulação 📋
+8. importar dados reais, por exemplo do Apache JMeter, e compará-los com o modelo e a simulação ✅
 
 ### Modelos de filas
 
@@ -264,7 +263,7 @@ flowchart TD
     API["API<br/>FastAPI"]
     AN["Analítico<br/>M/M/1 ✅ · M/M/c ✅ · M/M/1/K ✅ · M/M/c/K ✅"]
     SIM["Simulação<br/>SimPy (DES) ✅"]
-    ANL["Análise<br/>Comparação ✅ · Experimentos ✅ · Validação"]
+    ANL["Análise<br/>Comparação ✅ · Sensibilidade · Validação"]
     DB[("PostgreSQL<br/>(planejado)")]
 
     FE -->|HTTP / JSON| API
@@ -312,17 +311,23 @@ qsimulador/
     │   ├── api/                   # rotas (mm1.py, queues.py), esquemas e tratamento de erros
     │   ├── analytical/
     │   │   ├── mm1.py             # modelo analítico M/M/1
-    │   │   └── mmck.py            # M/M/c (Erlang C), M/M/1/K e M/M/c/K
+    │   │   ├── mmck.py            # M/M/c (Erlang C), M/M/1/K e M/M/c/K
+    │   │   └── closed.py          # modelo fechado M/M/c//N (população finita)
     │   ├── simulation/
     │   │   ├── mm1.py             # simulação M/M/1 com SimPy
     │   │   ├── mmck.py            # simulação de M/M/c, M/M/1/K e M/M/c/K
+    │   │   ├── closed.py          # simulação do M/M/c//N
     │   │   ├── results.py         # estruturas de resultado
     │   │   └── stats.py           # média e intervalo de confiança entre réplicas
     │   ├── domain/
     │   │   ├── metrics/           # estruturas de métricas
     │   │   ├── models/            # nome do modelo em notação de Kendall
     │   │   └── validation/        # validação de parâmetros e erros de domínio
-    │   ├── experiments/           # varredura, comparação de servidores e sensibilidade
+    │   ├── realdata/              # importação do JMeter e de níveis de carga, comparação e relatório
+    │   │   ├── jmeter.py          # CSV do JMeter → vazão, tempos, percentis, erros
+    │   │   ├── levels.py          # CSV de níveis de carga (users, avg_ms, ...)
+    │   │   ├── compare.py         # medido × analítico × simulação (aberto ou fechado)
+    │   │   └── report.py          # relatório em Markdown e HTML
     │   ├── analysis/
     │   │   └── comparison.py      # comparação analítico × simulação
     │   └── persistence/           # (planejado)
@@ -341,7 +346,7 @@ frontend/
     ├── styles.css             # tema claro e escuro por variáveis CSS
     ├── api/                   # cliente HTTP, erros por campo, tipos gerados (schema.d.ts)
     ├── domain/                # modelos, métricas, formatação, estimativa de custo
-    ├── charts/                # dados e layout dos gráficos (diferenças, réplicas e experimentos)
+    ├── charts/                # dados e layout dos gráficos (diferenças e réplicas)
     ├── components/            # painel de parâmetros, resultados, tabelas e abas
     ├── hooks/                 # execução com cancelamento, cores do tema
     └── test/                  # fixtures com respostas reais da API e testes de contrato
@@ -364,9 +369,6 @@ Com o servidor no ar (`python -m uvicorn app.main:app --reload`), a documentaç�
 | `POST /api/models/mmc/calculate` · `/simulate` · `/compare` | M/M/c (fila ilimitada) |
 | `POST /api/models/mm1k/calculate` · `/simulate` · `/compare` | M/M/1/K |
 | `POST /api/models/mmck/calculate` · `/simulate` · `/compare` | M/M/c/K |
-| `POST /api/experiments/sweep` | Varre λ, μ, c ou K em uma faixa (analítico e, opcionalmente, simulação em cada ponto) |
-| `POST /api/experiments/servers` | Compara números de servidores (M/M/c ou M/M/c/K) ao longo de uma faixa de λ |
-| `POST /api/experiments/sensitivity` | Mede quanto cada métrica muda ao perturbar cada parâmetro |
 
 ### `POST /api/models/mm1/calculate`
 
@@ -534,25 +536,34 @@ Toda requisição inválida devolve HTTP 422 com `{"code", "message", "fields"?}
 
 Para executar: `python -m pytest` (dentro de `backend/`) e `npm test` (dentro de `frontend/`).
 
-## Validação com dados reais (planejado)
+## Validação com dados reais
 
-O objetivo final do projeto é fechar o ciclo **modelo analítico × simulação × medição**: dados reais (por exemplo, exportados do Apache JMeter em CSV) serão comparados com o modelo e a simulação, com cálculo do erro relativo:
+A Fase 7 fecha o ciclo **modelo analítico × simulação × medição**: dados reais (CSV exportado do Apache JMeter, ou um CSV próprio de níveis de carga) são importados, comparados com o modelo e a simulação, e podem virar um relatório experimental. O erro relativo usa o valor **medido** como referência:
 
 $$
-\text{erro relativo} = \frac{|\,valor_{simulado} - valor_{observado}\,|}{valor_{observado}} \times 100
+\text{erro relativo} = \frac{|\,valor_{modelo} - valor_{medido}\,|}{valor_{medido}} \times 100
 $$
 
-Formato de CSV previsto:
+### Importação
 
-```text
-users,avg_ms,p90_ms,throughput,error_rate
-```
+- **CSV do JMeter** (colunas `timeStamp`, `elapsed`, `label`, `success`; `allThreads` é opcional): calcula vazão, tempo de resposta (média, desvio, p50, p90, p95, p99), taxa de erro e número de usuários, sobre uma janela de medição. É possível escolher um rótulo, descartar o início (ramp-up) e o fim (ramp-down) do teste e incluir ou não as amostras com falha. A vazão é o número de amostras usadas dividido pela duração da janela.
+- **CSV de níveis de carga** (um teste por linha): `users,avg_ms,p90_ms,throughput,error_rate` (`p90_ms` e `error_rate` são opcionais).
+- O arquivo precisa ter extensão `.csv` e até 10 MB. Arquivos malformados são rejeitados com a linha e o motivo (erro `invalid_dataset`).
 
-**Limitação a considerar.** O M/M/1 é um modelo de sistema *aberto*: as chegadas ocorrem a uma taxa $\lambda$ independente do estado do sistema. Já um teste de carga com $N$ usuários simultâneos se comporta como um sistema *fechado*, porque cada usuário só envia a próxima requisição depois de receber a resposta. Por isso:
+### Comparação com o modelo
 
-- o $\lambda$ a comparar com o modelo deve ser estimado a partir do *throughput* medido (ou controlado, com um timer de vazão constante no JMeter);
-- a latência medida inclui rede e outros componentes que o M/M/1 não representa;
-- divergências entre modelo e medição podem vir dessa diferença estrutural, e não de erro de implementação. Um modelo de população finita (M/M/1//N) é uma extensão natural.
+| Modo | Modelo | Como as entradas são obtidas |
+| --- | --- | --- |
+| **Fechado** (recomendado para testes com N usuários) | **M/M/c//N** (M/M/1//N com 1 servidor): N usuários alternam entre pensar (tempo médio Z) e pedir serviço | N vem de `allThreads` (ou é informado); Z vem da lei da resposta interativa, $Z = N/X - R$, ou é informado; μ é informado, estimado como $1/R$ (só com carga baixa) ou a partir de uma execução de carga mínima |
+| **Aberto** | **M/M/c** com $\lambda$ igual à vazão medida | A vazão é a entrada do modelo, não uma previsão. A tela exibe o aviso de que um teste de carga é um sistema fechado |
+
+São comparados vazão X, tempo de resposta W, usuários no sistema L e utilização ρ. L (lei de Little) e ρ = X/(c·μ) são **derivados** das medições, e isso fica marcado nas tabelas. Com vários níveis de carga, μ e Z são calibrados no menor nível, onde quase não há fila, e o modelo prevê a curva inteira. A simulação é opcional e traz intervalo de confiança; o IC é o da média entre réplicas, então um único teste medido cair fora dele não indica, sozinho, erro do modelo.
+
+### Relatório experimental
+
+O relatório (Markdown ou HTML) é gerado a partir dos resultados já calculados, sem recalcular nada: dados medidos, modelo e calibração (de onde veio cada parâmetro), tabela de comparação, avisos e limitações, e a semente da simulação.
+
+**Limitação a considerar.** Mesmo no modo fechado, o modelo assume tempos de serviço e de reflexão exponenciais e um único tipo de requisição. A latência medida inclui rede e outros componentes que o modelo não representa; divergências entre modelo e medição podem vir dessas premissas, e não de erro de implementação.
 
 ---
 
@@ -574,8 +585,8 @@ users,avg_ms,p90_ms,throughput,error_rate
 - [x] **Fase 3 — Interface:** React + TypeScript, seleção do modelo, formulário de parâmetros com estimativa de custo, painel de resultados com veredito, gráfico de diferenças e tabela, abas de gráficos, réplicas e detalhes, cancelamento, erros por campo e tema claro e escuro.
 - [x] **Fase 4 — Comparação:** módulo e endpoint de comparação analítico × simulação, com erro absoluto, erro relativo e verificação do intervalo de confiança. Os gráficos comparativos virão com a interface (Fase 3).
 - [x] **Fase 5 — Novos modelos:** M/M/c, M/M/1/K e M/M/c/K, com cálculo analítico, simulação, comparação e endpoints, incluindo as probabilidades de espera e de bloqueio.
-- [x] **Fase 6 — Experimentação:** varredura de λ, μ, c e K (com simulação opcional por ponto), comparação de servidores e análise de sensibilidade.
-- [ ] **Fase 7 — Dados reais:** importação de CSV e de resultados do JMeter, comparação com o modelo e relatórios experimentais.
+- [x] **Fase 6 — Experimentação:** varredura de λ e μ, comparação de servidores e análise de sensibilidade.
+- [x] **Fase 7 — Dados reais:** importação de CSV e de resultados do JMeter, comparação com o modelo e relatórios experimentais.
 - [ ] **Fase 8 — Persistência e publicação:** PostgreSQL, Docker, deploy e documentação acadêmica.
 
 ### Possíveis extensões

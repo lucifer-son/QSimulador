@@ -1,0 +1,38 @@
+{
+  "samples_total": 2919,
+  "samples_used": 2771,
+  "label": null,
+  "include_failures": false,
+  "trim_start_s": 20.0,
+  "trim_end_s": 10.0,
+  "window_seconds": 570.0999999046326,
+  "throughput": 4.860550781377896,
+  "mean_ms": 1074.7852760736196,
+  "std_ms": 679.1362180103874,
+  "min_ms": 2.0,
+  "max_ms": 4809.0,
+  "p50_ms": 965.0,
+  "p90_ms": 1976.0,
+  "p95_ms": 2385.5,
+  "p99_ms": 3078.2000000000025,
+  "error_rate": 0.0,
+  "users": 10,
+  "users_max": 10,
+  "suggested_mu": 0.9304184028768766,
+  "labels": [
+    {
+      "label": "login",
+      "samples": 693,
+      "mean_ms": 1083.095238095238,
+      "p90_ms": 1995.0000000000005,
+      "error_rate": 0.0
+    },
+    {
+      "label": "buscar",
+      "samples": 2078,
+      "mean_ms": 1072.0139557266602,
+      "p90_ms": 1964.3,
+      "error_rate": 0.0
+    }
+  ]
+}
