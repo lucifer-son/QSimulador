@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@tabler/icons-react": "^3.19.0",
+    "@vercel/analytics": "^2.0.1",
     "plotly.js-basic-dist-min": "^2.35.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
