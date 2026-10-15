@@ -546,3 +546,21 @@ curl -F "file=@teste.csv" http://localhost:8000/api/realdata/analyze
 ```
 
 Dependência nova: `python-multipart` (já em `requirements.txt`). Rode `pip install -r requirements.txt` de novo.
+
+### Acréscimos da Fase 7: níveis de carga, simulação e relatório
+
+| Rota | O que faz |
+| --- | --- |
+| `POST /api/realdata/import/levels` | Importa o CSV agregado (`users,avg_ms,throughput`, opcionais `p90_ms` e `error_rate`) e devolve os níveis e a calibração sugerida (μ e Z no menor nível) |
+| `POST /api/realdata/compare-simulated` | Como `/compare`, com o bloco `simulation`: acrescenta a média simulada (com IC) de cada métrica |
+| `POST /api/realdata/report` | Gera o relatório em Markdown (`"format": "markdown"`) ou HTML (`"html"`), a partir de `analysis`, `levels_import` e/ou `comparison` |
+| `POST /api/models/mmcn/calculate` · `/simulate` | Modelo fechado M/M/c//N. Entradas: `population` (N), `think_time` (Z), `mu`, `servers` |
+
+```bash
+curl -F "file=@niveis.csv" http://localhost:8000/api/realdata/import/levels
+```
+
+Na aba **Dados reais** há duas origens: *Teste do JMeter (JTL)* e *Níveis de carga (CSV agregado)*. Em qualquer uma, a opção
+**Simular também** (desligada por padrão) acrescenta as colunas de simulação à tabela e a curva simulada ao gráfico, e os botões
+**Markdown** e **HTML** baixam o relatório com o que está na tela. A API recebe o upload em multipart; os testes de contrato do
+upload rodam em `src/test/contract.upload.test.ts` (ambiente `node`), junto com os demais em `npm run test:contract`.
