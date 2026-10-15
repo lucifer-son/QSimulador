@@ -9,6 +9,10 @@ import errorUnstable from "./fixtures/error-unstable.json";
 import errorInvalidDataset from "./fixtures/error-invalid-dataset.json";
 import realdataAnalyzeClosed from "./fixtures/realdata-analyze-closed.json";
 import realdataCompareMmcn from "./fixtures/realdata-compare-mmcn.json";
+import realdataCompareSimulated from "./fixtures/realdata-compare-simulated.json";
+import realdataLevelsError from "./fixtures/realdata-levels-error.json";
+import realdataLevelsImport from "./fixtures/realdata-levels-import.json";
+import realdataReport from "./fixtures/realdata-report.json";
 import mm1Calculate from "./fixtures/mm1-calculate.json";
 import mm1Compare from "./fixtures/mm1-compare.json";
 import mm1Simulate from "./fixtures/mm1-simulate.json";
@@ -24,6 +28,7 @@ import type { ThemeColors } from "../hooks/useThemeColors";
 export const fixtures = {
   errorInvalidParameter, errorInvalidRequest, errorReplications, errorUnstable, errorInvalidDataset,
   realdataAnalyzeClosed, realdataCompareMmcn,
+  realdataCompareSimulated, realdataLevelsError, realdataLevelsImport, realdataReport,
   experimentSensitivityMm1, experimentServersMmc, experimentSweepMm1,
   mm1Calculate, mm1Compare, mm1Simulate,
   mmcCalculate, mmcCompare, mmcSimulate,

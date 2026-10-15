@@ -1,0 +1,314 @@
+{
+  "levels": [
+    {
+      "users": 1,
+      "metrics": {
+        "window_start": 0.0,
+        "window_end": 0.0,
+        "duration": 0.0,
+        "samples": 0,
+        "successes": 0,
+        "rejections": 0,
+        "other_failures": 0,
+        "arrival_rate": 0.81,
+        "throughput": 0.81,
+        "mean_response": 0.1958,
+        "p50": null,
+        "p90": 0.46,
+        "p95": null,
+        "p99": null,
+        "mean_in_flight": 0.15859800000000002,
+        "peak_in_flight": 0,
+        "mean_users": 1.0,
+        "think_time": 1.0387679012345679,
+        "p_block": 0.0,
+        "p_error": 0.0,
+        "arrival_cv": null,
+        "response_cv": null,
+        "summaries": {
+          "W": {
+            "mean": 0.1958,
+            "std": null,
+            "ci_low": null,
+            "ci_high": null,
+            "n": 1
+          },
+          "throughput": {
+            "mean": 0.81,
+            "std": null,
+            "ci_low": null,
+            "ci_high": null,
+            "n": 1
+          },
+          "L": {
+            "mean": 0.15859800000000002,
+            "std": null,
+            "ci_low": null,
+            "ci_high": null,
+            "n": 1
+          }
+        }
+      }
+    },
+    {
+      "users": 2,
+      "metrics": {
+        "window_start": 0.0,
+        "window_end": 0.0,
+        "duration": 0.0,
+        "samples": 0,
+        "successes": 0,
+        "rejections": 0,
+        "other_failures": 0,
+        "arrival_rate": 1.59,
+        "throughput": 1.59,
+        "mean_response": 0.2314,
+        "p50": null,
+        "p90": 0.5367000000000001,
+        "p95": null,
+        "p99": null,
+        "mean_in_flight": 0.36792600000000003,
+        "peak_in_flight": 0,
+        "mean_users": 2.0,
+        "think_time": 1.0264616352201257,
+        "p_block": 0.0,
+        "p_error": 0.0,
+        "arrival_cv": null,
+        "response_cv": null,
+        "summaries": {
+          "W": {
+            "mean": 0.2314,
+            "std": null,
+            "ci_low": null,
+            "ci_high": null,
+            "n": 1
+          },
+          "throughput": {
+            "mean": 1.59,
+            "std": null,
+            "ci_low": null,
+            "ci_high": null,
+            "n": 1
+          },
+          "L": {
+            "mean": 0.36792600000000003,
+            "std": null,
+            "ci_low": null,
+            "ci_high": null,
+            "n": 1
+          }
+        }
+      }
+    },
+    {
+      "users": 5,
+      "metrics": {
+        "window_start": 0.0,
+        "window_end": 0.0,
+        "duration": 0.0,
+        "samples": 0,
+        "successes": 0,
+        "rejections": 0,
+        "other_failures": 0,
+        "arrival_rate": 3.55,
+        "throughput": 3.55,
+        "mean_response": 0.3845,
+        "p50": null,
+        "p90": 0.9162,
+        "p95": null,
+        "p99": null,
+        "mean_in_flight": 1.364975,
+        "peak_in_flight": 0,
+        "mean_users": 5.0,
+        "think_time": 1.0239507042253522,
+        "p_block": 0.0,
+        "p_error": 0.0,
+        "arrival_cv": null,
+        "response_cv": null,
+        "summaries": {
+          "W": {
+            "mean": 0.3845,
+            "std": null,
+            "ci_low": null,
+            "ci_high": null,
+            "n": 1
+          },
+          "throughput": {
+            "mean": 3.55,
+            "std": null,
+            "ci_low": null,
+            "ci_high": null,
+            "n": 1
+          },
+          "L": {
+            "mean": 1.364975,
+            "std": null,
+            "ci_low": null,
+            "ci_high": null,
+            "n": 1
+          }
+        }
+      }
+    },
+    {
+      "users": 10,
+      "metrics": {
+        "window_start": 0.0,
+        "window_end": 0.0,
+        "duration": 0.0,
+        "samples": 0,
+        "successes": 0,
+        "rejections": 0,
+        "other_failures": 0,
+        "arrival_rate": 5.0,
+        "throughput": 5.0,
+        "mean_response": 1.0720999999999998,
+        "p50": null,
+        "p90": 2.3861999999999997,
+        "p95": null,
+        "p99": null,
+        "mean_in_flight": 5.360499999999999,
+        "peak_in_flight": 0,
+        "mean_users": 10.0,
+        "think_time": 0.9279000000000002,
+        "p_block": 0.0,
+        "p_error": 0.0,
+        "arrival_cv": null,
+        "response_cv": null,
+        "summaries": {
+          "W": {
+            "mean": 1.0720999999999998,
+            "std": null,
+            "ci_low": null,
+            "ci_high": null,
+            "n": 1
+          },
+          "throughput": {
+            "mean": 5.0,
+            "std": null,
+            "ci_low": null,
+            "ci_high": null,
+            "n": 1
+          },
+          "L": {
+            "mean": 5.360499999999999,
+            "std": null,
+            "ci_low": null,
+            "ci_high": null,
+            "n": 1
+          }
+        }
+      }
+    },
+    {
+      "users": 15,
+      "metrics": {
+        "window_start": 0.0,
+        "window_end": 0.0,
+        "duration": 0.0,
+        "samples": 0,
+        "successes": 0,
+        "rejections": 0,
+        "other_failures": 0,
+        "arrival_rate": 4.92,
+        "throughput": 4.92,
+        "mean_response": 2.0429,
+        "p50": null,
+        "p90": 4.601100000000001,
+        "p95": null,
+        "p99": null,
+        "mean_in_flight": 10.051067999999999,
+        "peak_in_flight": 0,
+        "mean_users": 15.0,
+        "think_time": 1.0058804878048782,
+        "p_block": 0.0,
+        "p_error": 0.0,
+        "arrival_cv": null,
+        "response_cv": null,
+        "summaries": {
+          "W": {
+            "mean": 2.0429,
+            "std": null,
+            "ci_low": null,
+            "ci_high": null,
+            "n": 1
+          },
+          "throughput": {
+            "mean": 4.92,
+            "std": null,
+            "ci_low": null,
+            "ci_high": null,
+            "n": 1
+          },
+          "L": {
+            "mean": 10.051067999999999,
+            "std": null,
+            "ci_low": null,
+            "ci_high": null,
+            "n": 1
+          }
+        }
+      }
+    },
+    {
+      "users": 20,
+      "metrics": {
+        "window_start": 0.0,
+        "window_end": 0.0,
+        "duration": 0.0,
+        "samples": 0,
+        "successes": 0,
+        "rejections": 0,
+        "other_failures": 0,
+        "arrival_rate": 4.93,
+        "throughput": 4.93,
+        "mean_response": 3.0088000000000004,
+        "p50": null,
+        "p90": 6.9,
+        "p95": null,
+        "p99": null,
+        "mean_in_flight": 14.833384,
+        "peak_in_flight": 0,
+        "mean_users": 20.0,
+        "think_time": 1.0479951318458416,
+        "p_block": 0.0,
+        "p_error": 0.0,
+        "arrival_cv": null,
+        "response_cv": null,
+        "summaries": {
+          "W": {
+            "mean": 3.0088000000000004,
+            "std": null,
+            "ci_low": null,
+            "ci_high": null,
+            "n": 1
+          },
+          "throughput": {
+            "mean": 4.93,
+            "std": null,
+            "ci_low": null,
+            "ci_high": null,
+            "n": 1
+          },
+          "L": {
+            "mean": 14.833384,
+            "std": null,
+            "ci_low": null,
+            "ci_high": null,
+            "n": 1
+          }
+        }
+      }
+    }
+  ],
+  "suggestions": {
+    "mu": 5.107252298263534,
+    "mu_source": "menor_nivel",
+    "think_time": 1.0387679012345679,
+    "think_source": "estimado",
+    "base_users": 1
+  },
+  "warnings": [
+    "Arquivo agregado: λ̂ foi tomado como igual à vazão X̂ (vale sem rejeições) e L̂ = X̂·W̄ é derivado pela lei de Little. Não há intervalo de confiança do medido."
+  ]
+}

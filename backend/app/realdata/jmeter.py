@@ -9,8 +9,6 @@ Tudo o que sai daqui está em **segundos**, a unidade da interface (decisão 7).
 
 import csv
 import io
-import math
-from dataclasses import asdict
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
@@ -22,7 +20,6 @@ REQUIRED_COLUMNS = ("timeStamp", "elapsed", "label", "success")
 OPTIONAL_COLUMNS = ("responseCode", "responseMessage", "failureMessage", "allThreads", "threadName")
 
 MAX_ROWS = 2_000_000
-MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 _DATE_FORMATS = ("%Y/%m/%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S.%f", "%Y/%m/%d %H:%M:%S", "%Y-%m-%d %H:%M:%S")
 
 
@@ -55,78 +52,6 @@ class JMeterDataset:
             pick(self.response_code), pick(self.response_message),
             pick(self.failure_message), pick(self.all_threads),
         )
-
-
-@dataclass(frozen=True)
-class JMeterSummary:
-    samples_total: int
-    samples_used: int
-    label: str | None
-    include_failures: bool
-    trim_start_s: float
-    trim_end_s: float
-    window_seconds: float
-    throughput: float
-    mean_ms: float
-    std_ms: float
-    min_ms: float
-    max_ms: float
-    p50_ms: float
-    p90_ms: float
-    p95_ms: float
-    p99_ms: float
-    error_rate: float
-    users: int | None
-    users_max: int | None
-    suggested_mu: float
-    labels: list[dict]
-
-    def as_dict(self) -> dict:
-        return asdict(self)
-
-
-def check_file(filename: str, content: str | bytes) -> str:
-    """Valida o nome e o tamanho de um CSV antes de o analisar."""
-    from app.domain.validation.errors import InvalidDatasetError
-
-    if not filename.lower().endswith(".csv"):
-        raise InvalidDatasetError("Envie um arquivo com extensão .csv.", "file")
-    raw = content.encode("utf-8") if isinstance(content, str) else content
-    if len(raw) > MAX_UPLOAD_BYTES:
-        raise InvalidDatasetError("O arquivo passa do limite de 10 MB.", "file")
-    if not raw.strip():
-        raise InvalidDatasetError("O arquivo está vazio.", "file")
-    return _decode(raw)
-
-
-def read_table(content: str, required: tuple[str, ...] = ()) -> tuple[list[str], list[dict[str, str]]]:
-    """Lê um CSV genérico com cabeçalho, usado também pelo formato agregado."""
-    from app.domain.validation.errors import InvalidDatasetError
-
-    lines = content.splitlines()
-    if not lines:
-        raise InvalidDatasetError("O arquivo está vazio.", "file")
-    reader = csv.DictReader(io.StringIO(content), delimiter=_delimiter(lines[0]))
-    columns = [name.strip() for name in (reader.fieldnames or [])]
-    mapping = {name.lower(): name for name in columns}
-    missing = [name for name in required if name.lower() not in mapping]
-    if missing:
-        raise InvalidDatasetError(f"Colunas obrigatórias ausentes: {', '.join(missing)}.", "file")
-    rows = [{str(k).strip(): (v or "").strip() for k, v in row.items() if k is not None}
-            for row in reader]
-    return columns, rows
-
-
-def number(row: dict[str, str], column: str, line: int) -> float:
-    from app.domain.validation.errors import InvalidDatasetError
-
-    try:
-        value = float(row[column])
-    except (KeyError, ValueError):
-        raise InvalidDatasetError(f"Linha {line}: '{column}' deve ser numérico.", "file") from None
-    if not math.isfinite(value):
-        raise InvalidDatasetError(f"Linha {line}: '{column}' deve ser finito.", "file")
-    return value
 
 
 def _decode(content: bytes | str) -> str:
@@ -242,67 +167,4 @@ def parse_jtl(content: bytes | str) -> JMeterDataset:
         response_message=vec(optional.get("responseMessage"), object),
         failure_message=vec(optional.get("failureMessage"), object),
         all_threads=vec(optional.get("allThreads"), int),
-    )
-
-
-def summarize_jmeter(
-    filename: str,
-    content: str | bytes,
-    label: str | None = None,
-    trim_start_s: float = 0.0,
-    trim_end_s: float = 0.0,
-    include_failures: bool = False,
-) -> JMeterSummary:
-    """Resumo agregado compatível com o formato legado de relatório experimental."""
-    from app.domain.validation.errors import InvalidDatasetError
-
-    dataset = parse_jtl(check_file(filename, content))
-    if label is not None:
-        selected_labels = dataset.label == label
-        if not np.any(selected_labels):
-            raise InvalidDatasetError(f"O rótulo '{label}' não existe no arquivo.", "label")
-        dataset = dataset.select(selected_labels)
-
-    start = float(np.min(dataset.start))
-    end = float(np.max(dataset.end))
-    window_start = start + float(trim_start_s)
-    window_end = end - float(trim_end_s)
-    duration = window_end - window_start
-    if duration <= 0:
-        raise InvalidDatasetError("A janela de análise deve ter duração positiva.", "file")
-    mask = (dataset.start >= window_start) & (dataset.end <= window_end)
-    sample_count = int(np.count_nonzero(mask))
-    if sample_count == 0:
-        raise InvalidDatasetError("A janela não contém amostras.", "file")
-    ok = dataset.success[mask]
-    all_elapsed = dataset.elapsed[mask]
-    usable = np.ones(sample_count, dtype=bool) if include_failures else ok
-    elapsed = all_elapsed[usable]
-    if elapsed.size == 0:
-        raise InvalidDatasetError("Não há amostras válidas na janela.", "file")
-    elapsed_ms = elapsed * 1000.0
-    threads = dataset.all_threads[mask] if dataset.all_threads is not None else None
-    users = int(np.median(threads)) if threads is not None else None
-    labels_out = []
-    for item in sorted(set(dataset.label[mask].tolist())):
-        label_mask = mask & (dataset.label == item)
-        label_ok = dataset.success[label_mask]
-        values = dataset.elapsed[label_mask][np.ones(label_ok.size, dtype=bool) if include_failures else label_ok] * 1000.0
-        if values.size:
-            labels_out.append({
-                "label": str(item), "samples": int(values.size),
-                "mean_ms": float(np.mean(values)), "p90_ms": float(np.percentile(values, 90)),
-                "error_rate": float(np.mean(~label_ok)),
-            })
-    return JMeterSummary(
-        samples_total=len(dataset), samples_used=int(elapsed.size), label=label,
-        include_failures=include_failures, trim_start_s=float(trim_start_s), trim_end_s=float(trim_end_s),
-        window_seconds=duration, throughput=float(np.count_nonzero(ok) / duration),
-        mean_ms=float(np.mean(elapsed_ms)), std_ms=float(np.std(elapsed_ms, ddof=1)) if elapsed_ms.size > 1 else 0.0,
-        min_ms=float(np.min(elapsed_ms)), max_ms=float(np.max(elapsed_ms)),
-        p50_ms=float(np.percentile(elapsed_ms, 50)), p90_ms=float(np.percentile(elapsed_ms, 90)),
-        p95_ms=float(np.percentile(elapsed_ms, 95)), p99_ms=float(np.percentile(elapsed_ms, 99)),
-        error_rate=float(np.mean(~ok)), users=users,
-        users_max=int(np.max(threads)) if threads is not None else None,
-        suggested_mu=float(1000.0 / np.mean(elapsed_ms)), labels=labels_out,
     )

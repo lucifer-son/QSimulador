@@ -283,3 +283,7 @@ span.nav-item { cursor: default; }
 .context { margin-top: 14px; }
 .context summary { cursor: pointer; color: var(--text-secondary); font-size: 0.9rem; }
 input[type="file"] { max-width: 100%; font-size: 0.85rem; }
+
+/* ---------- Dados reais: simulação e relatório (acréscimos da Fase 7) ---------- */
+.rd-report { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; font-size: 0.9rem; color: var(--text-secondary); }
+.cell-sim { display: block; font-size: 0.8rem; color: var(--text-secondary); }

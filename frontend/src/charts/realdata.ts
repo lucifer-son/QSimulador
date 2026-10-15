@@ -1,4 +1,5 @@
-import type { AnalysisResponse, LevelComparison } from "../api/realdata";
+import type { AnalysisResponse } from "../api/realdata";
+import type { SimulatedLevelComparison } from "../api/realdataExtra";
 import type { ThemeColors } from "../hooks/useThemeColors";
 
 export type LevelMetric = "W" | "throughput";
@@ -10,7 +11,7 @@ const TITLE: Record<LevelMetric, string> = {
 
 /** Medido × modelo por nível de carga (usuários). Medido com IC por lotes; modelo tracejado. */
 export function levelChart(
-  result: AnalysisResponse, comparison: LevelComparison[], metric: LevelMetric, colors: ThemeColors,
+  result: Pick<AnalysisResponse, "levels">, comparison: SimulatedLevelComparison[], metric: LevelMetric, colors: ThemeColors,
 ) {
   const hasUsers = result.levels.every((l) => l.users !== null);
   const x = result.levels.map((l, i) => (hasUsers ? (l.users as number) : i + 1));
@@ -28,6 +29,18 @@ export function levelChart(
     data.push({
       x, y: comparison.map((c) => c.metrics[metric]?.model ?? null), name: "Modelo", mode: "lines+markers",
       line: { color: colors.textSecondary, width: 2, dash: "dash" }, marker: { symbol: "diamond", size: 8, color: colors.textSecondary },
+    });
+  }
+  const simulated = comparison.map((c) => c.metrics[metric]?.simulated_mean ?? null);
+  if (comparison.length === result.levels.length && comparison.length > 0 && simulated.every((v) => v !== null)) {
+    data.push({
+      x, y: simulated, name: "Simulação", mode: "lines+markers",
+      line: { color: colors.danger, width: 2, dash: "dot" }, marker: { symbol: "square", size: 7, color: colors.danger },
+      error_y: {
+        type: "data", symmetric: false, color: colors.danger,
+        array: comparison.map((c) => Math.max((c.metrics[metric]?.simulated_ci_high ?? c.metrics[metric]?.simulated_mean ?? 0) - (c.metrics[metric]?.simulated_mean ?? 0), 0)),
+        arrayminus: comparison.map((c) => Math.max((c.metrics[metric]?.simulated_mean ?? 0) - (c.metrics[metric]?.simulated_ci_low ?? c.metrics[metric]?.simulated_mean ?? 0), 0)),
+      },
     });
   }
   const layout = {

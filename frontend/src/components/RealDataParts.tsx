@@ -1,7 +1,8 @@
 import { IconAlertTriangle, IconCircleCheck, IconInfoCircle } from "@tabler/icons-react";
 import type {
-  AnalysisResponse, Diagnostic, Estimates, Level, LevelComparison, RankingItem,
+  AnalysisResponse, Diagnostic, Estimates, Level, RankingItem,
 } from "../api/realdata";
+import type { SimulatedLevelComparison } from "../api/realdataExtra";
 import {
   bannerTone, CONFIDENCE_LABEL, CRITERIA_LABEL, CRITERIA_ORDER, DIAGNOSTIC_LABEL,
 } from "../domain/realdata";
@@ -185,10 +186,11 @@ export function LevelsTable({ levels }: { levels: Level[] }) {
 
 const COMPARED: MetricName[] = ["W", "throughput", "L", "p_block"];
 
-export function ComparisonTable({ comparison }: { comparison: LevelComparison[] }) {
+export function ComparisonTable({ comparison }: { comparison: SimulatedLevelComparison[] }) {
   const rows = comparison.flatMap((lv, i) =>
     COMPARED.filter((name) => name in lv.metrics).map((name) => ({ lv, i, name, m: lv.metrics[name] })),
   );
+  const hasSim = rows.some((r) => r.m.simulated_mean != null);
   return (
     <div className="table-wrap">
       <table className="table">
@@ -202,6 +204,9 @@ export function ComparisonTable({ comparison }: { comparison: LevelComparison[] 
             <th scope="col" className="num">IC do medido</th>
             <th scope="col" className="num">Erro relativo</th>
             <th scope="col">Modelo dentro do IC</th>
+            {hasSim && <th scope="col" className="num">Simulação (IC)</th>}
+            {hasSim && <th scope="col" className="num">Erro da simulação</th>}
+            {hasSim && <th scope="col">Simulação no IC do medido</th>}
           </tr>
         </thead>
         <tbody>
@@ -224,6 +229,24 @@ export function ComparisonTable({ comparison }: { comparison: LevelComparison[] 
                   </span>
                 )}
               </td>
+              {hasSim && (
+                <td className="num">
+                  {m.simulated_mean == null ? "—" : formatMetric(name, m.simulated_mean, { precise: true, unit: false })}
+                  {m.simulated_ci_low != null && m.simulated_ci_high != null && (
+                    <span className="cell-sim"> [{formatMetric(name, m.simulated_ci_low, { unit: false })}; {formatMetric(name, m.simulated_ci_high, { unit: false })}]</span>
+                  )}
+                </td>
+              )}
+              {hasSim && <td className="num">{m.simulated_error_pct == null ? "—" : formatPercentNumber(m.simulated_error_pct, 1)}</td>}
+              {hasSim && (
+                <td>
+                  {m.simulation_within_observed_ci == null ? "—" : (
+                    <span className={m.simulation_within_observed_ci ? "tag tag-ok" : "tag tag-bad"}>
+                      {m.simulation_within_observed_ci ? "Sim" : "Não"}
+                    </span>
+                  )}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

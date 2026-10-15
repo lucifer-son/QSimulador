@@ -10,6 +10,7 @@ import { fetchRuns, runAction } from "../api/actions";
 import { ApiError } from "../api/client";
 import { runSensitivity, runServerComparison, runSweep } from "../api/experiments";
 import { fieldErrorsFromApi } from "../api/fieldErrors";
+import { buildReport, compareSimulated, type LevelsImport } from "../api/realdataExtra";
 import { MODEL_ORDER, MODELS } from "../domain/models";
 import type { Action, ModelKey, Params } from "../domain/types";
 import { fixtures } from "./helpers";
@@ -158,6 +159,40 @@ describe.skipIf(!live)("contrato com a API real", () => {
         }
       }
       if ("runs" in raw) expect(keys((raw.runs as unknown[])[0])).toEqual(keys((saved.runs as unknown[])[0]));
+    });
+  });
+
+  describe("dados reais: acréscimos da Fase 7 (JSON)", () => {
+    const SIM = { simulation_time: 200, replications: 3, warmup_time: 10, confidence_level: 0.95, seed: 7 };
+    const imported = fixtures.realdataLevelsImport as unknown as LevelsImport;
+
+    it("comparação com simulação: formato igual ao da fixture e semente devolvida", async () => {
+      const { levels, suggestions } = imported;
+      const r = await compareSimulated({
+        model: "mm1n", mu: suggestions.mu as number, servers: 1, think_time: suggestions.think_time as number,
+        levels, simulation: SIM,
+      });
+      expect(keys(r)).toEqual(keys(fixtures.realdataCompareSimulated));
+      expect(keys(r.simulation)).toEqual(keys(fixtures.realdataCompareSimulated.simulation));
+      expect(keys(r.comparison[0].metrics.W)).toEqual(keys(fixtures.realdataCompareSimulated.comparison[0].metrics.W));
+      expect(r.simulation?.seed).toBe(7);
+    });
+
+    it("relatório: formato igual ao da fixture", async () => {
+      const r = await buildReport({ format: "markdown", levels_import: imported });
+      expect(keys(r)).toEqual(keys(fixtures.realdataReport));
+      expect(r.filename).toBe("relatorio-experimental.md");
+      expect(r.content).toContain("CSV agregado");
+    });
+
+    it("erro de regra na simulação chega com o campo", async () => {
+      const { levels, suggestions } = imported;
+      const bad = await compareSimulated({
+        model: "mm1n", mu: suggestions.mu as number, servers: 1, think_time: suggestions.think_time as number,
+        levels, simulation: { ...SIM, replications: 1 },
+      }).catch((e: unknown) => e);
+      expect(bad).toBeInstanceOf(ApiError);
+      expect((bad as ApiError).fields?.[0].field).toBe("replications");
     });
   });
 

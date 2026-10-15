@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "gen:api": "openapi-typescript ./openapi.json -o ./src/api/schema.d.ts",
-    "test:contract": "vitest run src/test/contract.test.ts"
+    "test:contract": "vitest run src/test/contract"
   },
   "dependencies": {
     "@tabler/icons-react": "^3.19.0",

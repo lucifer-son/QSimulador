@@ -1,0 +1,294 @@
+{
+  "notation": "M/M/1//N",
+  "comparison": [
+    {
+      "users": 1,
+      "metrics": {
+        "W": {
+          "model": 0.19580000000000003,
+          "observed": 0.1958,
+          "observed_ci_low": null,
+          "observed_ci_high": null,
+          "absolute_error": 2.7755575615628914e-17,
+          "relative_error_pct": 1.4175472735254806e-14,
+          "model_within_observed_ci": null,
+          "simulated_mean": 0.19535939607096164,
+          "simulated_ci_low": 0.17488953835000726,
+          "simulated_ci_high": 0.21582925379191603,
+          "simulated_error_pct": 0.22502754292050964,
+          "simulation_within_observed_ci": null
+        },
+        "throughput": {
+          "model": 0.81,
+          "observed": 0.81,
+          "observed_ci_low": null,
+          "observed_ci_high": null,
+          "absolute_error": 0.0,
+          "relative_error_pct": 0.0,
+          "model_within_observed_ci": null,
+          "simulated_mean": 0.843859649122807,
+          "simulated_ci_low": 0.7912368181195681,
+          "simulated_ci_high": 0.8964824801260458,
+          "simulated_error_pct": 4.180203595408262,
+          "simulation_within_observed_ci": null
+        },
+        "L": {
+          "model": 0.15859800000000004,
+          "observed": 0.15859800000000002,
+          "observed_ci_low": null,
+          "observed_ci_high": null,
+          "absolute_error": 2.7755575615628914e-17,
+          "relative_error_pct": 1.7500583623771364e-14,
+          "model_within_observed_ci": null,
+          "simulated_mean": 0.16473980637949964,
+          "simulated_ci_low": 0.14731501928424967,
+          "simulated_ci_high": 0.18216459347474961,
+          "simulated_error_pct": 3.8725623144677894,
+          "simulation_within_observed_ci": null
+        }
+      }
+    },
+    {
+      "users": 2,
+      "metrics": {
+        "W": {
+          "model": 0.22685348840000003,
+          "observed": 0.2314,
+          "observed_ci_low": null,
+          "observed_ci_high": null,
+          "absolute_error": 0.0045465115999999695,
+          "relative_error_pct": 1.9647846153846023,
+          "model_within_observed_ci": null,
+          "simulated_mean": 0.22144427788260038,
+          "simulated_ci_low": 0.21107857854508422,
+          "simulated_ci_high": 0.23180997722011654,
+          "simulated_error_pct": 4.30238639472758,
+          "simulation_within_observed_ci": null
+        },
+        "throughput": {
+          "model": 1.5802514214598369,
+          "observed": 1.59,
+          "observed_ci_low": null,
+          "observed_ci_high": null,
+          "absolute_error": 0.0097485785401632,
+          "relative_error_pct": 0.6131181471800754,
+          "model_within_observed_ci": null,
+          "simulated_mean": 1.6017543859649122,
+          "simulated_ci_low": 1.5370835396728468,
+          "simulated_ci_high": 1.6664252322569775,
+          "simulated_error_pct": 0.7392695575416398,
+          "simulation_within_observed_ci": null
+        },
+        "L": {
+          "model": 0.35848554750722267,
+          "observed": 0.36792600000000003,
+          "observed_ci_low": null,
+          "observed_ci_high": null,
+          "absolute_error": 0.009440452492777363,
+          "relative_error_pct": 2.5658563115347546,
+          "model_within_observed_ci": null,
+          "simulated_mean": 0.3547887167374265,
+          "simulated_ci_low": 0.3343580918865114,
+          "simulated_ci_high": 0.37521934158834164,
+          "simulated_error_pct": 3.5706319375563336,
+          "simulation_within_observed_ci": null
+        }
+      }
+    },
+    {
+      "users": 5,
+      "metrics": {
+        "W": {
+          "model": 0.37828156388316836,
+          "observed": 0.3845,
+          "observed_ci_low": null,
+          "observed_ci_high": null,
+          "absolute_error": 0.006218436116831649,
+          "relative_error_pct": 1.6172785739484132,
+          "model_within_observed_ci": null,
+          "simulated_mean": 0.37637753664271545,
+          "simulated_ci_low": 0.3625326883377904,
+          "simulated_ci_high": 0.3902223849476405,
+          "simulated_error_pct": 2.112474215158533,
+          "simulation_within_observed_ci": null
+        },
+        "throughput": {
+          "model": 3.52845833760967,
+          "observed": 3.55,
+          "observed_ci_low": null,
+          "observed_ci_high": null,
+          "absolute_error": 0.02154166239032973,
+          "relative_error_pct": 0.6068073912768938,
+          "model_within_observed_ci": null,
+          "simulated_mean": 3.5385964912280703,
+          "simulated_ci_low": 3.491440976633367,
+          "simulated_ci_high": 3.5857520058227736,
+          "simulated_error_pct": 0.32122559920928245,
+          "simulation_within_observed_ci": null
+        },
+        "L": {
+          "model": 1.3347507380475905,
+          "observed": 1.364975,
+          "observed_ci_low": null,
+          "observed_ci_high": null,
+          "absolute_error": 0.03022426195240957,
+          "relative_error_pct": 2.2142721993010546,
+          "model_within_observed_ci": null,
+          "simulated_mean": 1.3333700183598096,
+          "simulated_ci_low": 1.2910645918192625,
+          "simulated_ci_high": 1.3756754449003568,
+          "simulated_error_pct": 2.31542567740731,
+          "simulation_within_observed_ci": null
+        }
+      }
+    },
+    {
+      "users": 10,
+      "metrics": {
+        "W": {
+          "model": 0.9687478585953169,
+          "observed": 1.0720999999999998,
+          "observed_ci_low": null,
+          "observed_ci_high": null,
+          "absolute_error": 0.10335214140468296,
+          "relative_error_pct": 9.640158698319464,
+          "model_within_observed_ci": null,
+          "simulated_mean": 0.9867968284949871,
+          "simulated_ci_low": 0.8551261153220533,
+          "simulated_ci_high": 1.1184675416679208,
+          "simulated_error_pct": 7.956643177410015,
+          "simulation_within_observed_ci": null
+        },
+        "throughput": {
+          "model": 4.981280944388398,
+          "observed": 5.0,
+          "observed_ci_low": null,
+          "observed_ci_high": null,
+          "absolute_error": 0.018719055611602364,
+          "relative_error_pct": 0.3743811122320473,
+          "model_within_observed_ci": null,
+          "simulated_mean": 4.93859649122807,
+          "simulated_ci_low": 4.705132961374674,
+          "simulated_ci_high": 5.1720600210814665,
+          "simulated_error_pct": 1.2280701754385959,
+          "simulation_within_observed_ci": null
+        },
+        "L": {
+          "model": 4.825605247937918,
+          "observed": 5.360499999999999,
+          "observed_ci_low": null,
+          "observed_ci_high": null,
+          "absolute_error": 0.5348947520620815,
+          "relative_error_pct": 9.978448877195813,
+          "model_within_observed_ci": null,
+          "simulated_mean": 4.8686421139477565,
+          "simulated_ci_low": 4.45105990586378,
+          "simulated_ci_high": 5.286224322031733,
+          "simulated_error_pct": 9.175597165418203,
+          "simulation_within_observed_ci": null
+        }
+      }
+    },
+    {
+      "users": 15,
+      "metrics": {
+        "W": {
+          "model": 1.8990602926148417,
+          "observed": 2.0429,
+          "observed_ci_low": null,
+          "observed_ci_high": null,
+          "absolute_error": 0.14383970738515828,
+          "relative_error_pct": 7.040956844934078,
+          "model_within_observed_ci": null,
+          "simulated_mean": 1.9561260600255728,
+          "simulated_ci_low": 1.8635269851715888,
+          "simulated_ci_high": 2.048725134879557,
+          "simulated_error_pct": 4.247586273162033,
+          "simulation_within_observed_ci": null
+        },
+        "throughput": {
+          "model": 5.105812528929963,
+          "observed": 4.92,
+          "observed_ci_low": null,
+          "observed_ci_high": null,
+          "absolute_error": 0.18581252892996325,
+          "relative_error_pct": 3.7766774172756756,
+          "model_within_observed_ci": null,
+          "simulated_mean": 5.014473684210526,
+          "simulated_ci_low": 4.886477089928966,
+          "simulated_ci_high": 5.142470278492087,
+          "simulated_error_pct": 1.9201968335472819,
+          "simulation_within_observed_ci": null
+        },
+        "L": {
+          "model": 9.69624583522626,
+          "observed": 10.051067999999999,
+          "observed_ci_low": null,
+          "observed_ci_high": null,
+          "absolute_error": 0.3548221647737382,
+          "relative_error_pct": 3.5301936547811454,
+          "model_within_observed_ci": null,
+          "simulated_mean": 9.806726832173684,
+          "simulated_ci_low": 9.579771610257664,
+          "simulated_ci_high": 10.033682054089704,
+          "simulated_error_pct": 2.4309970624645563,
+          "simulation_within_observed_ci": null
+        }
+      }
+    },
+    {
+      "users": 20,
+      "metrics": {
+        "W": {
+          "model": 2.877234592179555,
+          "observed": 3.0088000000000004,
+          "observed_ci_low": null,
+          "observed_ci_high": null,
+          "absolute_error": 0.13156540782044557,
+          "relative_error_pct": 4.372687045348496,
+          "model_within_observed_ci": null,
+          "simulated_mean": 2.898124370577659,
+          "simulated_ci_low": 2.8033334833121444,
+          "simulated_ci_high": 2.9929152578431735,
+          "simulated_error_pct": 3.678397680880797,
+          "simulation_within_observed_ci": null
+        },
+        "throughput": {
+          "model": 5.10724904635166,
+          "observed": 4.93,
+          "observed_ci_low": null,
+          "observed_ci_high": null,
+          "absolute_error": 0.17724904635166006,
+          "relative_error_pct": 3.5953153418186625,
+          "model_within_observed_ci": null,
+          "simulated_mean": 5.086403508771929,
+          "simulated_ci_low": 4.9792165862844175,
+          "simulated_ci_high": 5.193590431259441,
+          "simulated_error_pct": 3.172484964947861,
+          "simulation_within_observed_ci": null
+        },
+        "L": {
+          "model": 14.694753627039038,
+          "observed": 14.833384,
+          "observed_ci_low": null,
+          "observed_ci_high": null,
+          "absolute_error": 0.1386303729609626,
+          "relative_error_pct": 0.9345835917209626,
+          "model_within_observed_ci": null,
+          "simulated_mean": 14.739614666013875,
+          "simulated_ci_low": 14.52597529260045,
+          "simulated_ci_high": 14.9532540394273,
+          "simulated_error_pct": 0.6321506541334456,
+          "simulation_within_observed_ci": null
+        }
+      }
+    }
+  ],
+  "simulation": {
+    "simulation_time": 600.0,
+    "replications": 4,
+    "warmup_time": 30.0,
+    "seed": 2026,
+    "confidence_level": 0.95
+  }
+}

@@ -350,6 +350,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/realdata/import/levels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Levels
+         * @description Importa o CSV agregado por nível de carga e devolve os níveis (para /compare) e a calibração sugerida.
+         */
+        post: operations["import_levels_api_realdata_import_levels_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/realdata/compare-simulated": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compare With Simulation
+         * @description Como /compare, mais a média simulada (com IC) de cada métrica em cada nível: medido × analítico × simulação.
+         */
+        post: operations["compare_with_simulation_api_realdata_compare_simulated_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/realdata/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report
+         * @description Gera o relatório experimental (Markdown ou HTML) a partir dos resultados já calculados.
+         */
+        post: operations["report_api_realdata_report_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/models/mmcn/calculate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Calculate
+         * @description Métricas analíticas do sistema fechado (N usuários, tempo de reflexão Z, c servidores).
+         */
+        post: operations["calculate_api_models_mmcn_calculate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/models/mmcn/simulate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Simulate
+         * @description Simulação de eventos discretos do sistema fechado, com réplicas e intervalos de confiança.
+         */
+        post: operations["simulate_api_models_mmcn_simulate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -375,7 +475,7 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /** AnalysisResponse */
-        AnalysisResponse: {
+        "AnalysisResponse-Input": {
             /**
              * Status
              * @enum {string}
@@ -406,7 +506,42 @@ export interface components {
             /** Levels */
             levels: components["schemas"]["LevelModel"][];
             /** Comparison */
-            comparison: components["schemas"]["LevelComparisonOut"][];
+            comparison: components["schemas"]["LevelComparisonOut-Input"][];
+            dataset: components["schemas"]["DatasetOut"];
+        };
+        /** AnalysisResponse */
+        "AnalysisResponse-Output": {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "recommended" | "no_good_fit";
+            /**
+             * Confidence
+             * @enum {string}
+             */
+            confidence: "alta" | "media" | "baixa";
+            recommended: components["schemas"]["ModelPickOut"] | null;
+            nearest: components["schemas"]["ModelPickOut"] | null;
+            /** Ranking */
+            ranking: components["schemas"]["RankingOut"][];
+            /** Rationale */
+            rationale: string;
+            /** Warnings */
+            warnings: string[];
+            /** Diagnostics */
+            diagnostics: components["schemas"]["DiagnosticOut"][];
+            /**
+             * System Type
+             * @enum {string}
+             */
+            system_type: "open" | "closed";
+            estimates: components["schemas"]["EstimatesOut"];
+            overall: components["schemas"]["EmpiricalMetricsModel"];
+            /** Levels */
+            levels: components["schemas"]["LevelModel"][];
+            /** Comparison */
+            comparison: components["schemas"]["LevelComparisonOut-Output"][];
             dataset: components["schemas"]["DatasetOut"];
         };
         /** Body_analyze_csv_api_realdata_analyze_post */
@@ -465,6 +600,14 @@ export interface components {
              */
             confidence_level: number;
         };
+        /** Body_import_levels_api_realdata_import_levels_post */
+        Body_import_levels_api_realdata_import_levels_post: {
+            /**
+             * File
+             * @description CSV com users, avg_ms, throughput (e opcionais p90_ms, error_rate).
+             */
+            file: string;
+        };
         /**
          * CompareRequest
          * @example {
@@ -506,7 +649,7 @@ export interface components {
             /** Notation */
             notation: string;
             /** Comparison */
-            comparison: components["schemas"]["LevelComparisonOut"][];
+            comparison: components["schemas"]["LevelComparisonOut-Output"][];
         };
         /** ComparisonResponse */
         ComparisonResponse: {
@@ -697,8 +840,158 @@ export interface components {
             /** Message */
             message: string;
         };
+        /**
+         * FinitePopulationRequest
+         * @example {
+         *       "mu": 5,
+         *       "population": 10,
+         *       "servers": 1,
+         *       "think_time": 1
+         *     }
+         */
+        FinitePopulationRequest: {
+            /**
+             * Population
+             * @description N, número de usuários.
+             */
+            population: number;
+            /**
+             * Think Time
+             * @description Z, tempo médio de reflexão (s); 0 é permitido.
+             */
+            think_time: number;
+            /**
+             * Mu
+             * @description Taxa de serviço por servidor (req/s).
+             */
+            mu: number;
+            /**
+             * Servers
+             * @description c, servidores (1 = M/M/1//N).
+             * @default 1
+             */
+            servers: number;
+        };
+        /** FinitePopulationResponse */
+        FinitePopulationResponse: {
+            /** Model */
+            model: string;
+            /** Population */
+            population: number;
+            /** Think Time */
+            think_time: number;
+            /** Servers */
+            servers: number;
+            /** Rho */
+            rho: number;
+            /** L */
+            L: number;
+            /** Lq */
+            Lq: number;
+            /** W */
+            W: number;
+            /** Wq */
+            Wq: number;
+            /** P0 */
+            p0: number;
+            /** Throughput */
+            throughput: number;
+            /** P Wait */
+            p_wait: number;
+            /** P Block */
+            p_block: number;
+        };
+        /**
+         * FinitePopulationSimulateRequest
+         * @example {
+         *       "mu": 5,
+         *       "population": 10,
+         *       "servers": 1,
+         *       "think_time": 1
+         *     }
+         */
+        FinitePopulationSimulateRequest: {
+            /**
+             * Population
+             * @description N, número de usuários.
+             */
+            population: number;
+            /**
+             * Think Time
+             * @description Z, tempo médio de reflexão (s); 0 é permitido.
+             */
+            think_time: number;
+            /**
+             * Mu
+             * @description Taxa de serviço por servidor (req/s).
+             */
+            mu: number;
+            /**
+             * Servers
+             * @description c, servidores (1 = M/M/1//N).
+             * @default 1
+             */
+            servers: number;
+            /** Simulation Time */
+            simulation_time: number;
+            /**
+             * Replications
+             * @default 10
+             */
+            replications: number;
+            /**
+             * Warmup Time
+             * @default 0
+             */
+            warmup_time: number;
+            /** Seed */
+            seed?: number | null;
+            /**
+             * Confidence Level
+             * @default 0.95
+             */
+            confidence_level: number;
+        };
+        /** FinitePopulationSimulationResponse */
+        FinitePopulationSimulationResponse: {
+            /** Model */
+            model: string;
+            /** Population */
+            population: number;
+            /** Think Time */
+            think_time: number;
+            /** Mu */
+            mu: number;
+            /** Servers */
+            servers: number;
+            /** Simulation Time */
+            simulation_time: number;
+            /** Warmup Time */
+            warmup_time: number;
+            /** Replications */
+            replications: number;
+            /** Seed */
+            seed: number;
+            /** Confidence Level */
+            confidence_level: number;
+            /** Runs */
+            runs: components["schemas"]["QueueReplicationOut"][];
+            /** Summary */
+            summary: {
+                [key: string]: components["schemas"]["MetricSummaryOut"];
+            };
+        };
         /** LevelComparisonOut */
-        LevelComparisonOut: {
+        "LevelComparisonOut-Input": {
+            /** Users */
+            users: number | null;
+            /** Metrics */
+            metrics: {
+                [key: string]: components["schemas"]["MetricComparisonOut-Input"];
+            };
+        };
+        /** LevelComparisonOut */
+        "LevelComparisonOut-Output": {
             /** Users */
             users: number | null;
             /** Metrics */
@@ -714,6 +1007,39 @@ export interface components {
              */
             users: number | null;
             metrics: components["schemas"]["EmpiricalMetricsModel"];
+        };
+        /** LevelSuggestionsOut */
+        LevelSuggestionsOut: {
+            /**
+             * Mu
+             * @description 1/R no menor nível de carga (req/s).
+             */
+            mu: number | null;
+            /**
+             * Mu Source
+             * @constant
+             */
+            mu_source: "menor_nivel";
+            /**
+             * Think Time
+             * @description Z = N/X − R no menor nível (s); null se não for positivo.
+             */
+            think_time: number | null;
+            /** Think Source */
+            think_source: "estimado" | null;
+            /** Base Users */
+            base_users: number;
+        };
+        /** LevelsImportResponse */
+        LevelsImportResponse: {
+            /**
+             * Levels
+             * @description No mesmo formato do `levels` de /analyze: alimentam /compare.
+             */
+            levels: components["schemas"]["LevelModel"][];
+            suggestions: components["schemas"]["LevelSuggestionsOut"];
+            /** Warnings */
+            warnings: string[];
         };
         /**
          * MM1CalculateRequest
@@ -1115,6 +1441,26 @@ export interface components {
              */
             servers: number;
         };
+        /** MetricComparisonOut */
+        "MetricComparisonOut-Input": {
+            /** Model */
+            model: number;
+            /** Observed */
+            observed: number;
+            /** Observed Ci Low */
+            observed_ci_low?: number | null;
+            /** Observed Ci High */
+            observed_ci_high?: number | null;
+            /** Absolute Error */
+            absolute_error: number;
+            /**
+             * Relative Error Pct
+             * @description |modelo − observado| / observado × 100.
+             */
+            relative_error_pct: number | null;
+            /** Model Within Observed Ci */
+            model_within_observed_ci?: boolean | null;
+        };
         /** MetricEffectOut */
         MetricEffectOut: {
             /**
@@ -1359,6 +1705,40 @@ export interface components {
             /** Observation Time */
             observation_time: number;
         };
+        /** ReportRequest */
+        ReportRequest: {
+            /**
+             * Format
+             * @default markdown
+             * @enum {string}
+             */
+            format: "markdown" | "html";
+            /**
+             * Title
+             * @default Relatório experimental — QSimulador
+             */
+            title: string;
+            /** @description Resultado de /analyze. */
+            analysis?: components["schemas"]["AnalysisResponse-Input"] | null;
+            /** @description Resultado de /import/levels. */
+            levels_import?: components["schemas"]["LevelsImportResponse"] | null;
+            /** @description Resultado de /compare ou /compare-simulated, se for outro modelo que o recomendado. */
+            comparison?: components["schemas"]["SimulatedCompareResponse"] | null;
+        };
+        /** ReportResponse */
+        ReportResponse: {
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "markdown" | "html";
+            /** Filename */
+            filename: string;
+            /** Media Type */
+            media_type: string;
+            /** Content */
+            content: string;
+        };
         /**
          * SensitivityRequest
          * @example {
@@ -1504,6 +1884,125 @@ export interface components {
             /** Points */
             points: components["schemas"]["SweepPointOut"][];
         };
+        /**
+         * SimulatedCompareRequest
+         * @example {
+         *       "levels": [],
+         *       "model": "mm1n",
+         *       "mu": 10,
+         *       "servers": 1,
+         *       "think_time": 1
+         *     }
+         */
+        SimulatedCompareRequest: {
+            /**
+             * Model
+             * @enum {string}
+             */
+            model: "mm1" | "mmc" | "mm1k" | "mmck" | "mm1n" | "mmcn";
+            /**
+             * Mu
+             * @description Taxa de serviço por servidor (req/s).
+             */
+            mu: number;
+            /**
+             * Servers
+             * @default 1
+             */
+            servers: number;
+            /** Capacity */
+            capacity?: number | null;
+            /** Think Time */
+            think_time?: number | null;
+            /**
+             * Levels
+             * @description Os níveis devolvidos por /analyze.
+             */
+            levels: components["schemas"]["LevelModel"][];
+            simulation: components["schemas"]["SimulationIn"];
+        };
+        /** SimulatedCompareResponse */
+        SimulatedCompareResponse: {
+            /** Notation */
+            notation: string;
+            /** Comparison */
+            comparison: components["schemas"]["SimulatedLevelOut"][];
+            /** @description Ausente na comparação só analítica. */
+            simulation?: components["schemas"]["SimulationUsedOut"] | null;
+        };
+        /** SimulatedLevelOut */
+        SimulatedLevelOut: {
+            /** Users */
+            users: number | null;
+            /** Metrics */
+            metrics: {
+                [key: string]: components["schemas"]["SimulatedMetricOut"];
+            };
+        };
+        /** SimulatedMetricOut */
+        SimulatedMetricOut: {
+            /** Model */
+            model: number;
+            /** Observed */
+            observed: number;
+            /** Observed Ci Low */
+            observed_ci_low?: number | null;
+            /** Observed Ci High */
+            observed_ci_high?: number | null;
+            /** Absolute Error */
+            absolute_error: number;
+            /**
+             * Relative Error Pct
+             * @description |modelo − observado| / observado × 100.
+             */
+            relative_error_pct: number | null;
+            /** Model Within Observed Ci */
+            model_within_observed_ci?: boolean | null;
+            /** Simulated Mean */
+            simulated_mean?: number | null;
+            /** Simulated Ci Low */
+            simulated_ci_low?: number | null;
+            /** Simulated Ci High */
+            simulated_ci_high?: number | null;
+            /**
+             * Simulated Error Pct
+             * @description |simulação − observado| / observado × 100.
+             */
+            simulated_error_pct?: number | null;
+            /** Simulation Within Observed Ci */
+            simulation_within_observed_ci?: boolean | null;
+        };
+        /** SimulationIn */
+        SimulationIn: {
+            /**
+             * Simulation Time
+             * @description Tempo simulado de cada réplica (s).
+             */
+            simulation_time: number;
+            /**
+             * Replications
+             * @description Réplicas independentes por nível.
+             * @default 10
+             */
+            replications: number;
+            /**
+             * Warmup Time
+             * @description Aquecimento descartado (s).
+             * @default 0
+             */
+            warmup_time: number;
+            /**
+             * Seed
+             * @description Semente-base; o nível i usa semente-base + i.
+             */
+            seed?: number | null;
+            /**
+             * Confidence Level
+             * @description Nível de confiança dos intervalos.
+             * @default 0.95
+             */
+            confidence_level: number;
+        };
         /** SimulationResponse */
         SimulationResponse: {
             /**
@@ -1531,6 +2030,19 @@ export interface components {
             summary: {
                 [key: string]: components["schemas"]["MetricSummaryOut"];
             };
+        };
+        /** SimulationUsedOut */
+        SimulationUsedOut: {
+            /** Simulation Time */
+            simulation_time: number;
+            /** Replications */
+            replications: number;
+            /** Warmup Time */
+            warmup_time: number;
+            /** Seed */
+            seed: number;
+            /** Confidence Level */
+            confidence_level: number;
         };
         /** SummaryOut */
         SummaryOut: {
@@ -2282,7 +2794,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AnalysisResponse"];
+                    "application/json": components["schemas"]["AnalysisResponse-Output"];
                 };
             };
             /** @description Arquivo acima do limite */
@@ -2337,6 +2849,198 @@ export interface operations {
                 };
             };
             /** @description Arquivo ou parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    import_levels_api_realdata_import_levels_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_levels_api_realdata_import_levels_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LevelsImportResponse"];
+                };
+            };
+            /** @description Arquivo acima do limite */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Arquivo ou parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    compare_with_simulation_api_realdata_compare_simulated_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SimulatedCompareRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimulatedCompareResponse"];
+                };
+            };
+            /** @description Arquivo acima do limite */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Arquivo ou parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    report_api_realdata_report_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportResponse"];
+                };
+            };
+            /** @description Arquivo acima do limite */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Arquivo ou parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    calculate_api_models_mmcn_calculate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FinitePopulationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinitePopulationResponse"];
+                };
+            };
+            /** @description Parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    simulate_api_models_mmcn_simulate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FinitePopulationSimulateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinitePopulationSimulationResponse"];
+                };
+            };
+            /** @description Parâmetros inválidos */
             422: {
                 headers: {
                     [name: string]: unknown;

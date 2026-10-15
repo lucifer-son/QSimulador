@@ -660,7 +660,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AnalysisResponse"
+                  "$ref": "#/components/schemas/AnalysisResponse-Output"
                 }
               }
             }
@@ -740,6 +740,246 @@
         }
       }
     },
+    "/api/realdata/import/levels": {
+      "post": {
+        "tags": [
+          "Dados reais"
+        ],
+        "summary": "Import Levels",
+        "description": "Importa o CSV agregado por nível de carga e devolve os níveis (para /compare) e a calibração sugerida.",
+        "operationId": "import_levels_api_realdata_import_levels_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_levels_api_realdata_import_levels_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LevelsImportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Arquivo ou parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Arquivo acima do limite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/realdata/compare-simulated": {
+      "post": {
+        "tags": [
+          "Dados reais"
+        ],
+        "summary": "Compare With Simulation",
+        "description": "Como /compare, mais a média simulada (com IC) de cada métrica em cada nível: medido × analítico × simulação.",
+        "operationId": "compare_with_simulation_api_realdata_compare_simulated_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulatedCompareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulatedCompareResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Arquivo ou parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Arquivo acima do limite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/realdata/report": {
+      "post": {
+        "tags": [
+          "Dados reais"
+        ],
+        "summary": "Report",
+        "description": "Gera o relatório experimental (Markdown ou HTML) a partir dos resultados já calculados.",
+        "operationId": "report_api_realdata_report_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Arquivo ou parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Arquivo acima do limite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/mmcn/calculate": {
+      "post": {
+        "tags": [
+          "M/M/c//N (população finita)"
+        ],
+        "summary": "Calculate",
+        "description": "Métricas analíticas do sistema fechado (N usuários, tempo de reflexão Z, c servidores).",
+        "operationId": "calculate_api_models_mmcn_calculate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinitePopulationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinitePopulationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/mmcn/simulate": {
+      "post": {
+        "tags": [
+          "M/M/c//N (população finita)"
+        ],
+        "summary": "Simulate",
+        "description": "Simulação de eventos discretos do sistema fechado, com réplicas e intervalos de confiança.",
+        "operationId": "simulate_api_models_mmcn_simulate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinitePopulationSimulateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinitePopulationSimulationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health": {
       "get": {
         "tags": [
@@ -769,7 +1009,7 @@
   },
   "components": {
     "schemas": {
-      "AnalysisResponse": {
+      "AnalysisResponse-Input": {
         "properties": {
           "status": {
             "type": "string",
@@ -856,7 +1096,122 @@
           },
           "comparison": {
             "items": {
-              "$ref": "#/components/schemas/LevelComparisonOut"
+              "$ref": "#/components/schemas/LevelComparisonOut-Input"
+            },
+            "type": "array",
+            "title": "Comparison"
+          },
+          "dataset": {
+            "$ref": "#/components/schemas/DatasetOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "confidence",
+          "recommended",
+          "nearest",
+          "ranking",
+          "rationale",
+          "warnings",
+          "diagnostics",
+          "system_type",
+          "estimates",
+          "overall",
+          "levels",
+          "comparison",
+          "dataset"
+        ],
+        "title": "AnalysisResponse"
+      },
+      "AnalysisResponse-Output": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "recommended",
+              "no_good_fit"
+            ],
+            "title": "Status"
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "alta",
+              "media",
+              "baixa"
+            ],
+            "title": "Confidence"
+          },
+          "recommended": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelPickOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nearest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelPickOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ranking": {
+            "items": {
+              "$ref": "#/components/schemas/RankingOut"
+            },
+            "type": "array",
+            "title": "Ranking"
+          },
+          "rationale": {
+            "type": "string",
+            "title": "Rationale"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "diagnostics": {
+            "items": {
+              "$ref": "#/components/schemas/DiagnosticOut"
+            },
+            "type": "array",
+            "title": "Diagnostics"
+          },
+          "system_type": {
+            "type": "string",
+            "enum": [
+              "open",
+              "closed"
+            ],
+            "title": "System Type"
+          },
+          "estimates": {
+            "$ref": "#/components/schemas/EstimatesOut"
+          },
+          "overall": {
+            "$ref": "#/components/schemas/EmpiricalMetricsModel"
+          },
+          "levels": {
+            "items": {
+              "$ref": "#/components/schemas/LevelModel"
+            },
+            "type": "array",
+            "title": "Levels"
+          },
+          "comparison": {
+            "items": {
+              "$ref": "#/components/schemas/LevelComparisonOut-Output"
             },
             "type": "array",
             "title": "Comparison"
@@ -982,6 +1337,21 @@
         ],
         "title": "Body_analyze_csv_api_realdata_analyze_post"
       },
+      "Body_import_levels_api_realdata_import_levels_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "description": "CSV com users, avg_ms, throughput (e opcionais p90_ms, error_rate)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_levels_api_realdata_import_levels_post"
+      },
       "CompareRequest": {
         "properties": {
           "model": {
@@ -1063,7 +1433,7 @@
           },
           "comparison": {
             "items": {
-              "$ref": "#/components/schemas/LevelComparisonOut"
+              "$ref": "#/components/schemas/LevelComparisonOut-Output"
             },
             "type": "array",
             "title": "Comparison"
@@ -1600,7 +1970,294 @@
         ],
         "title": "FieldError"
       },
-      "LevelComparisonOut": {
+      "FinitePopulationRequest": {
+        "properties": {
+          "population": {
+            "type": "integer",
+            "title": "Population",
+            "description": "N, número de usuários."
+          },
+          "think_time": {
+            "type": "number",
+            "title": "Think Time",
+            "description": "Z, tempo médio de reflexão (s); 0 é permitido."
+          },
+          "mu": {
+            "type": "number",
+            "title": "Mu",
+            "description": "Taxa de serviço por servidor (req/s)."
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers",
+            "description": "c, servidores (1 = M/M/1//N).",
+            "default": 1
+          }
+        },
+        "type": "object",
+        "required": [
+          "population",
+          "think_time",
+          "mu"
+        ],
+        "title": "FinitePopulationRequest",
+        "examples": [
+          {
+            "mu": 5.0,
+            "population": 10,
+            "servers": 1,
+            "think_time": 1.0
+          }
+        ]
+      },
+      "FinitePopulationResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "population": {
+            "type": "integer",
+            "title": "Population"
+          },
+          "think_time": {
+            "type": "number",
+            "title": "Think Time"
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers"
+          },
+          "rho": {
+            "type": "number",
+            "title": "Rho"
+          },
+          "L": {
+            "type": "number",
+            "title": "L"
+          },
+          "Lq": {
+            "type": "number",
+            "title": "Lq"
+          },
+          "W": {
+            "type": "number",
+            "title": "W"
+          },
+          "Wq": {
+            "type": "number",
+            "title": "Wq"
+          },
+          "p0": {
+            "type": "number",
+            "title": "P0"
+          },
+          "throughput": {
+            "type": "number",
+            "title": "Throughput"
+          },
+          "p_wait": {
+            "type": "number",
+            "title": "P Wait"
+          },
+          "p_block": {
+            "type": "number",
+            "title": "P Block"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "population",
+          "think_time",
+          "servers",
+          "rho",
+          "L",
+          "Lq",
+          "W",
+          "Wq",
+          "p0",
+          "throughput",
+          "p_wait",
+          "p_block"
+        ],
+        "title": "FinitePopulationResponse"
+      },
+      "FinitePopulationSimulateRequest": {
+        "properties": {
+          "population": {
+            "type": "integer",
+            "title": "Population",
+            "description": "N, número de usuários."
+          },
+          "think_time": {
+            "type": "number",
+            "title": "Think Time",
+            "description": "Z, tempo médio de reflexão (s); 0 é permitido."
+          },
+          "mu": {
+            "type": "number",
+            "title": "Mu",
+            "description": "Taxa de serviço por servidor (req/s)."
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers",
+            "description": "c, servidores (1 = M/M/1//N).",
+            "default": 1
+          },
+          "simulation_time": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Simulation Time"
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications",
+            "default": 10
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time",
+            "default": 0.0
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level",
+            "default": 0.95
+          }
+        },
+        "type": "object",
+        "required": [
+          "population",
+          "think_time",
+          "mu",
+          "simulation_time"
+        ],
+        "title": "FinitePopulationSimulateRequest",
+        "examples": [
+          {
+            "mu": 5.0,
+            "population": 10,
+            "servers": 1,
+            "think_time": 1.0
+          }
+        ]
+      },
+      "FinitePopulationSimulationResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "population": {
+            "type": "integer",
+            "title": "Population"
+          },
+          "think_time": {
+            "type": "number",
+            "title": "Think Time"
+          },
+          "mu": {
+            "type": "number",
+            "title": "Mu"
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers"
+          },
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time"
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time"
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed"
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level"
+          },
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/QueueReplicationOut"
+            },
+            "type": "array",
+            "title": "Runs"
+          },
+          "summary": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MetricSummaryOut"
+            },
+            "type": "object",
+            "title": "Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "population",
+          "think_time",
+          "mu",
+          "servers",
+          "simulation_time",
+          "warmup_time",
+          "replications",
+          "seed",
+          "confidence_level",
+          "runs",
+          "summary"
+        ],
+        "title": "FinitePopulationSimulationResponse"
+      },
+      "LevelComparisonOut-Input": {
+        "properties": {
+          "users": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Users"
+          },
+          "metrics": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MetricComparisonOut-Input"
+            },
+            "type": "object",
+            "title": "Metrics"
+          }
+        },
+        "type": "object",
+        "required": [
+          "users",
+          "metrics"
+        ],
+        "title": "LevelComparisonOut"
+      },
+      "LevelComparisonOut-Output": {
         "properties": {
           "users": {
             "anyOf": [
@@ -1652,6 +2309,93 @@
           "metrics"
         ],
         "title": "LevelModel"
+      },
+      "LevelSuggestionsOut": {
+        "properties": {
+          "mu": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mu",
+            "description": "1/R no menor nível de carga (req/s)."
+          },
+          "mu_source": {
+            "type": "string",
+            "const": "menor_nivel",
+            "title": "Mu Source"
+          },
+          "think_time": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Think Time",
+            "description": "Z = N/X − R no menor nível (s); null se não for positivo."
+          },
+          "think_source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "estimado"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Think Source"
+          },
+          "base_users": {
+            "type": "integer",
+            "title": "Base Users"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mu",
+          "mu_source",
+          "think_time",
+          "think_source",
+          "base_users"
+        ],
+        "title": "LevelSuggestionsOut"
+      },
+      "LevelsImportResponse": {
+        "properties": {
+          "levels": {
+            "items": {
+              "$ref": "#/components/schemas/LevelModel"
+            },
+            "type": "array",
+            "title": "Levels",
+            "description": "No mesmo formato do `levels` de /analyze: alimentam /compare."
+          },
+          "suggestions": {
+            "$ref": "#/components/schemas/LevelSuggestionsOut"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "levels",
+          "suggestions",
+          "warnings"
+        ],
+        "title": "LevelsImportResponse"
       },
       "MM1CalculateRequest": {
         "properties": {
@@ -2186,6 +2930,75 @@
             "warmup_time": 100
           }
         ]
+      },
+      "MetricComparisonOut-Input": {
+        "properties": {
+          "model": {
+            "type": "number",
+            "title": "Model"
+          },
+          "observed": {
+            "type": "number",
+            "title": "Observed"
+          },
+          "observed_ci_low": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed Ci Low"
+          },
+          "observed_ci_high": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed Ci High"
+          },
+          "absolute_error": {
+            "type": "number",
+            "title": "Absolute Error"
+          },
+          "relative_error_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relative Error Pct",
+            "description": "|modelo − observado| / observado × 100."
+          },
+          "model_within_observed_ci": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Within Observed Ci"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "observed",
+          "absolute_error",
+          "relative_error_pct"
+        ],
+        "title": "MetricComparisonOut"
       },
       "MetricEffectOut": {
         "properties": {
@@ -2889,6 +3702,91 @@
         ],
         "title": "ReplicationOut"
       },
+      "ReportRequest": {
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": [
+              "markdown",
+              "html"
+            ],
+            "title": "Format",
+            "default": "markdown"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "default": "Relatório experimental — QSimulador"
+          },
+          "analysis": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnalysisResponse-Input"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Resultado de /analyze."
+          },
+          "levels_import": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LevelsImportResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Resultado de /import/levels."
+          },
+          "comparison": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SimulatedCompareResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Resultado de /compare ou /compare-simulated, se for outro modelo que o recomendado."
+          }
+        },
+        "type": "object",
+        "title": "ReportRequest"
+      },
+      "ReportResponse": {
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": [
+              "markdown",
+              "html"
+            ],
+            "title": "Format"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "media_type": {
+            "type": "string",
+            "title": "Media Type"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "format",
+          "filename",
+          "media_type",
+          "content"
+        ],
+        "title": "ReportResponse"
+      },
       "SensitivityRequest": {
         "properties": {
           "model": {
@@ -3179,6 +4077,313 @@
         ],
         "title": "ServerSeriesOut"
       },
+      "SimulatedCompareRequest": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "enum": [
+              "mm1",
+              "mmc",
+              "mm1k",
+              "mmck",
+              "mm1n",
+              "mmcn"
+            ],
+            "title": "Model"
+          },
+          "mu": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Mu",
+            "description": "Taxa de serviço por servidor (req/s)."
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers",
+            "default": 1
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity"
+          },
+          "think_time": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Think Time"
+          },
+          "levels": {
+            "items": {
+              "$ref": "#/components/schemas/LevelModel"
+            },
+            "type": "array",
+            "title": "Levels",
+            "description": "Os níveis devolvidos por /analyze."
+          },
+          "simulation": {
+            "$ref": "#/components/schemas/SimulationIn"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "mu",
+          "levels",
+          "simulation"
+        ],
+        "title": "SimulatedCompareRequest",
+        "examples": [
+          {
+            "levels": [],
+            "model": "mm1n",
+            "mu": 10.0,
+            "servers": 1,
+            "think_time": 1.0
+          }
+        ]
+      },
+      "SimulatedCompareResponse": {
+        "properties": {
+          "notation": {
+            "type": "string",
+            "title": "Notation"
+          },
+          "comparison": {
+            "items": {
+              "$ref": "#/components/schemas/SimulatedLevelOut"
+            },
+            "type": "array",
+            "title": "Comparison"
+          },
+          "simulation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SimulationUsedOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Ausente na comparação só analítica."
+          }
+        },
+        "type": "object",
+        "required": [
+          "notation",
+          "comparison"
+        ],
+        "title": "SimulatedCompareResponse"
+      },
+      "SimulatedLevelOut": {
+        "properties": {
+          "users": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Users"
+          },
+          "metrics": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/SimulatedMetricOut"
+            },
+            "type": "object",
+            "title": "Metrics"
+          }
+        },
+        "type": "object",
+        "required": [
+          "users",
+          "metrics"
+        ],
+        "title": "SimulatedLevelOut"
+      },
+      "SimulatedMetricOut": {
+        "properties": {
+          "model": {
+            "type": "number",
+            "title": "Model"
+          },
+          "observed": {
+            "type": "number",
+            "title": "Observed"
+          },
+          "observed_ci_low": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed Ci Low"
+          },
+          "observed_ci_high": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed Ci High"
+          },
+          "absolute_error": {
+            "type": "number",
+            "title": "Absolute Error"
+          },
+          "relative_error_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relative Error Pct",
+            "description": "|modelo − observado| / observado × 100."
+          },
+          "model_within_observed_ci": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Within Observed Ci"
+          },
+          "simulated_mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Simulated Mean"
+          },
+          "simulated_ci_low": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Simulated Ci Low"
+          },
+          "simulated_ci_high": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Simulated Ci High"
+          },
+          "simulated_error_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Simulated Error Pct",
+            "description": "|simulação − observado| / observado × 100."
+          },
+          "simulation_within_observed_ci": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Simulation Within Observed Ci"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "observed",
+          "absolute_error",
+          "relative_error_pct"
+        ],
+        "title": "SimulatedMetricOut"
+      },
+      "SimulationIn": {
+        "properties": {
+          "simulation_time": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Simulation Time",
+            "description": "Tempo simulado de cada réplica (s)."
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications",
+            "description": "Réplicas independentes por nível.",
+            "default": 10
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time",
+            "description": "Aquecimento descartado (s).",
+            "default": 0.0
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Semente-base; o nível i usa semente-base + i."
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level",
+            "description": "Nível de confiança dos intervalos.",
+            "default": 0.95
+          }
+        },
+        "type": "object",
+        "required": [
+          "simulation_time"
+        ],
+        "title": "SimulationIn"
+      },
       "SimulationResponse": {
         "properties": {
           "model": {
@@ -3242,6 +4447,39 @@
           "summary"
         ],
         "title": "SimulationResponse"
+      },
+      "SimulationUsedOut": {
+        "properties": {
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time"
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications"
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed"
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level"
+          }
+        },
+        "type": "object",
+        "required": [
+          "simulation_time",
+          "replications",
+          "warmup_time",
+          "seed",
+          "confidence_level"
+        ],
+        "title": "SimulationUsedOut"
       },
       "SummaryOut": {
         "properties": {

@@ -1,0 +1,10 @@
+{
+  "code": "invalid_dataset",
+  "message": "Envie um arquivo com extensão .csv.",
+  "fields": [
+    {
+      "field": "file",
+      "message": "Envie um arquivo com extensão .csv."
+    }
+  ]
+}

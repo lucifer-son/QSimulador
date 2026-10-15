@@ -7,7 +7,9 @@ from app.api.errors import register_exception_handlers
 from app.api.experiments import router as experiments_router
 from app.api.mm1 import router as mm1_router
 from app.api.queues import mm1k_router, mmc_router, mmck_router
+from app.api.finite_population import router as finite_population_router
 from app.api.realdata import router as realdata_router
+from app.api.realdata_extra import router as realdata_extra_router
 
 CORS_ENV_VAR = "QSIMULADOR_CORS_ORIGINS"
 
@@ -45,6 +47,8 @@ def create_app(cors_origins: list[str] | None = None) -> FastAPI:
     application.include_router(mmck_router)
     application.include_router(experiments_router)
     application.include_router(realdata_router)
+    application.include_router(realdata_extra_router)
+    application.include_router(finite_population_router)
 
     @application.get("/api/health", tags=["infra"])
     def health() -> dict[str, str]:
