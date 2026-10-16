@@ -25,7 +25,7 @@ O projeto está em desenvolvimento. Os modelos **M/M/1**, **M/M/c**, **M/M/1/K**
 | Interface web (React + TypeScript): formulário, comparação, gráficos, abas de réplicas e detalhes, tema claro e escuro | ✅ Implementado |
 | Experimentos: varredura de λ, μ, c e K (analítica, com simulação opcional), comparação de servidores e análise de sensibilidade (`/api/experiments`, aba Experimentos) | ✅ Implementado |
 | Dados reais: análise do CSV do JMeter com recomendação do modelo, CSV agregado por nível de carga, M/M/c//N (analítico e simulação), comparação medido × analítico × simulação e relatório em Markdown e HTML (`/api/realdata`, aba Dados reais) | ✅ Implementado |
-| Persistência | 📋 Planejado |
+| Persistência | ✅ Implementado |
 
 ---
 
