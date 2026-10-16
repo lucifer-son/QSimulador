@@ -4,7 +4,7 @@ Laboratório interativo de modelagem, simulação e análise de sistemas de fila
 
 Este documento especifica os **requisitos funcionais (RF)** e **não funcionais (RNF)** do sistema e os relaciona aos [Casos de Uso](casos-de-uso.md) e às [Histórias de Usuário](historias-de-usuario.md). Para instruções de execução, veja [`como-executar.md`](como-executar.md).
 
-**Versão:** 1.4 (Fase 7: backend da recomendação de modelo, em 13/10/2026)
+**Versão:** 1.5 (Fase 8: Persistência em 15/10/2026)
 
 ---
 
