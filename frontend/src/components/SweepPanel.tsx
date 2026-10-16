@@ -1,5 +1,5 @@
 import { IconAlertTriangle, IconInfoCircle } from "@tabler/icons-react";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { runSweep, type SweepResponse } from "../api/experiments";
 import { describeUnstable, sweepChart, sweepSeries, type XAxis } from "../charts/experiments";
 import {
@@ -10,9 +10,11 @@ import { formatInteger, formatNumber } from "../domain/format";
 import type { MetricName, ModelKey } from "../domain/types";
 import { useExperiment } from "../hooks/useExperiment";
 import { useThemeColors } from "../hooks/useThemeColors";
+import { experimentRecord, experimentTitle } from "../domain/records";
 import { FixedParameters, MetricSelect, ResultArea, RunButtons } from "./ExperimentParts";
 import { metricTitle } from "./MetricsTable";
 import { PlotlyChart } from "./PlotlyChart";
+import { SaveButton } from "./SaveButton";
 import { SweepTable } from "./SweepTable";
 import { TextField } from "./TextField";
 
@@ -32,6 +34,7 @@ export function SweepPanel({ active, model, system, sim }: Props) {
   const [simText, setSimText] = useState<SimText>(sim);
   const [errors, setErrors] = useState<ExpErrors>({});
   const { state, run, cancel } = useExperiment<SweepResponse>();
+  const lastRequest = useRef<unknown>(null);   // o pedido que gerou o resultado, para o histórico
 
   // Ao trocar a variável (ou o modelo), a faixa antiga deixa de fazer sentido: sugere outra.
   useEffect(() => {
@@ -52,6 +55,7 @@ export function SweepPanel({ active, model, system, sim }: Props) {
       return;
     }
     setErrors({});
+    lastRequest.current = built.body;
     void run((signal) => runSweep(built.body, signal));
   };
 
@@ -123,13 +127,24 @@ export function SweepPanel({ active, model, system, sim }: Props) {
         idleText={`Escolha a faixa de ${label} e clique em Gerar curva para ver as métricas e onde o sistema satura.`}
         loadingText={simulate ? "Calculando e simulando a faixa" : "Calculando a faixa"}
       >
-        {(result) => <SweepResult result={result} />}
+        {(result) => {
+          const title = experimentTitle("sweep", result.model as ModelKey, result);
+          return (
+            <>
+              <SaveButton
+                suggestedTitle={title}
+                build={(t) => experimentRecord("sweep", result.model as ModelKey, lastRequest.current, result, t ?? title)}
+              />
+              <SweepResult result={result} />
+            </>
+          );
+        }}
       </ResultArea>
     </div>
   );
 }
 
-function SweepResult({ result }: { result: SweepResponse }) {
+export function SweepResult({ result }: { result: SweepResponse }) {
   const colors = useThemeColors();
   const model = result.model as ModelKey;
   const variable = result.variable as SweepVariable;

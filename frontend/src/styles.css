@@ -287,3 +287,31 @@ input[type="file"] { max-width: 100%; font-size: 0.85rem; }
 /* ---------- Dados reais: simulação e relatório (acréscimos da Fase 7) ---------- */
 .rd-report { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; font-size: 0.9rem; color: var(--text-secondary); }
 .cell-sim { display: block; font-size: 0.8rem; color: var(--text-secondary); }
+
+/* ---------- Histórico (Fase 8) ---------- */
+.save-row { padding: 10px 16px 0; }
+.save-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 12px; }
+.save-label { font-size: 0.85rem; color: var(--text-secondary); }
+.save-bar input[type="text"] {
+  min-width: 220px; flex: 1 1 220px; height: 28px; padding: 0 8px; font-size: 0.85rem;
+  background: var(--surface); color: var(--text-primary); border: 1px solid var(--border-strong); border-radius: var(--radius);
+}
+.save-ok { display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem; color: var(--success-text); }
+.link-button {
+  background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font: inherit; text-decoration: underline;
+}
+.btn-danger { background: var(--danger-bg); color: var(--danger-text); border-color: transparent; }
+
+.history { display: grid; gap: 16px; align-items: start; }
+.history-list { padding: 16px; }
+.history-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.history-items { list-style: none; margin: 10px 0; padding: 0; display: flex; flex-direction: column; }
+.history-item {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 10px 8px; border-bottom: 1px solid var(--border);
+}
+.history-item.is-open { background: var(--surface-2); }
+.history-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.history-main .note { margin-top: 0; }
+.history-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.history-view { min-width: 0; }

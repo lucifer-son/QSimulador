@@ -175,6 +175,7 @@ Abra **http://127.0.0.1:8000/docs** no navegador. A página lista os endpoints, 
 | `POST /api/experiments/sweep` | Varredura de λ, μ, c ou K ([detalhes](#experimentos-fase-6)) |
 | `POST /api/experiments/servers` | Comparação de números de servidores |
 | `POST /api/experiments/sensitivity` | Análise de sensibilidade |
+| `GET/POST /api/records` · `GET/PATCH/DELETE /api/records/{id}` | Histórico de resultados com PostgreSQL ([detalhes](#histórico-com-postgresql-fase-8)) |
 
 ### Chamadas de exemplo
 
@@ -564,3 +565,89 @@ Na aba **Dados reais** há duas origens: *Teste do JMeter (JTL)* e *Níveis de c
 **Simular também** (desligada por padrão) acrescenta as colunas de simulação à tabela e a curva simulada ao gráfico, e os botões
 **Markdown** e **HTML** baixam o relatório com o que está na tela. A API recebe o upload em multipart; os testes de contrato do
 upload rodam em `src/test/contract.upload.test.ts` (ambiente `node`), junto com os demais em `npm run test:contract`.
+
+## Histórico com PostgreSQL (Fase 8)
+
+O histórico guarda resultados para reabri-los depois. É **opcional** (RNF-18): sem banco configurado, a análise, a simulação, os experimentos e os dados reais funcionam como antes; o botão *Salvar no histórico* some e a aba *Histórico* explica que o servidor não tem banco.
+
+### O que é salvo
+
+| Tela | Tipo do registro | Ao reabrir |
+| --- | --- | --- |
+| Laboratório (Calcular, Simular, Comparar) | `model`, `simulation` ou `comparison` | **Reabrir no Laboratório** devolve o modelo, os parâmetros e o resultado, sem recalcular |
+| Experimentos (varredura, servidores, sensibilidade) | `experiment` | O resultado aparece na própria aba Histórico |
+| Dados reais, análise do JTL do JMeter | `realdata` | O resultado aparece na própria aba Histórico |
+
+A importação de níveis de carga (CSV agregado) ainda não é salva. Os dados ficam em JSONB, como a API os devolveu; ao reabrir, os valores voltam iguais (a ordem das chaves do objeto pode mudar, o que não altera o significado).
+
+### Rotas
+
+| Método e rota | O que faz |
+| --- | --- |
+| `GET /api/records/status` | Diz se o histórico está ativo e quais são os limites |
+| `POST /api/records` | Salva um registro (`kind`, `title`, `params`, `result`) |
+| `GET /api/records` | Lista, do mais recente ao mais antigo (`kind`, `limit` até 100, `offset`) |
+| `GET /api/records/{id}` | Reabre um registro, com parâmetros e resultado |
+| `PATCH /api/records/{id}` | Renomeia |
+| `DELETE /api/records/{id}` | Exclui |
+
+Todas, exceto `/status`, exigem o cabeçalho `X-Client-Id` com um UUID. O frontend cria esse identificador na primeira vez e o guarda no navegador. Respostas de erro: `503 persistence_disabled` (sem banco), `503 database_unavailable` (banco fora do ar ou sem migração), `404 record_not_found`, `409 record_limit_reached`, `413 record_too_large`, `422 invalid_client_id` e `422 invalid_record`.
+
+### Variáveis de ambiente (RNF-26)
+
+Nenhuma credencial fica no código. Há um modelo em `backend/.env.example`.
+
+| Variável | Para que serve | Padrão |
+| --- | --- | --- |
+| `QSIMULADOR_DATABASE_URL` (ou `DATABASE_URL`) | URL do PostgreSQL. Aceita `postgres://` e `postgresql://` | sem banco |
+| `QSIMULADOR_MAX_RECORD_BYTES` | Tamanho máximo de um registro, em bytes | 2.000.000 |
+| `QSIMULADOR_MAX_RECORDS_PER_CLIENT` | Registros por navegador | 200 |
+| `QSIMULADOR_CORS_ORIGINS` | Origens do frontend, se ele estiver em outro domínio | desligado |
+
+### Usando um PostgreSQL local
+
+Crie o banco (`createdb qsimulador`, ou pelo pgAdmin) e aplique as migrações. A partir de `backend/`, com o ambiente virtual ativo e `pip install -r requirements.txt` feito:
+
+```bash
+# macOS / Linux
+export QSIMULADOR_DATABASE_URL="postgresql://usuario:senha@localhost:5432/qsimulador"
+python -m alembic upgrade head
+python -m uvicorn app.main:app --reload
+```
+
+```powershell
+# Windows (PowerShell)
+$env:QSIMULADOR_DATABASE_URL = "postgresql://usuario:senha@localhost:5432/qsimulador"
+python -m alembic upgrade head
+python -m uvicorn app.main:app --reload
+```
+
+A variável vale só para o terminal em que foi definida. Confira em `http://127.0.0.1:8000/api/health`: deve aparecer `"persistence": "enabled"`.
+
+### Publicação na Vercel com um PostgreSQL externo
+
+A Vercel não guarda arquivos entre execuções, então o banco precisa ser externo (por exemplo, Neon ou Supabase, que têm plano gratuito).
+
+1. Crie o banco no provedor e copie a URL de conexão. Para o app, use a URL com **pool de conexões** (o provedor costuma chamá-la de *pooled*).
+2. No projeto da Vercel, em *Settings → Environment Variables*, crie `QSIMULADOR_DATABASE_URL` com essa URL. Se a integração do provedor já criou `DATABASE_URL`, ela também funciona.
+3. Aplique as migrações **uma vez**, da sua máquina, apontando para o banco de produção (de preferência com a URL direta, sem pool): defina `QSIMULADOR_DATABASE_URL` como na seção anterior e rode `python -m alembic upgrade head`. Repita sempre que uma nova migração for publicada.
+4. Faça um novo deploy para a variável valer. Confira `/api/health` em produção.
+
+As migrações não rodam sozinhas na subida da API de propósito: em serverless, cada instância nova faria isso.
+
+### Segurança e limites
+
+O histórico não tem login. Cada navegador tem um identificador anônimo e só enxerga os próprios registros, mas isso **não é autenticação**: quem souber o identificador acessa aqueles registros. Por isso, não salve dados pessoais ou sigilosos. Os limites (tamanho do registro e registros por navegador) evitam abuso de um site público; ajuste-os pelas variáveis acima. Limpar os dados do navegador faz o identificador mudar, e os registros antigos deixam de aparecer para ele.
+
+### Testes com PostgreSQL real
+
+Os testes do histórico rodam em SQLite por padrão. Para rodá-los também em um PostgreSQL de teste (que **será limpo**: as tabelas `saved_records` e `alembic_version` são apagadas), defina `QSIMULADOR_TEST_POSTGRES_URL` com a URL de um banco descartável e rode `python -m pytest`. O teste de contrato do frontend (`npm run test:contract`, com `VITE_API_BASE_URL` apontando para uma API com banco) também confere o ciclo salvar, listar, reabrir, renomear e excluir.
+
+### Problemas comuns
+
+| Sintoma | Causa provável |
+| --- | --- |
+| A aba Histórico diz que está indisponível | A API está sem `QSIMULADOR_DATABASE_URL`, ou o frontend aponta para outra API |
+| `503 database_unavailable` | Banco fora do ar, URL errada ou migração não aplicada (`python -m alembic upgrade head`) |
+| `409 record_limit_reached` | O navegador chegou ao limite; exclua registros na aba Histórico |
+| Os registros sumiram | O navegador mudou (ou teve os dados limpos): o identificador é outro |

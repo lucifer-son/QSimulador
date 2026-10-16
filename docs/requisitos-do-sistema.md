@@ -17,6 +17,7 @@ Este documento especifica os **requisitos funcionais (RF)** e **não funcionais 
 | 1.2 | Status de todos os requisitos conferido executando o sistema (ver seção 11); resolvidos os ❓; decisões em aberto 1 a 4 e 7 confirmadas pelo código; incluída a seção **Auditoria de conformidade**. |
 | 1.3 | Fechadas as divergências 1 a 4 da auditoria: P0 em todos os modelos, no analítico e na simulação (RF-03, RF-31); réplicas entre 2 e 100 (RF-06, RNF-12); limite de 1.000.000 de chegadas esperadas por réplica (RNF-12); e campo identificado em cada erro de regra (RF-28). Segue em aberto a divergência 5 (versões fixas, RNF-05). |
 | 1.4 | Fase 7 (backend): incluídos RF-39 a RF-44 e RNF-33 e RNF-34; RF-23 e RF-24 passam de **C** para **M** (requisito da disciplina); decisões em aberto 5 e 6 resolvidas. Na mesclagem, entraram RF-43 e RF-44 (relatório em Markdown e HTML), a simulação do M/M/c//N e a comparação medido × analítico × simulação. Ver `docs/plano-fase-7.md`. |
+| 1.5 | Fase 8 (persistência): RF-25, RF-26 e RNF-26 passam a ✅ (histórico com PostgreSQL opcional, rotas `/api/records`, Alembic e variáveis de ambiente); RNF-31 passa a ✅ (arquivo `LICENSE` na raiz). RNF-17 (Docker) segue 📋, adiado. Não há autenticação: o histórico usa um identificador anônimo por navegador. |
 
 ---
 
@@ -177,8 +178,8 @@ Com λ = taxa de chegada, μ = taxa de serviço e ρ = λ/μ, válidas apenas pa
 
 | ID | Requisito | Prior. | Verif. | UC | US | Status |
 |----|-----------|--------|--------|----|----|--------|
-| RF-25 | O sistema deve salvar modelos, simulações e experimentos no PostgreSQL. | C | T | UC-09 | US-23 | 📋 |
-| RF-26 | O sistema deve listar e reabrir registros salvos, recuperando exatamente os dados gravados. | C | T | UC-09 | US-24 | 📋 |
+| RF-25 | O sistema deve salvar modelos, simulações e experimentos no PostgreSQL. | C | T | UC-09 | US-23 | ✅ |
+| RF-26 | O sistema deve listar e reabrir registros salvos, recuperando exatamente os dados gravados. | C | T | UC-09 | US-24 | ✅ |
 
 ### 4.10 API
 
@@ -251,7 +252,7 @@ Medições feitas em máquina de referência com 4 núcleos e 8 GB de RAM, em ex
 | RNF-20 | Os modelos de filas devem ser extensíveis. | Um novo modelo é adicionado implementando a interface comum, sem alterar o código dos modelos existentes. | M | I | 🚧 |
 | RNF-21 | O código deve ser tipado e seguir um padrão de estilo único. | Anotações de tipo no Python, TypeScript em modo estrito, verificadores e formatadores configurados e sem erros. | S | I, T | 🚧 |
 | RNF-22 | O README e a documentação de execução devem acompanhar o código. | A cada etapa concluída, README e `docs/como-executar.md` refletem o estado real. | M | I | ✅ |
-| RNF-31 | O repositório deve conter uma licença definida. | Arquivo `LICENSE` presente na raiz (pendência atual). | S | I | 📋 |
+| RNF-31 | O repositório deve conter uma licença definida. | Arquivo `LICENSE` presente na raiz. | S | I | ✅ |
 
 ### 5.8 Segurança
 
@@ -260,7 +261,7 @@ Medições feitas em máquina de referência com 4 núcleos e 8 GB de RAM, em ex
 | RNF-23 | Toda entrada deve ser validada no backend, independentemente do frontend. | Requisições inválidas enviadas diretamente à API são rejeitadas. | M | T | ✅ |
 | RNF-24 | O CORS deve permitir apenas as origens configuradas. | Origem não configurada é bloqueada; não há liberação irrestrita em produção. | S | T | ✅ |
 | RNF-25 | O upload de CSV deve ser validado antes do processamento. | Rejeição de extensão ou tipo diferente de CSV, de arquivo acima de 10 MB **(proposto)** e de estrutura inválida. | S | T | 🚧 |
-| RNF-26 | Credenciais e configurações sensíveis devem ficar em variáveis de ambiente. | Nenhuma credencial no código ou no repositório. | M | I | 📋 |
+| RNF-26 | Credenciais e configurações sensíveis devem ficar em variáveis de ambiente. | Nenhuma credencial no código ou no repositório. | M | I | ✅ |
 
 ### 5.9 Compatibilidade e interoperabilidade
 
@@ -388,7 +389,6 @@ Os status deste documento foram conferidos **executando o sistema**: API real, t
 
 | Requisito | Pendência |
 |-----------|-----------|
-| RNF-31 | Não há arquivo `LICENSE` |
 | RNF-32 | O backend não usa `logging` |
 | RNF-21 | TypeScript está em modo estrito e o Python tem anotações de tipo, mas **não há linter nem formatador configurado** (ruff, mypy, ESLint, Prettier) |
 | RNF-30 | Resta um aviso de depreciação (`httpx` no `TestClient` do Starlette) |

@@ -9,9 +9,25 @@ export type ApiErrorCode =
   | "insufficient_sample"
   | "invalid_dataset"
   | "file_too_large"
+  | RecordsErrorCode
   | "network"
   | "http"
   | "aborted";
+
+/** Erros próprios do histórico (/api/records). */
+export type RecordsErrorCode =
+  | "persistence_disabled"
+  | "database_unavailable"
+  | "record_not_found"
+  | "record_too_large"
+  | "record_limit_reached"
+  | "invalid_client_id"
+  | "invalid_record";
+
+const RECORDS_CODES: RecordsErrorCode[] = [
+  "persistence_disabled", "database_unavailable", "record_not_found", "record_too_large",
+  "record_limit_reached", "invalid_client_id", "invalid_record",
+];
 
 export interface FieldIssue {
   field: string;
@@ -37,7 +53,7 @@ export class ApiError extends Error {
 // Vazio = mesma origem (o proxy do Vite cuida do desenvolvimento).
 const BASE_URL: string = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
 
-async function send<T>(path: string, init: RequestInit, signal?: AbortSignal): Promise<T> {
+export async function send<T>(path: string, init: RequestInit, signal?: AbortSignal): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${BASE_URL}${path}`, { ...init, signal });
@@ -47,7 +63,7 @@ async function send<T>(path: string, init: RequestInit, signal?: AbortSignal): P
     throw new ApiError("network", "Não foi possível conectar à API. Confira se o servidor está no ar.");
   }
 
-  if (response.ok) return (await response.json()) as T;
+  if (response.ok) return (response.status === 204 ? undefined : await response.json()) as T;
 
   let payload: Partial<ErrorResponse> | null = null;
   try {
@@ -57,8 +73,19 @@ async function send<T>(path: string, init: RequestInit, signal?: AbortSignal): P
   }
   const code = payload?.code as ApiErrorCode | undefined;
   // 422: erro de validação; 413: arquivo acima do limite (envio de CSV).
-  if ((response.status === 422 || response.status === 413) && code && API_CODES.includes(code) && typeof payload?.message === "string") {
+  if (
+    (response.status === 422 || response.status === 413) && code
+    && (API_CODES.includes(code) || (RECORDS_CODES as string[]).includes(code))
+    && typeof payload?.message === "string"
+  ) {
     throw new ApiError(code, payload.message, payload.fields ?? undefined);
+  }
+  // Histórico: 404 (não existe), 409 (limite de registros) e 503 (sem banco) também trazem {code, message}.
+  if (
+    [404, 409, 503].includes(response.status) && code && (RECORDS_CODES as string[]).includes(code)
+    && typeof payload?.message === "string"
+  ) {
+    throw new ApiError(code, payload.message);
   }
   throw new ApiError("http", `A API respondeu com erro ${response.status}.`);
 }

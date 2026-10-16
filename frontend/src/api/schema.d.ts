@@ -450,6 +450,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/records/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Status
+         * @description Informa se o histórico está disponível e quais são os limites.
+         */
+        get: operations["status_api_records_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List All
+         * @description Lista os registros do navegador, do mais recente para o mais antigo.
+         */
+        get: operations["list_all_api_records_get"];
+        put?: never;
+        /**
+         * Create
+         * @description Salva um resultado. `params` e `result` são guardados exatamente como enviados.
+         */
+        post: operations["create_api_records_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/records/{record_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get One
+         * @description Reabre um registro, com parâmetros e resultado.
+         */
+        get: operations["get_one_api_records__record_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Remove
+         * @description Exclui um registro.
+         */
+        delete: operations["remove_api_records__record_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Rename
+         * @description Renomeia um registro.
+         */
+        patch: operations["rename_api_records__record_id__patch"];
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -459,7 +531,7 @@ export interface paths {
         };
         /**
          * Health
-         * @description Verifica se a API está no ar.
+         * @description Verifica se a API está no ar e se a persistência está configurada.
          */
         get: operations["health_api_health_get"];
         put?: never;
@@ -1681,6 +1753,136 @@ export interface components {
             penalty_pp: number;
             /** Criteria */
             criteria: components["schemas"]["CriterionOut"][];
+        };
+        /** RecordCreate */
+        RecordCreate: {
+            /**
+             * Kind
+             * @description Tipo do registro.
+             * @enum {string}
+             */
+            kind: "model" | "simulation" | "comparison" | "experiment" | "realdata";
+            /**
+             * Title
+             * @description Título exibido no histórico.
+             */
+            title: string;
+            /**
+             * Params
+             * @description Parâmetros usados (como enviados à API).
+             */
+            params: {
+                [key: string]: unknown;
+            };
+            /**
+             * Result
+             * @description Resultado (como devolvido pela API).
+             */
+            result: {
+                [key: string]: unknown;
+            };
+            /**
+             * App Version
+             * @description Versão do app que gerou o resultado.
+             */
+            app_version?: string | null;
+        };
+        /** RecordDetail */
+        RecordDetail: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "model" | "simulation" | "comparison" | "experiment" | "realdata";
+            /** Title */
+            title: string;
+            /** App Version */
+            app_version?: string | null;
+            /** Size Bytes */
+            size_bytes: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Params */
+            params: {
+                [key: string]: unknown;
+            };
+            /** Result */
+            result: {
+                [key: string]: unknown;
+            };
+        };
+        /** RecordList */
+        RecordList: {
+            /** Items */
+            items: components["schemas"]["RecordSummary"][];
+            /**
+             * Total
+             * @description Total de registros que atendem ao filtro.
+             */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /** RecordSummary */
+        RecordSummary: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "model" | "simulation" | "comparison" | "experiment" | "realdata";
+            /** Title */
+            title: string;
+            /** App Version */
+            app_version?: string | null;
+            /** Size Bytes */
+            size_bytes: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** RecordUpdate */
+        RecordUpdate: {
+            /** Title */
+            title: string;
+        };
+        /** RecordsStatus */
+        RecordsStatus: {
+            /**
+             * Enabled
+             * @description Se o banco de dados está configurado.
+             */
+            enabled: boolean;
+            /** Max Record Bytes */
+            max_record_bytes: number;
+            /** Max Records Per Client */
+            max_records_per_client: number;
         };
         /** ReplicationOut */
         ReplicationOut: {
@@ -3042,6 +3244,293 @@ export interface operations {
             };
             /** @description Parâmetros inválidos */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    status_api_records_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordsStatus"];
+                };
+            };
+        };
+    };
+    list_all_api_records_get: {
+        parameters: {
+            query?: {
+                /** @description Filtra por tipo. */
+                kind?: ("model" | "simulation" | "comparison" | "experiment" | "realdata") | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: {
+                /** @description Identificador anônimo do navegador (UUID). */
+                "X-Client-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordList"];
+                };
+            };
+            /** @description Requisição inválida ou X-Client-Id ausente */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Persistência desativada ou banco indisponível */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    create_api_records_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Identificador anônimo do navegador (UUID). */
+                "X-Client-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordDetail"];
+                };
+            };
+            /** @description Limite de registros atingido */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Registro grande demais */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requisição inválida ou X-Client-Id ausente */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Persistência desativada ou banco indisponível */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_one_api_records__record_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Identificador anônimo do navegador (UUID). */
+                "X-Client-Id"?: string | null;
+            };
+            path: {
+                record_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordDetail"];
+                };
+            };
+            /** @description Registro não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requisição inválida ou X-Client-Id ausente */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Persistência desativada ou banco indisponível */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    remove_api_records__record_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Identificador anônimo do navegador (UUID). */
+                "X-Client-Id"?: string | null;
+            };
+            path: {
+                record_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Registro não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requisição inválida ou X-Client-Id ausente */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Persistência desativada ou banco indisponível */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    rename_api_records__record_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Identificador anônimo do navegador (UUID). */
+                "X-Client-Id"?: string | null;
+            };
+            path: {
+                record_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordSummary"];
+                };
+            };
+            /** @description Registro não encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requisição inválida ou X-Client-Id ausente */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Persistência desativada ou banco indisponível */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

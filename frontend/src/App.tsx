@@ -4,13 +4,16 @@ import { fieldErrorsFromApi } from "./api/fieldErrors";
 import { ParametersPanel } from "./components/ParametersPanel";
 import { ResultsPanel } from "./components/ResultsPanel";
 import { ExperimentTab } from "./components/ExperimentTab";
+import { HistoryTab } from "./components/HistoryTab";
 import { RealDataTab } from "./components/RealDataTab";
 import { estimateText } from "./domain/estimate";
 import { MODEL_ORDER, MODELS } from "./domain/models";
+import type { LabSnapshot } from "./domain/records";
 import { parseForm } from "./domain/request";
 import {
   SYSTEM_FIELDS, type Action, type FieldErrors, type FieldKey, type FormValues, type ModelKey,
 } from "./domain/types";
+import { RecordsProvider } from "./hooks/RecordsContext";
 import { useRunner } from "./hooks/useRunner";
 
 type SystemValues = Pick<FormValues, "lambda" | "mu" | "servers" | "capacity">;
@@ -36,12 +39,12 @@ export default function App() {
   const [apiErrors, setApiErrors] = useState<FieldErrors>({});
   const [theme, setTheme] = useState<Theme>(initialTheme);
   
-  const [activeTab, setActiveTab] = useState<"laboratorio" | "experimentos" | "dados">("laboratorio");
+  const [activeTab, setActiveTab] = useState<"laboratorio" | "experimentos" | "dados" | "historico">("laboratorio");
   // Os experimentos só são montados na primeira visita; depois ficam montados para manter os resultados.
   const [experimentsOpened, setExperimentsOpened] = useState(false);
   const [realDataOpened, setRealDataOpened] = useState(false);
 
-  const { state, run, cancel, loadRuns } = useRunner();
+  const { state, run, cancel, loadRuns, restore } = useRunner();
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -87,7 +90,36 @@ export default function App() {
     void run(model, action, parsed.params);
   };
 
+  /** Reabre no Laboratório um resultado salvo: formulário e resultado voltam como estavam. */
+  const handleReopenLab = ({ model: savedModel, parameters: p, result }: LabSnapshot) => {
+    const text = (v: number | undefined, fallback: string) => (v === undefined ? fallback : String(v));
+    setModel(savedModel);
+    setSystems((prev) => {
+      const current = prev[savedModel];
+      return {
+        ...prev,
+        [savedModel]: {
+          lambda: String(p.lambda),
+          mu: String(p.mu),
+          servers: text(p.servers, current.servers),
+          capacity: text(p.capacity, current.capacity),
+        },
+      };
+    });
+    setSim((prev) => ({
+      simulationTime: text(p.simulationTime, prev.simulationTime),
+      replications: text(p.replications, prev.replications),
+      warmupTime: text(p.warmupTime, prev.warmupTime),
+      seed: text(p.seed, prev.seed),
+    }));
+    setLocalErrors({});
+    setApiErrors({});
+    restore(result);
+    setActiveTab("laboratorio");
+  };
+
   return (
+    <RecordsProvider openHistory={() => setActiveTab("historico")}>
     <div className="app">
       <header className="topbar">
         <h1 className="brand"><IconChartDots3 size={22} aria-hidden="true" />QSimulador</h1>
@@ -115,6 +147,14 @@ export default function App() {
             onClick={() => { setActiveTab("dados"); setRealDataOpened(true); }}
           >
             Dados reais
+          </button>
+          <button
+            type="button"
+            className="nav-item"
+            aria-current={activeTab === "historico" ? "page" : undefined}
+            onClick={() => setActiveTab("historico")}
+          >
+            Histórico
           </button>
           <button
             type="button"
@@ -154,6 +194,14 @@ export default function App() {
           <RealDataTab />
         </main>
       )}
+
+      {/* Só monta ao abrir a aba: a lista é recarregada a cada visita e mostra o que acabou de ser salvo. */}
+      {activeTab === "historico" && (
+        <main className="layout layout-wide">
+          <HistoryTab onReopenLab={handleReopenLab} />
+        </main>
+      )}
     </div>
+    </RecordsProvider>
   );
 }

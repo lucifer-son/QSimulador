@@ -1,5 +1,5 @@
 import { IconAlertTriangle } from "@tabler/icons-react";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { runServerComparison, type ServerComparisonResponse } from "../api/experiments";
 import { describeServerLimits, metricScale, serverLines, serversChart } from "../charts/experiments";
 import {
@@ -11,9 +11,11 @@ import { MODELS } from "../domain/models";
 import type { MetricName, ModelKey } from "../domain/types";
 import { useExperiment } from "../hooks/useExperiment";
 import { useThemeColors } from "../hooks/useThemeColors";
+import { experimentRecord, experimentTitle } from "../domain/records";
 import { FixedParameters, MetricSelect, ResultArea, RunButtons } from "./ExperimentParts";
 import { metricTitle } from "./MetricsTable";
 import { PlotlyChart } from "./PlotlyChart";
+import { SaveButton } from "./SaveButton";
 import { TextField } from "./TextField";
 
 interface Props {
@@ -35,6 +37,7 @@ export function ServersPanel({ active, model, system }: Props) {
   const [range, setRange] = useState<RangeText>(() => suggestLambdaRange(system, suggestServers(model, system)));
   const [errors, setErrors] = useState<ExpErrors>({});
   const { state, run, cancel } = useExperiment<ServerComparisonResponse>();
+  const lastRequest = useRef<unknown>(null);   // o pedido que gerou o resultado, para o histórico
 
   useEffect(() => {
     if (state.status === "error") setErrors(experimentFieldErrors(state.error.fields, state.error.code));
@@ -48,6 +51,7 @@ export function ServersPanel({ active, model, system }: Props) {
       return;
     }
     setErrors({});
+    lastRequest.current = built.body;
     void run((signal) => runServerComparison(built.body, signal));
   };
   const edit = (field: keyof RangeText) => (value: string) => {
@@ -96,13 +100,24 @@ export function ServersPanel({ active, model, system }: Props) {
         idleText="Informe quais valores de c comparar e a faixa de λ. O gráfico mostra uma curva por número de servidores."
         loadingText="Calculando as séries"
       >
-        {(result) => <ServersResult result={result} model={model} />}
+        {(result) => {
+          const title = experimentTitle("servers", model, {});
+          return (
+            <>
+              <SaveButton
+                suggestedTitle={title}
+                build={(t) => experimentRecord("servers", model, lastRequest.current, result, t ?? title)}
+              />
+              <ServersResult result={result} model={model} />
+            </>
+          );
+        }}
       </ResultArea>
     </div>
   );
 }
 
-function ServersResult({ result, model }: { result: ServerComparisonResponse; model: ModelKey }) {
+export function ServersResult({ result, model }: { result: ServerComparisonResponse; model: ModelKey }) {
   const colors = useThemeColors();
   const [metric, setMetric] = useState<MetricName>("W");
   const has = (n: MetricName) => result.series.some((s) => s.points.some((p) => p.metrics && n in p.metrics));

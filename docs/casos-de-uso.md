@@ -79,7 +79,7 @@ flowchart LR
 | UC-06 | Modelar M/M/c, M/M/1/K e M/M/c/K | Usuário | ✅ |
 | UC-07 | Executar experimentos (varredura de parâmetros) | Usuário | ✅ |
 | UC-08 | Importar CSV do JMeter e comparar com o modelo | Usuário | 📋 |
-| UC-09 | Salvar e consultar modelos e resultados | Usuário | 📋 |
+| UC-09 | Salvar e consultar modelos e resultados | Usuário | ✅ |
 | UC-10 | Verificar estabilidade do sistema | Sistema (incluído) | ✅ |
 
 > **Conferência de 08/10/2026:** os casos de uso implementados (UC-01 a UC-06 e UC-10) foram verificados executando o sistema. As divergências encontradas na auditoria em UC-02 (P0 não retornado), UC-03 (a simulação aceitava 1 réplica) e UC-04 (P0 simulado) foram fechadas. Os detalhes estão na seção 11 de [`requisitos-do-sistema.md`](requisitos-do-sistema.md).
@@ -267,7 +267,7 @@ flowchart LR
 
 ---
 
-### UC-09 — Salvar e consultar modelos e resultados 📋
+### UC-09 — Salvar e consultar modelos e resultados ✅
 
 | Campo | Descrição |
 |-------|-----------|
@@ -281,6 +281,14 @@ flowchart LR
 1. O usuário escolhe salvar um modelo ou resultado.
 2. O sistema persiste os dados no PostgreSQL.
 3. O usuário consulta o histórico e reabre um registro salvo.
+
+**Fluxos alternativos**
+- **2a.** Se o servidor não tem banco configurado, o botão de salvar não aparece e a aba Histórico informa que o recurso está indisponível; o restante do sistema funciona normalmente.
+- **2b.** Se o banco está fora do ar, o limite de registros do navegador foi atingido ou o registro é grande demais, o sistema informa o motivo e nada é salvo.
+- **3a.** O usuário pode renomear e excluir registros. Resultados do Laboratório voltam ao Laboratório, com o formulário preenchido; experimentos e análises do JMeter são mostrados na aba Histórico.
+
+**Regras de negócio**
+- RN-08: sem login, cada navegador tem um identificador anônimo e só vê os próprios registros. Isso organiza o histórico, mas não é autenticação.
 
 ---
 

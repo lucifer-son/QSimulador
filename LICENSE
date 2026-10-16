@@ -1,0 +1,32 @@
+QSimulador — Licença de Uso Acadêmico
+
+Copyright © [2026] [RAFAEL GOMES DE ARAÚJO MELO, MARIANA OLIVEIRA LIMA, JOÃO LUCAS COSME]. Todos os direitos reservados, exceto o que esta licença concede expressamente.
+
+1. Definições. Software é o QSimulador, com o seu código-fonte, a documentação e os demais arquivos deste repositório. Titulares são os autores indicados acima. Uso Acadêmico é o uso, sem finalidade comercial, em ensino, pesquisa ou extensão universitária, por pessoas e instituições de ensino superior ou de pesquisa. Uso Comercial é qualquer uso voltado a obter vantagem econômica, direta ou indireta, como venda, licenciamento ou aluguel do Software, oferta como serviço pago (inclusive SaaS), incorporação em produto ou serviço comercial e prestação de consultoria ou treinamento remunerados que dependam do Software.
+
+2. Concessão. Os Titulares concedem a quem receber o Software uma licença gratuita, não exclusiva, intransferível e válida enquanto durarem os direitos autorais, para, exclusivamente para Uso Acadêmico, usar, executar, copiar, estudar, modificar e distribuir o Software e as obras derivadas, nos termos desta licença.
+
+3. Condições. Toda concessão acima depende de cumprir as condições a seguir.
+
+- Citação obrigatória. Trabalhos, relatórios, artigos, apresentações, material didático e software que usem o Software, parte dele ou resultados obtidos com ele devem citar o QSimulador e os seus autores, conforme a seção Como citar.
+- Avisos. Toda cópia ou parte substancial do Software deve manter o aviso de direitos autorais e esta licença.
+- Obras derivadas. Quem modificar o Software deve indicar as alterações feitas e distribuir a obra derivada sob esta mesma licença, mantendo a citação dos autores originais.
+
+4. Restrições. É proibido o Uso Comercial. Também é proibido sublicenciar o Software, remover ou alterar avisos de autoria e licença, e apresentar o Software ou uma obra derivada como criação própria, sem citar os autores.
+
+5. Outros usos. Qualquer uso fora desta licença, inclusive o Uso Comercial, exige autorização prévia e por escrito dos Titulares: [CONTATO DOS AUTORES — preencher].
+
+6. Componentes de terceiros. O Software usa bibliotecas e ferramentas de terceiros (como FastAPI, SimPy, NumPy, SciPy, React e Plotly). Elas continuam sujeitas às suas próprias licenças, que esta licença não altera.
+
+7. Ausência de garantia. O Software é fornecido "no estado em que se encontra", sem garantia de qualquer tipo, expressa ou implícita, inclusive de adequação a uma finalidade específica. Os Titulares não respondem por danos decorrentes do uso do Software, e os resultados das simulações são educacionais e experimentais.
+
+8. Rescisão. A violação desta licença encerra automaticamente os direitos concedidos. Eles podem ser restabelecidos se a violação cessar e, quando houver, for regularizada com os Titulares.
+
+9. Lei aplicável e foro. Esta licença é regida pela legislação brasileira, em especial as Leis nº 9.609/1998 (programas de computador) e nº 9.610/1998 (direitos autorais). Fica eleito o foro de [CIDADE/UF] para dirimir dúvidas decorrentes dela.
+
+Como citar
+
+Cite o projeto em trabalhos que usem o Software ou os resultados dele. Modelo (ajuste ao padrão exigido, como ABNT):
+
+[GOMES, Rafael; OLIVEIRA, Mariana; COSME, João Lucas]. QSimulador: ferramenta web de modelagem e simulação de filas.
+[2026]. [UFRPE]. Disponível em: [URL]. Acesso em: [dd/mm/aaaa].

@@ -1,6 +1,6 @@
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.errors import register_exception_handlers
@@ -10,6 +10,9 @@ from app.api.queues import mm1k_router, mmc_router, mmck_router
 from app.api.finite_population import router as finite_population_router
 from app.api.realdata import router as realdata_router
 from app.api.realdata_extra import router as realdata_extra_router
+from app.api.records import router as records_router
+from app.persistence.config import PersistenceLimits, database_url_from_env
+from app.persistence.database import Database, create_db_engine
 
 CORS_ENV_VAR = "QSIMULADOR_CORS_ORIGINS"
 
@@ -21,8 +24,21 @@ def parse_origins(value: str | None) -> list[str]:
     return [origin.strip() for origin in value.split(",") if origin.strip()]
 
 
-def create_app(cors_origins: list[str] | None = None) -> FastAPI:
+def build_database_from_env() -> Database | None:
+    """Cria o acesso ao banco se houver URL configurada; senão, a persistência fica desativada."""
+    url = database_url_from_env()
+    return Database(create_db_engine(url)) if url else None
+
+
+def create_app(
+    cors_origins: list[str] | None = None,
+    database: Database | None = None,
+    limits: PersistenceLimits | None = None,
+) -> FastAPI:
     """Monta a aplicação. O CORS só é ativado se houver origens permitidas.
+
+    O banco é opcional (RNF-18): sem `database` e sem URL nas variáveis de ambiente, o
+    núcleo funciona normalmente e as rotas de histórico respondem 503.
 
     Em desenvolvimento não precisa: o proxy do Vite faz as chamadas à API pela mesma origem.
     """
@@ -35,10 +51,13 @@ def create_app(cors_origins: list[str] | None = None) -> FastAPI:
         application.add_middleware(
             CORSMiddleware,
             allow_origins=cors_origins,
-            allow_methods=["GET", "POST"],
-            allow_headers=["Content-Type"],
+            allow_methods=["GET", "POST", "PATCH", "DELETE"],
+            allow_headers=["Content-Type", "X-Client-Id"],
             allow_credentials=False,
         )
+
+    application.state.database = database if database is not None else build_database_from_env()
+    application.state.limits = limits or PersistenceLimits.from_env()
 
     register_exception_handlers(application)
     application.include_router(mm1_router)
@@ -49,11 +68,13 @@ def create_app(cors_origins: list[str] | None = None) -> FastAPI:
     application.include_router(realdata_router)
     application.include_router(realdata_extra_router)
     application.include_router(finite_population_router)
+    application.include_router(records_router)
 
     @application.get("/api/health", tags=["infra"])
-    def health() -> dict[str, str]:
-        """Verifica se a API está no ar."""
-        return {"status": "ok"}
+    def health(request: Request) -> dict[str, str]:
+        """Verifica se a API está no ar e se a persistência está configurada."""
+        enabled = request.app.state.database is not None
+        return {"status": "ok", "persistence": "enabled" if enabled else "disabled"}
 
     return application
 

@@ -14,7 +14,7 @@ Mais do que uma calculadora de teoria das filas, a proposta é uma **plataforma 
 
 ## Status
 
-O projeto está em desenvolvimento. Os modelos **M/M/1**, **M/M/c**, **M/M/1/K** e **M/M/c/K** (cálculo analítico, simulação e comparação) e a API já funcionam; a interface web também já está disponível; os experimentos (varredura de parâmetros, comparação de servidores e análise de sensibilidade) também já estão disponíveis; a validação com dados reais (análise do CSV do JMeter com recomendação do modelo, CSV agregado por nível de carga, simulação e relatório) também já está disponível.
+O projeto está em desenvolvimento. Os modelos **M/M/1**, **M/M/c**, **M/M/1/K** e **M/M/c/K** (cálculo analítico, simulação e comparação) e a API já funcionam; a interface web também já está disponível; os experimentos (varredura de parâmetros, comparação de servidores e análise de sensibilidade) também já estão disponíveis; a validação com dados reais (análise do CSV do JMeter com recomendação do modelo, CSV agregado por nível de carga, simulação e relatório) também já está disponível; o histórico de resultados com PostgreSQL (opcional) também já está disponível.
 
 | Componente | Situação |
 | --- | --- |
@@ -95,6 +95,7 @@ O QSimulador permite (ou permitirá) ao usuário:
 6. identificar regiões de alta utilização e aproximação da saturação ✅
 7. visualizar resultados em tabelas e gráficos ✅
 8. importar dados reais, por exemplo do Apache JMeter, e compará-los com o modelo e a simulação ✅
+9. salvar resultados e reabri-los depois, em um histórico com PostgreSQL (opcional) ✅
 
 ### Modelos de filas
 
@@ -258,7 +259,7 @@ Os tipos TypeScript são gerados a partir do OpenAPI da API (`npm run gen:api`),
 
 ## Arquitetura
 
-O projeto é um **monólito modular**, com separação clara entre interface, API, modelos matemáticos, simulação e análise. As partes tracejadas ainda não foram implementadas.
+O projeto é um **monólito modular**, com separação clara entre interface, API, modelos matemáticos, simulação e análise.
 
 ```mermaid
 flowchart TD
@@ -267,18 +268,16 @@ flowchart TD
     AN["Analítico<br/>M/M/1 ✅ · M/M/c ✅ · M/M/1/K ✅ · M/M/c/K ✅"]
     SIM["Simulação<br/>SimPy (DES) ✅"]
     ANL["Análise<br/>Comparação ✅ · Experimentos ✅ · Validação"]
-    DB[("PostgreSQL<br/>(planejado)")]
+    DB[("PostgreSQL<br/>(opcional) ✅")]
 
     FE -->|HTTP / JSON| API
     API --> AN
     API --> SIM
     API --> ANL
-    AN -.-> DB
-    SIM -.-> DB
-    ANL -.-> DB
+    API -->|/api/records| DB
 ```
 
-A persistência (`Model`, `Experiment`, `SimulationRun`, `Metric`, `JMeterDataset`, `Comparison`) é opcional na primeira versão: o núcleo funciona sem banco de dados.
+A persistência é opcional: o núcleo funciona sem banco de dados. Os resultados salvos ficam em uma tabela única (`saved_records`), com parâmetros e resultado em JSONB, acessada pelas rotas `/api/records` (ver [como executar](docs/como-executar.md#histórico-com-postgresql-fase-8)).
 
 ## Tecnologias
 
@@ -290,7 +289,7 @@ A persistência (`Model`, `Experiment`, `SimulationRun`, `Metric`, `JMeterDatase
 | Testes | pytest | ✅ em uso |
 | Frontend | React + TypeScript (Vite) | ✅ em uso |
 | Visualização | Plotly | ✅ em uso |
-| Banco de dados | PostgreSQL | 📋 planejado |
+| Banco de dados | PostgreSQL (SQLAlchemy 2, Alembic, psycopg 3) | ✅ em uso (opcional) |
 | Testes do frontend | Vitest + Testing Library | ✅ em uso |
 | Containerização | Docker | 📋 planejado |
 
@@ -299,19 +298,24 @@ A persistência (`Model`, `Experiment`, `SimulationRun`, `Metric`, `JMeterDatase
 ```text
 qsimulador/
 ├── README.md
+├── LICENSE
+├── vercel.json                # publicação na Vercel (frontend e backend)
 ├── docs/
-│   └── como-executar.md
+│   ├── como-executar.md
+│   └── documentacao-academica.md
 ├── frontend/                  # interface web (detalhada abaixo)
 └── backend/
     ├── requirements.txt
     ├── requirements-dev.txt
     ├── pytest.ini
+    ├── .env.example           # variáveis de ambiente (banco, CORS, limites)
+    ├── alembic.ini · alembic/ # migrações do PostgreSQL
     ├── examples/
     │   ├── mm1_demo.py            # M/M/1: analítico × simulação no terminal
     │   └── queue_demo.py          # M/M/c, M/M/1/K e M/M/c/K
     ├── app/
     │   ├── main.py                # aplicação FastAPI
-    │   ├── api/                   # rotas (mm1.py, queues.py), esquemas e tratamento de erros
+    │   ├── api/                   # rotas (mm1.py, queues.py, records.py...), esquemas e tratamento de erros
     │   ├── analytical/
     │   │   ├── mm1.py             # modelo analítico M/M/1
     │   │   └── mmck.py            # M/M/c (Erlang C), M/M/1/K e M/M/c/K
@@ -327,7 +331,7 @@ qsimulador/
     │   ├── experiments/           # varredura, comparação de servidores e sensibilidade
     │   ├── analysis/
     │   │   └── comparison.py      # comparação analítico × simulação
-    │   └── persistence/           # (planejado)
+    │   └── persistence/           # histórico: configuração, modelo, repositório e acesso ao banco
     └── tests/
 ```
 
@@ -349,7 +353,7 @@ frontend/
     └── test/                  # fixtures com respostas reais da API e testes de contrato
 ```
 
-Ainda planejados: `docker/` e `docker-compose.yml`.
+Ainda planejados: `docker/` e `docker-compose.yml` (Docker adiado).
 
 ---
 
@@ -369,6 +373,7 @@ Com o servidor no ar (`python -m uvicorn app.main:app --reload`), a documentaç�
 | `POST /api/experiments/sweep` | Varre λ, μ, c ou K em uma faixa (analítico e, opcionalmente, simulação em cada ponto) |
 | `POST /api/experiments/servers` | Compara números de servidores (M/M/c ou M/M/c/K) ao longo de uma faixa de λ |
 | `POST /api/experiments/sensitivity` | Mede quanto cada métrica muda ao perturbar cada parâmetro |
+| `GET /api/records/status` · `POST/GET /api/records` · `GET/PATCH/DELETE /api/records/{id}` | Histórico: salvar, listar, reabrir, renomear e excluir resultados (exige PostgreSQL configurado e o cabeçalho `X-Client-Id`; ver [como executar](docs/como-executar.md#histórico-com-postgresql-fase-8)) |
 
 ### `POST /api/models/mm1/calculate`
 
@@ -585,7 +590,7 @@ users,avg_ms,p90_ms,throughput,error_rate
 - [x] **Fase 5 — Novos modelos:** M/M/c, M/M/1/K e M/M/c/K, com cálculo analítico, simulação, comparação e endpoints, incluindo as probabilidades de espera e de bloqueio.
 - [x] **Fase 6 — Experimentação:** varredura de λ, μ, c e K (com simulação opcional por ponto), comparação de servidores e análise de sensibilidade.
 - [x] **Fase 7 — Dados reais:** importação do CSV do JMeter, verificação dos dados, recomendação do melhor modelo, comparação com o modelo e relatórios experimentais. **Feito (backend):** modelos M/M/1//N e M/M/c//N, leitor do JTL, métricas empíricas, diagnósticos, recomendador e rotas `/api/realdata/analyze` e `/compare`. **Também feito:** aba *Dados reais* no frontend. **Também feito (acréscimos):** simulação do M/M/c//N, CSV agregado por nível de carga (`/api/realdata/import/levels`), comparação medido × analítico × simulação (`/api/realdata/compare-simulated`), relatório em Markdown e HTML (`/api/realdata/report`) e OpenAPI regenerado.
-- [ ] **Fase 8 — Persistência e publicação:** PostgreSQL, Docker, deploy e documentação acadêmica.
+- [ ] **Fase 8 — Persistência e publicação:** PostgreSQL, Docker, deploy e documentação acadêmica. **Feito:** histórico com PostgreSQL opcional (salvar, listar, reabrir, renomear e excluir resultados do Laboratório, dos experimentos e da análise do JMeter; rotas `/api/records`; migrações com Alembic; configuração por variáveis de ambiente), aba *Histórico* no frontend, arquivo `LICENSE` e [documentação acadêmica](docs/documentacao-academica.md). **Falta:** Docker (`docker compose up`).
 
 ### Possíveis extensões
 
@@ -601,6 +606,8 @@ O QSimulador foi concebido no contexto da disciplina **Modelagem e Simulação d
 Problema → Abstração → Modelo matemático → Implementação
         → Simulação → Experimento → Análise → Validação
 ```
+
+A fundamentação, a metodologia, a validação e as limitações estão reunidas em **[docs/documentacao-academica.md](docs/documentacao-academica.md)**.
 
 ## Licença
 

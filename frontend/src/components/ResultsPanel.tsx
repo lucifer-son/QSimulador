@@ -6,8 +6,10 @@ import { ChartsTab } from "./ChartsTab";
 import { DetailsTab } from "./DetailsTab";
 import { DeviationChart } from "./DeviationChart";
 import { HeadlineCards } from "./HeadlineCards";
+import { labRecord, labTitle } from "../domain/records";
 import { MetricsTable } from "./MetricsTable";
 import { ReplicationsTab } from "./ReplicationsTab";
+import { SaveButton } from "./SaveButton";
 import { VerdictBanner } from "./VerdictBanner";
 
 type TabKey = "results" | "charts" | "replications" | "details";
@@ -27,6 +29,13 @@ export const ERROR_TITLES: Record<ApiError["code"], string> = {
   insufficient_sample: "Simulação curta demais",
   invalid_dataset: "Arquivo inválido",
   file_too_large: "Arquivo grande demais",
+  persistence_disabled: "Histórico indisponível",
+  database_unavailable: "Banco de dados indisponível",
+  record_not_found: "Registro não encontrado",
+  record_too_large: "Registro grande demais",
+  record_limit_reached: "Limite de registros atingido",
+  invalid_client_id: "Navegador não identificado",
+  invalid_record: "Registro inválido",
   network: "Sem conexão com a API",
   http: "Erro na API",
   aborted: "Execução cancelada",
@@ -95,6 +104,9 @@ export function ResultsPanel({ state, estimate, onLoadRuns }: Props) {
   const { result, runs } = state;
   return (
     <div className="panel results">
+      <div className="save-row">
+        <SaveButton suggestedTitle={labTitle(result)} build={(t) => labRecord(result, t ?? labTitle(result))} />
+      </div>
       <div role="tablist" aria-label="Seções do resultado" className="tabs">
         {TABS.map((t) => (
           <button

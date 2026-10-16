@@ -214,13 +214,13 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 
 ### E8 — Persistência e implantação
 
-#### US-23 — Salvar modelos e resultados 📋 · C · UC-09
+#### US-23 — Salvar modelos e resultados ✅ · C · UC-09
 > Como **estudante**, quero salvar modelos e resultados, para não precisar refazer a simulação.
 
 **Critérios de aceitação**
 - **Dado** um resultado, **quando** escolho salvar, **então** ele é persistido no PostgreSQL.
 
-#### US-24 — Consultar o histórico 📋 · C · UC-09
+#### US-24 — Consultar o histórico ✅ · C · UC-09
 > Como **estudante**, quero listar e reabrir análises anteriores, para comparar execuções ao longo do tempo.
 
 **Critérios de aceitação**

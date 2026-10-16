@@ -17,6 +17,16 @@ from app.domain.validation.errors import (
 )
 
 
+class ApiError(Exception):
+    """Erro de API com status, código e mensagem no formato padrão {"code", "message"}."""
+
+    def __init__(self, status_code: int, code: str, message: str) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+        self.code = code
+        self.message = message
+
+
 def _domain_code(exc: QueueValidationError) -> str:
     if isinstance(exc, UnstableSystemError):
         return "unstable_system"
@@ -28,6 +38,12 @@ def _domain_code(exc: QueueValidationError) -> str:
 
 
 def register_exception_handlers(app: FastAPI) -> None:
+    @app.exception_handler(ApiError)
+    async def handle_api_error(request: Request, exc: ApiError):
+        return JSONResponse(
+            status_code=exc.status_code, content={"code": exc.code, "message": exc.message}
+        )
+
     @app.exception_handler(QueueValidationError)
     async def handle_domain_error(request: Request, exc: QueueValidationError):
         content: dict = {"code": _domain_code(exc), "message": str(exc)}

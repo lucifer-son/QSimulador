@@ -13,12 +13,14 @@ import {
 } from "../domain/realdataExtra";
 import { useExperiment } from "../hooks/useExperiment";
 import { useThemeColors } from "../hooks/useThemeColors";
+import { realDataRecord, realDataTitle } from "../domain/records";
 import { ResultArea, RunButtons } from "./ExperimentParts";
 import { PlotlyChart } from "./PlotlyChart";
 import { LevelsTab, ReportButtons, SimulationOptions, SIMULATION_NOTE } from "./RealDataExtras";
 import {
   ComparisonTable, CriteriaTable, DiagnosticList, EstimatesList, LevelsTable, RecommendationBanner, WarningList,
 } from "./RealDataParts";
+import { SaveButton } from "./SaveButton";
 import { TextField } from "./TextField";
 
 const SYSTEM_OPTIONS: { value: SystemType; label: string }[] = [
@@ -29,7 +31,7 @@ const SYSTEM_OPTIONS: { value: SystemType; label: string }[] = [
 
 const CONTEXT_FIELDS: (keyof RealDataText)[] = ["systemType", "servers", "serviceTime", "thinkTime", "capacity", "trimStart", "trimEnd"];
 
-function Results({ result }: { result: AnalysisResponse }) {
+export function RealDataResults({ result }: { result: AnalysisResponse }) {
   const colors = useThemeColors();
   const options = useMemo(() => modelOptions(result), [result]);
   const initialKey = (result.recommended ?? result.nearest)?.key ?? null;
@@ -220,7 +222,13 @@ function JtlAnalysis() {
         errorTitles={{ insufficient_sample: "Poucas amostras" }}
       >
         {(result) => (
-          <Results key={`${result.dataset.start}-${result.dataset.rows}-${result.recommended?.key ?? "x"}`} result={result} />
+          <>
+            <SaveButton
+              suggestedTitle={realDataTitle(result)}
+              build={(t) => realDataRecord(result, t ?? realDataTitle(result))}
+            />
+            <RealDataResults key={`${result.dataset.start}-${result.dataset.rows}-${result.recommended?.key ?? "x"}`} result={result} />
+          </>
         )}
       </ResultArea>
     </div>

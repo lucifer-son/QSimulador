@@ -1,5 +1,5 @@
 import { IconInfoCircle, IconX } from "@tabler/icons-react";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { runSensitivity, type SensitivityResponse } from "../api/experiments";
 import { tornadoChart, tornadoRows } from "../charts/experiments";
 import {
@@ -9,9 +9,11 @@ import { formatMetric, formatNumber, formatSignedPercent } from "../domain/forma
 import type { MetricName, ModelKey } from "../domain/types";
 import { useExperiment } from "../hooks/useExperiment";
 import { useThemeColors } from "../hooks/useThemeColors";
+import { experimentRecord, experimentTitle } from "../domain/records";
 import { FixedParameters, MetricSelect, ResultArea, RunButtons } from "./ExperimentParts";
 import { metricTitle } from "./MetricsTable";
 import { PlotlyChart } from "./PlotlyChart";
+import { SaveButton } from "./SaveButton";
 import { TextField } from "./TextField";
 
 interface Props {
@@ -24,6 +26,7 @@ export function SensitivityPanel({ active, model, system }: Props) {
   const [delta, setDelta] = useState("10");
   const [errors, setErrors] = useState<ExpErrors>({});
   const { state, run, cancel } = useExperiment<SensitivityResponse>();
+  const lastRequest = useRef<unknown>(null);   // o pedido que gerou o resultado, para o histórico
 
   useEffect(() => {
     if (state.status === "error") setErrors(experimentFieldErrors(state.error.fields, state.error.code));
@@ -37,6 +40,7 @@ export function SensitivityPanel({ active, model, system }: Props) {
       return;
     }
     setErrors({});
+    lastRequest.current = built.body;
     void run((signal) => runSensitivity(built.body, signal));
   };
 
@@ -64,13 +68,24 @@ export function SensitivityPanel({ active, model, system }: Props) {
         idleText="A análise mostra qual parâmetro move mais cada métrica, e como isso piora perto da saturação."
         loadingText="Calculando a sensibilidade"
       >
-        {(result) => <SensitivityResult result={result} model={model} />}
+        {(result) => {
+          const title = experimentTitle("sensitivity", model, {});
+          return (
+            <>
+              <SaveButton
+                suggestedTitle={title}
+                build={(t) => experimentRecord("sensitivity", model, lastRequest.current, result, t ?? title)}
+              />
+              <SensitivityResult result={result} model={model} />
+            </>
+          );
+        }}
       </ResultArea>
     </div>
   );
 }
 
-function SensitivityResult({ result, model }: { result: SensitivityResponse; model: ModelKey }) {
+export function SensitivityResult({ result, model }: { result: SensitivityResponse; model: ModelKey }) {
   const colors = useThemeColors();
   const [metric, setMetric] = useState<MetricName>("W");
   const shown = metric in result.base_metrics ? metric : "rho";

@@ -8,6 +8,7 @@
 import { describe, expect, it } from "vitest";
 import { fetchRuns, runAction } from "../api/actions";
 import { ApiError } from "../api/client";
+import { createRecord, deleteRecord, getRecord, getRecordsStatus, listRecords, renameRecord } from "../api/records";
 import { runSensitivity, runServerComparison, runSweep } from "../api/experiments";
 import { fieldErrorsFromApi } from "../api/fieldErrors";
 import { buildReport, compareSimulated, type LevelsImport } from "../api/realdataExtra";
@@ -232,6 +233,36 @@ describe.skipIf(!live)("contrato com a API real", () => {
       expect((error as ApiError).code).toBe("invalid_parameter");
       expect((error as ApiError).fields?.[0].field).toBe("step");
     });
+  });
+});
+
+/**
+ * Histórico: precisa de uma API com banco (QSIMULADOR_DATABASE_URL). Sem banco, o teste é ignorado.
+ * Confere o ciclo completo e que o JSON volta exatamente como foi gravado (RF-26).
+ */
+describe.skipIf(!live)("contrato do histórico (/api/records)", () => {
+  it("salva, lista, reabre, renomeia e exclui, devolvendo os mesmos dados", async (ctx) => {
+    const status = await getRecordsStatus();
+    if (!status.enabled) ctx.skip();
+
+    const result = { rho: 0.1 + 0.2, tiny: 1e-9, texto: "λ ≤ μ", lista: [1, 2.5, { x: null }], flag: true };
+    const params = { origin: "contrato", lambda: 40, mu: 50 };
+    const saved = await createRecord({ kind: "simulation", title: "contrato", params, result });
+    try {
+      const page = await listRecords({ kind: "simulation", limit: 100 });
+      expect(page.items.some((i) => i.id === saved.id)).toBe(true);
+
+      const back = await getRecord(saved.id);
+      expect(back.params).toEqual(params);
+      expect(back.result).toEqual(result);
+
+      expect((await renameRecord(saved.id, "novo título")).title).toBe("novo título");
+    } finally {
+      await deleteRecord(saved.id);
+    }
+    const gone = await getRecord(saved.id).catch((e: unknown) => e);
+    expect(gone).toBeInstanceOf(ApiError);
+    expect((gone as ApiError).code).toBe("record_not_found");
   });
 });
 

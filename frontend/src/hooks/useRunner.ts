@@ -32,6 +32,13 @@ export function useRunner() {
 
   const cancel = useCallback(() => controller.current?.abort(), []);
 
+  /** Mostra um resultado já pronto (vindo do histórico), sem chamar a API. */
+  const restore = useCallback((result: ViewResult) => {
+    controller.current?.abort();
+    controller.current = null;
+    setState({ status: "success", result, runs: "idle" });
+  }, []);
+
   const loadRuns = useCallback(async () => {
     if (state.status !== "success" || state.result.runs) return;
     const base = state.result;
@@ -52,5 +59,5 @@ export function useRunner() {
     }
   }, [state]);
 
-  return { state, run, cancel, loadRuns };
+  return { state, run, cancel, loadRuns, restore };
 }
