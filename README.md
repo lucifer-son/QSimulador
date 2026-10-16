@@ -3,7 +3,7 @@
 > Laboratório interativo de modelagem, simulação e análise de sistemas de filas.
 
 ![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)
-![Versão](https://img.shields.io/badge/vers%C3%A3o-1.4.0-6F42C1)
+![Versão](https://img.shields.io/badge/vers%C3%A3o-1.5-6F42C1)
 ![Python](https://img.shields.io/badge/backend-Python%20%7C%20FastAPI-3776AB)
 ![SimPy](https://img.shields.io/badge/simula%C3%A7%C3%A3o-SimPy-2E8B57)
 ![Licença](https://img.shields.io/badge/licen%C3%A7a-uso%20acad%C3%AAmico%20(n%C3%A3o%20comercial)-blue)
