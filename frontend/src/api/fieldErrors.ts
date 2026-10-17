@@ -10,6 +10,9 @@ const API_TO_FORM: Record<string, FieldKey> = {
   replications: "replications",
   warmup_time: "warmupTime",
   seed: "seed",
+  // serviço geral (M/G/1)
+  distribution: "distribution",
+  mean: "mean", k: "k", cv: "cv", min: "min", mode: "mode", max: "max", loc: "loc", scale: "scale",
 };
 
 /**

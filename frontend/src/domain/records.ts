@@ -9,8 +9,8 @@ import type { NewRecord, RecordDetail, RecordKind } from "../api/records";
 import type { AnalysisResponse } from "../api/realdata";
 import type { ServerComparisonResponse, SensitivityResponse, SweepResponse } from "../api/experiments";
 import { VARIABLE_INFO, type SweepVariable } from "./experiments";
-import { MODEL_ORDER, MODELS } from "./models";
-import type { Action, ModelKey, Params, ViewResult } from "./types";
+import { LAB_MODEL_ORDER, MODEL_ORDER, MODELS } from "./models";
+import type { Action, MarkovModelKey, ModelKey, Params, ViewResult } from "./types";
 
 export const KIND_LABELS: Record<RecordKind, string> = {
   model: "Cálculo analítico",
@@ -25,14 +25,19 @@ const ACTION_KIND: Record<Action, RecordKind> = { calculate: "model", simulate: 
 const ACTION_LABEL: Record<Action, string> = { calculate: "Cálculo", simulate: "Simulação", compare: "Comparação" };
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
-const isModel = (v: unknown): v is ModelKey => typeof v === "string" && (MODEL_ORDER as string[]).includes(v);
+const isLabModel = (v: unknown): v is ModelKey => typeof v === "string" && (LAB_MODEL_ORDER as string[]).includes(v);
+const isModel = (v: unknown): v is MarkovModelKey => typeof v === "string" && (MODEL_ORDER as string[]).includes(v);
 
 // ---------- Laboratório ----------
 
 /** O rótulo do modelo já traz c e K (ex.: "M/M/3/6"), então o título só acrescenta λ e μ. */
 export function labTitle(result: ViewResult): string {
   const { lambda, mu } = result.params;
-  return `${result.modelLabel} · ${ACTION_LABEL[result.action]} (λ=${lambda}, μ=${mu})`;
+  // M/G/1: o serviço é descrito pela distribuição, e μ = 1/E[S] vem arredondado da API.
+  const service = result.service
+    ? `λ=${lambda}, ${result.service.label}, E[S]=${Number(result.service.mean.toPrecision(4))}`
+    : `λ=${lambda}, μ=${mu}`;
+  return `${result.modelLabel} · ${ACTION_LABEL[result.action]} (${service})`;
 }
 
 export function labRecord(result: ViewResult, title: string = labTitle(result)): NewRecord {
@@ -48,12 +53,13 @@ export interface LabSnapshot { model: ModelKey; action: Action; parameters: Para
 
 export function parseLabRecord(record: RecordDetail): LabSnapshot | null {
   const { params, result } = record;
-  if (params.origin !== "lab" || !isModel(params.model)) return null;
+  if (params.origin !== "lab" || !isLabModel(params.model)) return null;
   const action = params.action;
   if (action !== "calculate" && action !== "simulate" && action !== "compare") return null;
   const parameters = params.parameters;
   if (!isObject(parameters) || typeof parameters.lambda !== "number" || typeof parameters.mu !== "number") return null;
   if (result.modelKey !== params.model || result.action !== action || !Array.isArray(result.metrics)) return null;
+  if (params.model === "mg1" && !isObject(parameters.service)) return null;   // sem a distribuição não há como reabrir
   return { model: params.model, action, parameters: parameters as unknown as Params, result: result as unknown as ViewResult };
 }
 
@@ -62,11 +68,11 @@ export function parseLabRecord(record: RecordDetail): LabSnapshot | null {
 export type ExperimentType = "sweep" | "servers" | "sensitivity";
 
 export type ExperimentSnapshot =
-  | { type: "sweep"; model: ModelKey; result: SweepResponse }
-  | { type: "servers"; model: ModelKey; result: ServerComparisonResponse }
-  | { type: "sensitivity"; model: ModelKey; result: SensitivityResponse };
+  | { type: "sweep"; model: MarkovModelKey; result: SweepResponse }
+  | { type: "servers"; model: MarkovModelKey; result: ServerComparisonResponse }
+  | { type: "sensitivity"; model: MarkovModelKey; result: SensitivityResponse };
 
-export function experimentTitle(type: ExperimentType, model: ModelKey, result: { variable?: string }): string {
+export function experimentTitle(type: ExperimentType, model: MarkovModelKey, result: { variable?: string }): string {
   const label = MODELS[model].label;
   if (type === "sweep") {
     const variable = VARIABLE_INFO[result.variable as SweepVariable]?.label ?? result.variable ?? "parâmetro";
@@ -76,7 +82,7 @@ export function experimentTitle(type: ExperimentType, model: ModelKey, result: {
 }
 
 export function experimentRecord(
-  type: ExperimentType, model: ModelKey, request: unknown, result: object, title: string,
+  type: ExperimentType, model: MarkovModelKey, request: unknown, result: object, title: string,
 ): NewRecord {
   return {
     kind: "experiment",

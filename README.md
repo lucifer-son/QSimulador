@@ -3,7 +3,7 @@
 > Laboratório interativo de modelagem, simulação e análise de sistemas de filas.
 
 ![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)
-![Versão](https://img.shields.io/badge/vers%C3%A3o-1.5-6F42C1)
+![Versão](https://img.shields.io/badge/vers%C3%A3o-1.6-6F42C1)
 ![Python](https://img.shields.io/badge/backend-Python%20%7C%20FastAPI-3776AB)
 ![SimPy](https://img.shields.io/badge/simula%C3%A7%C3%A3o-SimPy-2E8B57)
 ![Licença](https://img.shields.io/badge/licen%C3%A7a-uso%20acad%C3%AAmico%20(n%C3%A3o%20comercial)-blue)
@@ -26,6 +26,7 @@ O projeto está em desenvolvimento. Os modelos **M/M/1**, **M/M/c**, **M/M/1/K**
 | Experimentos: varredura de λ, μ, c e K (analítica, com simulação opcional), comparação de servidores e análise de sensibilidade (`/api/experiments`, aba Experimentos) | ✅ Implementado |
 | Dados reais: análise do CSV do JMeter com recomendação do modelo, CSV agregado por nível de carga, M/M/c//N (analítico e simulação), comparação medido × analítico × simulação e relatório em Markdown e HTML (`/api/realdata`, aba Dados reais) | ✅ Implementado |
 | Persistência | ✅ Implementado |
+| Serviço geral: M/D/1 e M/G/1 (Pollaczek-Khinchine) com oito distribuições de serviço, simulação e comparação com IC (`/api/models/mg1`, `/api/distributions`, modelo M/G/1 no Laboratório) | ✅ Implementado (Fase 9) |
 
 ---
 
@@ -87,7 +88,7 @@ Uma ferramenta de modelagem permite estudar esses fenômenos de forma controlada
 
 O QSimulador permite (ou permitirá) ao usuário:
 
-1. definir um modelo de filas (M/M/1, M/M/c, M/M/1/K ou M/M/c/K) e informar seus parâmetros ✅
+1. definir um modelo de filas (M/M/1, M/M/c, M/M/1/K, M/M/c/K ou M/G/1) e informar seus parâmetros ✅
 2. obter métricas analíticas ✅
 3. executar uma simulação de eventos discretos com múltiplas replicações ✅
 4. comparar resultados analíticos e simulados, com erro relativo ✅
@@ -105,6 +106,9 @@ O QSimulador permite (ou permitirá) ao usuário:
 | M/M/c | c | ilimitada | ✅ Implementado |
 | M/M/1/K | 1 | K | ✅ Implementado |
 | M/M/c/K | c | K | ✅ Implementado |
+| M/G/1 (e M/D/1) | 1 | ilimitada | ✅ Implementado (serviço geral) |
+
+No **M/G/1** o tempo de serviço pode seguir qualquer uma de oito distribuições (determinística, exponencial, Erlang-k, lognormal, Weibull, uniforme, triangular e normal truncada em zero). O analítico usa a fórmula de Pollaczek-Khinchine, que depende só da média e da variância do serviço, e a simulação amostra o serviço da distribuição escolhida. Com serviço determinístico o modelo é o **M/D/1**, que aparece com o próprio nome. Com serviço não exponencial o modelo deixa de ser markoviano: o QSimulador avisa isso na interface.
 
 Os modelos são implementados de forma modular, para que novos modelos possam ser adicionados sem alterar a interface ou o núcleo de simulação.
 
@@ -248,6 +252,7 @@ A interface é uma tela única de trabalho: à esquerda, o modelo e os parâmetr
 - **Comparar** (ação principal) chama `/compare` e mostra, nesta ordem, o veredito (se o analítico está dentro do IC), quatro números de destaque, o gráfico de diferenças e a tabela completa. **Só calcular** e **Só simular** são atalhos.
 - **Gráfico de diferenças:** as métricas têm escalas muito diferentes (ρ perto de 0,7 e vazão perto de 22, por exemplo), então todas aparecem como diferença percentual da simulação em relação ao analítico, com o IC. Se a barra cruza o zero, o valor analítico está dentro do intervalo.
 - **Abas:** Resultados, Gráficos (valor de cada réplica, média simulada e analítico), Réplicas (tabela por réplica) e Detalhes (parâmetros usados, semente e resposta completa da API).
+- **M/G/1:** ao escolher esse modelo, no lugar de μ, servidores e capacidade aparecem o seletor **Distribuição do serviço** e os campos da distribuição escolhida. Abaixo deles, um resumo mostra E[S], o desvio padrão, o CV, μ = 1/E[S] e ρ = λ·E[S] antes de executar. A aba Experimentos ainda não cobre o M/G/1 e continua no último modelo markoviano escolhido.
 - **Execução:** estimativa de custo antes de rodar, indicador de progresso e botão para cancelar.
 - **Erros:** os erros da API aparecem no campo certo do formulário. A tela só confere o formato (número, inteiro); as regras do modelo (λ < c·μ, capacidade ≥ servidores etc.) ficam na API.
 - **Semente:** o resultado mostra a semente usada. O `/compare` não devolve as réplicas individuais, então as abas Gráficos e Réplicas repetem a simulação com a mesma semente, que reproduz exatamente as mesmas réplicas.
@@ -302,7 +307,10 @@ qsimulador/
 ├── vercel.json                # publicação na Vercel (frontend e backend)
 ├── docs/
 │   ├── como-executar.md
-│   └── documentacao-academica.md
+│   ├── documentacao-academica.md
+│   ├── analise-concorrente.md   # análise do UtiliQueue e lacunas
+│   ├── roadmap-competitivo.md   # Fases 9 a 20
+│   └── valores-de-referencia.md # valores exatos para testes
 ├── frontend/                  # interface web (detalhada abaixo)
 └── backend/
     ├── requirements.txt
@@ -318,19 +326,23 @@ qsimulador/
     │   ├── api/                   # rotas (mm1.py, queues.py, records.py...), esquemas e tratamento de erros
     │   ├── analytical/
     │   │   ├── mm1.py             # modelo analítico M/M/1
+    │   │   ├── mg1.py             # M/G/1 e M/D/1 (Pollaczek-Khinchine)
     │   │   └── mmck.py            # M/M/c (Erlang C), M/M/1/K e M/M/c/K
     │   ├── simulation/
     │   │   ├── mm1.py             # simulação M/M/1 com SimPy
     │   │   ├── mmck.py            # simulação de M/M/c, M/M/1/K e M/M/c/K
+    │   │   ├── mg1.py             # simulação do M/G/1 (serviço amostrado da distribuição)
     │   │   ├── results.py         # estruturas de resultado
     │   │   └── stats.py           # média e intervalo de confiança entre réplicas
     │   ├── domain/
     │   │   ├── metrics/           # estruturas de métricas
     │   │   ├── models/            # nome do modelo em notação de Kendall
+    │   │   ├── service/           # distribuições de serviço (média, variância, CV, amostrador)
     │   │   └── validation/        # validação de parâmetros e erros de domínio
     │   ├── experiments/           # varredura, comparação de servidores e sensibilidade
     │   ├── analysis/
-    │   │   └── comparison.py      # comparação analítico × simulação
+    │   │   ├── comparison.py      # comparação analítico × simulação
+    │   │   └── comparison_mg1.py  # comparação do M/G/1
     │   └── persistence/           # histórico: configuração, modelo, repositório e acesso ao banco
     └── tests/
 ```
@@ -512,13 +524,50 @@ Cada modelo tem as rotas `calculate`, `simulate` e `compare`, com os mesmos camp
 
 As respostas de `/simulate` e `/compare` seguem o formato do M/M/1, com os campos `model` (notação de Kendall, por exemplo `"M/M/3/6"`), `servers` e `capacity` (`null` quando a fila é ilimitada) e **nove métricas** em vez de sete (`p_wait` e `p_block` a mais).
 
+### Serviço geral: M/G/1 e M/D/1
+
+O tempo de serviço deixa de ser exponencial. As rotas `/api/models/mg1/calculate`, `/simulate` e `/compare` recebem `lambda`, a `distribution` do serviço e os parâmetros dela (no lugar de `mu`), mais os campos de simulação de sempre. `GET /api/distributions` lista as oito distribuições e seus parâmetros.
+
+| `distribution` | Parâmetros | Média e CV |
+| --- | --- | --- |
+| `deterministic` | `mean` ou `mu` | CV = 0 (M/D/1) |
+| `exponential` | `mean` ou `mu` | CV = 1 (reproduz o M/M/1) |
+| `erlang` | `mean` ou `mu`, `k` (inteiro ≥ 1) | CV = 1/√k |
+| `lognormal` | `mean` ou `mu`, `cv` (0,01 a 10) | o CV informado |
+| `weibull` | `mean` ou `mu`, `cv` (0,01 a 10) | o CV informado (a forma é calculada) |
+| `uniform` | `min`, `max` | calculados |
+| `triangular` | `min`, `mode`, `max` | calculados |
+| `truncated_normal` | `loc`, `scale` | os da normal **truncada em 0**, não os da normal original |
+
+`mean` é o tempo médio de serviço E[S] e `mu` é a alternativa em taxa (μ = 1/E[S]); informe um ou outro. Parâmetros que a distribuição não usa são ignorados. A resposta traz `service` com a média, o desvio padrão, o CV, μ e os parâmetros efetivos. O M/D/1 é o M/G/1 com distribuição determinística e aparece como `"model": "M/D/1"`.
+
+```json
+// POST /api/models/mg1/calculate
+{ "lambda": 25, "distribution": "lognormal", "mu": 30, "cv": 0.5 }
+```
+
+```json
+// Resposta (valores arredondados)
+{
+  "model": "M/G/1",
+  "service": {
+    "distribution": "lognormal", "label": "Lognormal",
+    "mean": 0.0333, "std": 0.0167, "variance": 0.000278, "cv": 0.5, "mu": 30,
+    "parameters": { "mean": 0.0333, "cv": 0.5, "sigma": 0.4724, "mu_log": -3.5128 }
+  },
+  "rho": 0.8333, "L": 3.4375, "Lq": 2.6042, "W": 0.1375, "Wq": 0.1042, "p0": 0.1667
+}
+```
+
+O sistema é estável quando ρ = λ·E[S] < 1; senão a API devolve `unstable_system`. `/simulate` e `/compare` aceitam os mesmos campos de simulação do M/M/1 e devolvem as sete métricas (ρ, L, Lq, W, Wq, P0 e vazão), com `service` e o intervalo de confiança.
+
 ### Erros
 
 Toda requisição inválida devolve HTTP 422 com `{"code", "message", "fields"?}`. `fields` lista o campo e o motivo de cada erro, tanto nos erros de formato quanto nos de regra:
 
 | `code` | Quando acontece |
 | --- | --- |
-| `unstable_system` | λ ≥ μ (M/M/1) ou λ ≥ c·μ (M/M/c). Não se aplica à capacidade finita |
+| `unstable_system` | λ ≥ μ (M/M/1), λ ≥ c·μ (M/M/c) ou λ·E[S] ≥ 1 (M/G/1). Não se aplica à capacidade finita |
 | `invalid_parameter` | Valor fora da regra (zero, negativo, `capacity` menor que `servers`, `servers` acima de 1.000, `capacity` acima de 100.000, `replications` fora de 2 a 100, warm-up ≥ tempo simulado, mais de 1.000.000 de chegadas esperadas por réplica ou de 5.000.000 no total) |
 | `invalid_request` | Campo ausente ou do tipo errado (inclui a lista `fields`) |
 | `insufficient_sample` | Tempo simulado tão curto que nenhum cliente foi medido |
@@ -538,6 +587,8 @@ Toda requisição inválida devolve HTTP 422 com `{"code", "message", "fields"?}
 - **Conformidade com a especificação:** P0 conferido com aritmética exata de frações, com valores conhecidos e na simulação (casos determinísticos e comparação estatística), réplicas entre 2 e 100, limites de chegadas por réplica e no total, e o campo presente em cada erro de regra.
 - **CORS e tipos:** a API só libera outras origens quando configurado, e um teste falha se o `openapi.json` do frontend ficar desatualizado em relação à API.
 - **Testes do frontend:** formatação, conversão do formulário em requisição, cliente HTTP e tradução de erros por campo, mapeamento das respostas (com respostas reais da API gravadas como fixtures), construção dos gráficos e fluxos completos da tela com a API simulada (comparar, calcular, simular, erros, cancelamento, abas e reprodução por semente). Um teste de contrato opcional roda o mesmo cliente contra a API de verdade e confere se as fixtures ainda têm o formato real.
+
+- **Testes do serviço geral (M/D/1 e M/G/1):** valores exatos de [`docs/valores-de-referencia.md`](docs/valores-de-referencia.md) (M/D/1 com λ = 40 e μ = 80 dá Wq = 22,5 s; M/G/1 com λ = 25, μ = 30 e CV = 0,5 dá Lq = 2,6042), propriedades (CV = 1 reproduz o M/M/1, CV = 0 reproduz o M/D/1, M/D/1 tem metade da fila do M/M/1), média e variância de uma amostra grande de cada uma das oito distribuições (tolerância calibrada pela variação entre sementes), validação com o campo identificado, simulação × analítico com IC e Lei de Little.
 
 Para executar: `python -m pytest` (dentro de `backend/`) e `npm test` (dentro de `frontend/`).
 
@@ -591,10 +642,11 @@ users,avg_ms,p90_ms,throughput,error_rate
 - [x] **Fase 6 — Experimentação:** varredura de λ, μ, c e K (com simulação opcional por ponto), comparação de servidores e análise de sensibilidade.
 - [x] **Fase 7 — Dados reais:** importação do CSV do JMeter, verificação dos dados, recomendação do melhor modelo, comparação com o modelo e relatórios experimentais. **Feito (backend):** modelos M/M/1//N e M/M/c//N, leitor do JTL, métricas empíricas, diagnósticos, recomendador e rotas `/api/realdata/analyze` e `/compare`. **Também feito:** aba *Dados reais* no frontend. **Também feito (acréscimos):** simulação do M/M/c//N, CSV agregado por nível de carga (`/api/realdata/import/levels`), comparação medido × analítico × simulação (`/api/realdata/compare-simulated`), relatório em Markdown e HTML (`/api/realdata/report`) e OpenAPI regenerado.
 - [x] **Fase 8 — Persistência e publicação:** PostgreSQL, Docker, deploy e documentação acadêmica. **Feito:** histórico com PostgreSQL opcional (salvar, listar, reabrir, renomear e excluir resultados do Laboratório, dos experimentos e da análise do JMeter; rotas `/api/records`; migrações com Alembic; configuração por variáveis de ambiente), aba *Histórico* no frontend, arquivo `LICENSE` e [documentação acadêmica](docs/documentacao-academica.md). **Falta:** Docker (`docker compose up`).
+- [x] **Fase 9 — Serviço geral:** M/D/1 e M/G/1 (Pollaczek-Khinchine) com oito distribuições de serviço, simulação com o serviço amostrado da distribuição, comparação analítico × simulação com IC, rotas `/api/models/mg1/*` e `GET /api/distributions`, e modelo M/G/1 no Laboratório. As Fases 10 a 20 (Erlang-B, M/G/c, dimensionamento, cenários prontos, PDF e outras) estão no [roadmap competitivo](docs/roadmap-competitivo.md).
 
 ### Possíveis extensões
 
-Outras disciplinas de atendimento, distribuições além da exponencial, redes de filas, modelos de população finita, análise de estado estacionário e transiente, e geração automática de relatórios. Essas extensões só serão implementadas após a validação do núcleo inicial.
+Outras disciplinas de atendimento, redes de filas, modelos de população finita, análise de estado estacionário e transiente, e geração automática de relatórios. Essas extensões só serão implementadas após a validação do núcleo inicial.
 
 ---
 
@@ -615,27 +667,6 @@ A fundamentação, a metodologia, a validação e as limitações estão reunida
 
 Copyright © [2026] [RAFAEL GOMES DE ARAÚJO MELO, MARIANA OLIVEIRA LIMA, JOÃO LUCAS COSME]. Todos os direitos reservados, exceto o que esta licença concede expressamente.
 
-**1. Definições.** *Software* é o QSimulador, com o seu código-fonte, a documentação e os demais arquivos deste repositório. *Titulares* são os autores indicados acima. *Uso Acadêmico* é o uso, **sem finalidade comercial**, em **ensino**, **pesquisa** ou **extensão universitária**, por pessoas e instituições de ensino superior ou de pesquisa. *Uso Comercial* é qualquer uso voltado a obter vantagem econômica, direta ou indireta, como venda, licenciamento ou aluguel do Software, oferta como serviço pago (inclusive SaaS), incorporação em produto ou serviço comercial e prestação de consultoria ou treinamento remunerados que dependam do Software.
-
-**2. Concessão.** Os Titulares concedem a quem receber o Software uma licença gratuita, não exclusiva, intransferível e válida enquanto durarem os direitos autorais, para, **exclusivamente para Uso Acadêmico**, usar, executar, copiar, estudar, modificar e distribuir o Software e as obras derivadas, nos termos desta licença.
-
-**3. Condições.** Toda concessão acima depende de cumprir as condições a seguir.
-
-- **Citação obrigatória.** Trabalhos, relatórios, artigos, apresentações, material didático e *software* que usem o Software, parte dele ou resultados obtidos com ele devem citar o QSimulador e os seus autores, conforme a seção *Como citar*.
-- **Avisos.** Toda cópia ou parte substancial do Software deve manter o aviso de direitos autorais e esta licença.
-- **Obras derivadas.** Quem modificar o Software deve indicar as alterações feitas e distribuir a obra derivada sob esta mesma licença, mantendo a citação dos autores originais.
-
-**4. Restrições.** É proibido o Uso Comercial. Também é proibido sublicenciar o Software, remover ou alterar avisos de autoria e licença, e apresentar o Software ou uma obra derivada como criação própria, sem citar os autores.
-
-**5. Outros usos.** Qualquer uso fora desta licença, inclusive o Uso Comercial, exige autorização prévia e por escrito dos Titulares: [CONTATO DOS AUTORES — preencher].
-
-**6. Componentes de terceiros.** O Software usa bibliotecas e ferramentas de terceiros (como FastAPI, SimPy, NumPy, SciPy, React e Plotly). Elas continuam sujeitas às suas próprias licenças, que esta licença não altera.
-
-**7. Ausência de garantia.** O Software é fornecido "no estado em que se encontra", sem garantia de qualquer tipo, expressa ou implícita, inclusive de adequação a uma finalidade específica. Os Titulares não respondem por danos decorrentes do uso do Software, e os resultados das simulações são educacionais e experimentais.
-
-**8. Rescisão.** A violação desta licença encerra automaticamente os direitos concedidos. Eles podem ser restabelecidos se a violação cessar e, quando houver, for regularizada com os Titulares.
-
-**9. Lei aplicável e foro.** Esta licença é regida pela legislação brasileira, em especial as Leis nº 9.609/1998 (programas de computador) e nº 9.610/1998 (direitos autorais). Fica eleito o foro de [CIDADE/UF] para dirimir dúvidas decorrentes dela.
 
 ### Como citar
 

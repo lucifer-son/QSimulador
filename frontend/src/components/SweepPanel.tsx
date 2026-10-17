@@ -7,7 +7,7 @@ import {
   type ExpErrors, type RangeText, type SimText, type SweepVariable, type SystemText,
 } from "../domain/experiments";
 import { formatInteger, formatNumber } from "../domain/format";
-import type { MetricName, ModelKey } from "../domain/types";
+import type { MetricName, MarkovModelKey } from "../domain/types";
 import { useExperiment } from "../hooks/useExperiment";
 import { useThemeColors } from "../hooks/useThemeColors";
 import { experimentRecord, experimentTitle } from "../domain/records";
@@ -20,7 +20,7 @@ import { TextField } from "./TextField";
 
 interface Props {
   active: boolean;
-  model: ModelKey;
+  model: MarkovModelKey;
   system: SystemText;
   sim: SimText;
 }
@@ -128,12 +128,12 @@ export function SweepPanel({ active, model, system, sim }: Props) {
         loadingText={simulate ? "Calculando e simulando a faixa" : "Calculando a faixa"}
       >
         {(result) => {
-          const title = experimentTitle("sweep", result.model as ModelKey, result);
+          const title = experimentTitle("sweep", result.model as MarkovModelKey, result);
           return (
             <>
               <SaveButton
                 suggestedTitle={title}
-                build={(t) => experimentRecord("sweep", result.model as ModelKey, lastRequest.current, result, t ?? title)}
+                build={(t) => experimentRecord("sweep", result.model as MarkovModelKey, lastRequest.current, result, t ?? title)}
               />
               <SweepResult result={result} />
             </>
@@ -146,7 +146,7 @@ export function SweepPanel({ active, model, system, sim }: Props) {
 
 export function SweepResult({ result }: { result: SweepResponse }) {
   const colors = useThemeColors();
-  const model = result.model as ModelKey;
+  const model = result.model as MarkovModelKey;
   const variable = result.variable as SweepVariable;
   const [metric, setMetric] = useState<MetricName>("W");
   const [xAxis, setXAxis] = useState<XAxis>("value");

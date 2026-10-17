@@ -98,3 +98,37 @@ describe("Dados reais", () => {
     expect(parseRealDataRecord({ ...good, result: { dataset: 1 } })).toBeNull();
   });
 });
+
+describe("Laboratório: M/G/1", () => {
+  const MG1: Params = {
+    lambda: 25, mu: 50, simulationTime: 100, replications: 3, warmupTime: 10, seed: 7,
+    service: { distribution: "lognormal", values: { mean: 0.02, cv: 0.5 } },
+  };
+  const mg1 = () => fromCompare("mg1", MG1, fx.mg1Compare as unknown as CompareResponse);
+
+  it("o título descreve a distribuição e E[S] (não μ)", () => {
+    expect(labTitle(mg1())).toBe("M/G/1 · Comparação (λ=25, Lognormal, E[S]=0.02)");
+  });
+
+  it("salvar e reabrir devolve a distribuição e o resultado", () => {
+    const original = mg1();
+    const snapshot = parseLabRecord(stored(labRecord(original)));
+    expect(snapshot).not.toBeNull();
+    expect(snapshot!.model).toBe("mg1");
+    expect(snapshot!.parameters.service).toEqual(MG1.service);
+    expect(snapshot!.result).toEqual(JSON.parse(JSON.stringify(original)));
+  });
+
+  it("registro do M/G/1 sem a distribuição não pode ser reaberto", () => {
+    const record = labRecord(mg1());
+    const params = record.params as { parameters: Record<string, unknown> };
+    delete params.parameters.service;
+    expect(parseLabRecord(stored(record))).toBeNull();
+  });
+
+  it("experimentos continuam restritos aos modelos markovianos", () => {
+    const bad = stored({ kind: "experiment", title: "x", params: { origin: "experiment", experiment: "sweep", model: "mg1", request: null }, result: { points: [] } });
+    expect(parseExperimentRecord(bad)).toBeNull();
+  });
+});
+

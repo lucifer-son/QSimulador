@@ -13,17 +13,20 @@ import { runSensitivity, runServerComparison, runSweep } from "../api/experiment
 import { fieldErrorsFromApi } from "../api/fieldErrors";
 import { buildReport, compareSimulated, type LevelsImport } from "../api/realdataExtra";
 import { MODEL_ORDER, MODELS } from "../domain/models";
-import type { Action, ModelKey, Params } from "../domain/types";
+import type { Action, MarkovModelKey, Params } from "../domain/types";
 import { fixtures } from "./helpers";
 
 const live = Boolean(import.meta.env.VITE_API_BASE_URL);
 
 const SIM = { simulationTime: 100, replications: 3, warmupTime: 10, seed: 7 };
-const PARAMS: Record<ModelKey, Params> = {
+const PARAMS: Record<MarkovModelKey, Params> = {
   mm1: { lambda: 40, mu: 50, ...SIM },
   mmc: { lambda: 8, mu: 1, servers: 10, ...SIM },
   mm1k: { lambda: 12, mu: 10, capacity: 5, ...SIM },
   mmck: { lambda: 25, mu: 10, servers: 3, capacity: 6, ...SIM },
+};
+const MG1_PARAMS: Params = {
+  lambda: 25, mu: 50, ...SIM, service: { distribution: "lognormal", values: { mean: 0.02, cv: 0.5 } },
 };
 const ACTIONS: Action[] = ["calculate", "simulate", "compare"];
 const keys = (o: unknown) => Object.keys(o as object).sort();
@@ -141,8 +144,45 @@ describe.skipIf(!live)("contrato com a API real", () => {
     }
   });
 
+  describe("mg1 (serviço geral)", () => {
+    it.each(ACTIONS)("%s devolve o formato que o cliente espera", async (action) => {
+      const r = await runAction("mg1", action, MG1_PARAMS);
+      expect(r.action).toBe(action);
+      expect(r.modelLabel).toBe("M/G/1");
+      expect(r.service).toMatchObject({ distribution: "lognormal", cv: 0.5, mu: 50 });
+      expect(r.metrics.map((m) => m.name).slice(0, 6)).toEqual(["rho", "L", "Lq", "W", "Wq", "p0"]);
+      if (action === "compare") expect(r.maxErrorPct).toBeTypeOf("number");
+      if (action === "simulate") expect(r.runs).toHaveLength(3);
+    });
+
+    it("determinística vira M/D/1 e confere o valor de referência (Wq = 22,5 s com λ = 40/h, μ = 80/h)", async () => {
+      const r = await runAction("mg1", "calculate", {
+        lambda: 40, mu: 80, service: { distribution: "deterministic", values: { mu: 80 } as never },
+      });
+      expect(r.modelLabel).toBe("M/D/1");
+      expect(r.metrics.find((m) => m.name === "Wq")!.analytical! * 3600).toBeCloseTo(22.5, 6);
+    });
+
+    it("sistema instável chega como unstable_system, com o campo λ", async () => {
+      const error = await runAction("mg1", "calculate", {
+        lambda: 60, mu: 0, service: { distribution: "uniform", values: { min: 0.01, max: 0.03 } },
+      }).catch((e: unknown) => e as ApiError);
+      expect(error).toBeInstanceOf(ApiError);
+      expect((error as ApiError).code).toBe("unstable_system");
+      expect(Object.keys(fieldErrorsFromApi(error as ApiError))).toEqual(["lambda"]);
+    });
+
+    it("as fixtures do M/G/1 ainda têm o formato real da API", async () => {
+      for (const [action, fixture] of [["calculate", fixtures.mg1Calculate], ["simulate", fixtures.mg1Simulate], ["compare", fixtures.mg1Compare]] as const) {
+        const raw = (await runAction("mg1", action, MG1_PARAMS)).raw as Record<string, unknown>;
+        expect(keys(raw), action).toEqual(keys(fixture));
+        expect(keys(raw.service), action).toEqual(keys((fixture as Record<string, unknown>).service));
+      }
+    });
+  });
+
   describe("as fixtures dos testes ainda têm o formato real da API", () => {
-    const cases: [ModelKey, Action, unknown][] = [
+    const cases: [MarkovModelKey, Action, unknown][] = [
       ["mm1", "calculate", fixtures.mm1Calculate], ["mm1", "simulate", fixtures.mm1Simulate], ["mm1", "compare", fixtures.mm1Compare],
       ["mmc", "calculate", fixtures.mmcCalculate], ["mmc", "simulate", fixtures.mmcSimulate], ["mmc", "compare", fixtures.mmcCompare],
       ["mmck", "calculate", fixtures.mmckCalculate], ["mmck", "simulate", fixtures.mmckSimulate], ["mmck", "compare", fixtures.mmckCompare],

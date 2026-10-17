@@ -132,6 +132,154 @@
         }
       }
     },
+    "/api/models/mg1/calculate": {
+      "post": {
+        "tags": [
+          "M/G/1 e M/D/1"
+        ],
+        "summary": "Calculate",
+        "description": "Métricas analíticas (Pollaczek-Khinchine). Exige ρ = λ·E[S] < 1.",
+        "operationId": "calculate_api_models_mg1_calculate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MG1CalculateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MG1CalculateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/mg1/simulate": {
+      "post": {
+        "tags": [
+          "M/G/1 e M/D/1"
+        ],
+        "summary": "Simulate",
+        "description": "Simulação de eventos discretos com o serviço amostrado da distribuição escolhida.",
+        "operationId": "simulate_api_models_mg1_simulate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MG1SimulateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MG1SimulationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/mg1/compare": {
+      "post": {
+        "tags": [
+          "M/G/1 e M/D/1"
+        ],
+        "summary": "Compare",
+        "description": "Compara o analítico com a simulação, métrica a métrica (erro e IC).",
+        "operationId": "compare_api_models_mg1_compare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MG1SimulateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MG1ComparisonResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/distributions": {
+      "get": {
+        "tags": [
+          "Distribuições de serviço"
+        ],
+        "summary": "List Distributions",
+        "description": "Distribuições de serviço disponíveis, com os parâmetros de cada uma.",
+        "operationId": "list_distributions_api_distributions_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistributionCatalogResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/models/mmc/calculate": {
       "post": {
         "tags": [
@@ -2095,6 +2243,76 @@
         ],
         "title": "DiagnosticOut"
       },
+      "DistributionCatalogResponse": {
+        "properties": {
+          "distributions": {
+            "items": {
+              "$ref": "#/components/schemas/DistributionOut"
+            },
+            "type": "array",
+            "title": "Distributions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "distributions"
+        ],
+        "title": "DistributionCatalogResponse"
+      },
+      "DistributionOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "accepts_mean": {
+            "type": "boolean",
+            "title": "Accepts Mean",
+            "description": "Se verdadeiro, informe mean ou mu (média ou taxa de serviço)."
+          },
+          "parameters": {
+            "items": {
+              "$ref": "#/components/schemas/ParameterOut"
+            },
+            "type": "array",
+            "title": "Parameters",
+            "description": "Parâmetros próprios, além de mean/mu."
+          },
+          "example": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Example",
+            "description": "Exemplo válido de parâmetros (aceito pelas rotas do M/G/1)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "description",
+          "accepts_mean",
+          "parameters",
+          "example"
+        ],
+        "title": "DistributionOut"
+      },
       "EmpiricalMetricsModel": {
         "properties": {
           "window_start": {
@@ -2863,6 +3081,532 @@
           "warnings"
         ],
         "title": "LevelsImportResponse"
+      },
+      "MG1CalculateRequest": {
+        "properties": {
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa média de chegada (λ)."
+          },
+          "distribution": {
+            "type": "string",
+            "enum": [
+              "deterministic",
+              "exponential",
+              "erlang",
+              "lognormal",
+              "weibull",
+              "uniform",
+              "triangular",
+              "truncated_normal"
+            ],
+            "title": "Distribution",
+            "description": "Distribuição do tempo de serviço (veja GET /api/distributions)."
+          },
+          "mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean",
+            "description": "Tempo médio de serviço E[S] (exponencial, determinística, Erlang-k, lognormal, Weibull)."
+          },
+          "mu": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mu",
+            "description": "Alternativa à média: taxa de serviço μ = 1/E[S]. Informe mean ou mu, não os dois."
+          },
+          "k": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "K",
+            "description": "Etapas do Erlang-k (inteiro ≥ 1). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "cv": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cv",
+            "description": "Coeficiente de variação (lognormal e Weibull). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min",
+            "description": "Mínimo (uniforme e triangular). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mode",
+            "description": "Moda (triangular). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max",
+            "description": "Máximo (uniforme e triangular). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "loc": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loc",
+            "description": "Média da normal original (normal truncada em 0). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "scale": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scale",
+            "description": "Desvio padrão da normal original (normal truncada em 0). Ignorado pelas distribuições que não usam este parâmetro."
+          }
+        },
+        "type": "object",
+        "required": [
+          "lambda",
+          "distribution"
+        ],
+        "title": "MG1CalculateRequest",
+        "examples": [
+          {
+            "cv": 0.5,
+            "distribution": "lognormal",
+            "lambda": 25,
+            "mean": 0.02
+          },
+          {
+            "distribution": "deterministic",
+            "lambda": 40,
+            "mu": 80
+          }
+        ]
+      },
+      "MG1CalculateResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "service": {
+            "$ref": "#/components/schemas/ServiceOut"
+          },
+          "rho": {
+            "type": "number",
+            "title": "Rho"
+          },
+          "L": {
+            "type": "number",
+            "title": "L"
+          },
+          "Lq": {
+            "type": "number",
+            "title": "Lq"
+          },
+          "W": {
+            "type": "number",
+            "title": "W"
+          },
+          "Wq": {
+            "type": "number",
+            "title": "Wq"
+          },
+          "p0": {
+            "type": "number",
+            "title": "P0"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "service",
+          "rho",
+          "L",
+          "Lq",
+          "W",
+          "Wq",
+          "p0"
+        ],
+        "title": "MG1CalculateResponse"
+      },
+      "MG1ComparisonResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "lambda": {
+            "type": "number",
+            "title": "Lambda"
+          },
+          "service": {
+            "$ref": "#/components/schemas/ServiceOut"
+          },
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time"
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time"
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed"
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level"
+          },
+          "metrics": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/app__api__schemas__MetricComparisonOut"
+            },
+            "type": "object",
+            "title": "Metrics"
+          },
+          "all_within_ci": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "All Within Ci"
+          },
+          "max_relative_error_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Relative Error Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "lambda",
+          "service",
+          "simulation_time",
+          "warmup_time",
+          "replications",
+          "seed",
+          "confidence_level",
+          "metrics",
+          "all_within_ci",
+          "max_relative_error_pct"
+        ],
+        "title": "MG1ComparisonResponse"
+      },
+      "MG1SimulateRequest": {
+        "properties": {
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa média de chegada (λ)."
+          },
+          "distribution": {
+            "type": "string",
+            "enum": [
+              "deterministic",
+              "exponential",
+              "erlang",
+              "lognormal",
+              "weibull",
+              "uniform",
+              "triangular",
+              "truncated_normal"
+            ],
+            "title": "Distribution",
+            "description": "Distribuição do tempo de serviço (veja GET /api/distributions)."
+          },
+          "mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean",
+            "description": "Tempo médio de serviço E[S] (exponencial, determinística, Erlang-k, lognormal, Weibull)."
+          },
+          "mu": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mu",
+            "description": "Alternativa à média: taxa de serviço μ = 1/E[S]. Informe mean ou mu, não os dois."
+          },
+          "k": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "K",
+            "description": "Etapas do Erlang-k (inteiro ≥ 1). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "cv": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cv",
+            "description": "Coeficiente de variação (lognormal e Weibull). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min",
+            "description": "Mínimo (uniforme e triangular). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mode",
+            "description": "Moda (triangular). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max",
+            "description": "Máximo (uniforme e triangular). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "loc": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loc",
+            "description": "Média da normal original (normal truncada em 0). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "scale": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scale",
+            "description": "Desvio padrão da normal original (normal truncada em 0). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time",
+            "description": "Tempo simulado por replicação."
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications",
+            "description": "Número de replicações.",
+            "default": 10
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time",
+            "description": "Período inicial descartado (transitório).",
+            "default": 0.0
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Semente aleatória. Se omitida, uma é sorteada e devolvida."
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level",
+            "description": "Nível do intervalo de confiança (0 a 1).",
+            "default": 0.95
+          }
+        },
+        "type": "object",
+        "required": [
+          "lambda",
+          "distribution",
+          "simulation_time"
+        ],
+        "title": "MG1SimulateRequest",
+        "examples": [
+          {
+            "cv": 0.5,
+            "distribution": "lognormal",
+            "lambda": 25,
+            "mean": 0.02,
+            "replications": 10,
+            "seed": 2026,
+            "simulation_time": 2000,
+            "warmup_time": 100
+          }
+        ]
+      },
+      "MG1SimulationResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "lambda": {
+            "type": "number",
+            "title": "Lambda"
+          },
+          "service": {
+            "$ref": "#/components/schemas/ServiceOut"
+          },
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time"
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time"
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed"
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level"
+          },
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/ReplicationOut"
+            },
+            "type": "array",
+            "title": "Runs"
+          },
+          "summary": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MetricSummaryOut"
+            },
+            "type": "object",
+            "title": "Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "lambda",
+          "service",
+          "simulation_time",
+          "warmup_time",
+          "replications",
+          "seed",
+          "confidence_level",
+          "runs",
+          "summary"
+        ],
+        "title": "MG1SimulationResponse"
       },
       "MM1CalculateRequest": {
         "properties": {
@@ -3647,6 +4391,39 @@
           "servers"
         ],
         "title": "ModelPickOut"
+      },
+      "ParameterOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Nome do campo na API."
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "float",
+              "int"
+            ],
+            "title": "Kind"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "label",
+          "kind",
+          "description"
+        ],
+        "title": "ParameterOut"
       },
       "ParameterSensitivityOut": {
         "properties": {
@@ -4800,6 +5577,62 @@
           "points"
         ],
         "title": "ServerSeriesOut"
+      },
+      "ServiceOut": {
+        "properties": {
+          "distribution": {
+            "type": "string",
+            "title": "Distribution"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "mean": {
+            "type": "number",
+            "title": "Mean",
+            "description": "Tempo médio de serviço E[S]."
+          },
+          "std": {
+            "type": "number",
+            "title": "Std",
+            "description": "Desvio padrão do serviço."
+          },
+          "variance": {
+            "type": "number",
+            "title": "Variance"
+          },
+          "cv": {
+            "type": "number",
+            "title": "Cv",
+            "description": "Coeficiente de variação (desvio / média)."
+          },
+          "mu": {
+            "type": "number",
+            "title": "Mu",
+            "description": "Taxa de serviço equivalente, 1/E[S]."
+          },
+          "parameters": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Parameters",
+            "description": "Parâmetros efetivos, incluindo os derivados (ex.: forma do Weibull)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "distribution",
+          "label",
+          "mean",
+          "std",
+          "variance",
+          "cv",
+          "mu",
+          "parameters"
+        ],
+        "title": "ServiceOut"
       },
       "SimulatedCompareRequest": {
         "properties": {

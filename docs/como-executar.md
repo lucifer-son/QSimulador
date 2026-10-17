@@ -54,7 +54,7 @@ Quando o ambiente virtual está ativo, o prompt começa com `(.venv)`. **Todos o
 python -m pytest
 ```
 
-Todos os testes devem passar (432 no momento em que este guia foi escrito). Um aviso de depreciação do Starlette sobre o `httpx` pode aparecer e é inofensivo.
+Todos os testes devem passar (935 no backend na Fase 9; os que dependem de um PostgreSQL real são ignorados quando `QSIMULADOR_TEST_POSTGRES_URL` não está definida). Um aviso de depreciação do Starlette sobre o `httpx` pode aparecer e é inofensivo.
 
 ---
 
@@ -172,6 +172,8 @@ Abra **http://127.0.0.1:8000/docs** no navegador. A página lista os endpoints, 
 | `POST /api/models/mmc/calculate` · `/simulate` · `/compare` | M/M/c (fila ilimitada). Entrada extra: `servers` |
 | `POST /api/models/mm1k/calculate` · `/simulate` · `/compare` | M/M/1/K. Entrada extra: `capacity` |
 | `POST /api/models/mmck/calculate` · `/simulate` · `/compare` | M/M/c/K. Entradas extras: `servers` e `capacity` |
+| `POST /api/models/mg1/calculate` · `/simulate` · `/compare` | M/G/1 e M/D/1 (serviço geral). Entradas: `lambda`, `distribution` e os parâmetros dela, no lugar de `mu` ([detalhes](#serviço-geral-mg1-e-md1-fase-9)) |
+| `GET /api/distributions` | Lista as oito distribuições de serviço e seus parâmetros |
 | `POST /api/experiments/sweep` | Varredura de λ, μ, c ou K ([detalhes](#experimentos-fase-6)) |
 | `POST /api/experiments/servers` | Comparação de números de servidores |
 | `POST /api/experiments/sensitivity` | Análise de sensibilidade |
@@ -252,6 +254,57 @@ A resposta de `/compare` traz, para cada métrica (`rho`, `L`, `Lq`, `W`, `Wq`, 
 
 Nos modelos M/M/c, M/M/1/K e M/M/c/K as respostas seguem o mesmo formato, com dois campos a mais (`servers` e `capacity`, este `null` quando a fila é ilimitada), o `model` em notação de Kendall (por exemplo, `"M/M/3/6"`) e **nove métricas** em vez de sete: além das anteriores, `p_wait` e `p_block` (veja [Interpretando os resultados](#6-interpretando-os-resultados)).
 
+### Serviço geral: M/G/1 e M/D/1 (Fase 9)
+
+No M/G/1 o tempo de serviço não precisa ser exponencial. Em vez de `mu`, a requisição traz a `distribution` e os parâmetros dela. Os tempos ficam na mesma unidade de `1/λ` (por exemplo, segundos).
+
+| `distribution` | Parâmetros |
+| --- | --- |
+| `deterministic` | `mean` ou `mu` (M/D/1) |
+| `exponential` | `mean` ou `mu` |
+| `erlang` | `mean` ou `mu`, e `k` (inteiro de 1 a 1.000) |
+| `lognormal` | `mean` ou `mu`, e `cv` (de 0,01 a 10) |
+| `weibull` | `mean` ou `mu`, e `cv` (de 0,01 a 10; a forma é calculada) |
+| `uniform` | `min` (≥ 0) e `max` (> `min`) |
+| `triangular` | `min`, `mode` e `max` (`min` ≤ `mode` ≤ `max`) |
+| `truncated_normal` | `loc` e `scale` (> 0); a média e a variância são as da normal truncada em 0 |
+
+`mean` é o tempo médio de serviço E[S]; `mu` é a mesma informação em taxa (1/E[S]). Informe um dos dois. O sistema só é estável com ρ = λ·E[S] < 1.
+
+**PowerShell** (exemplos com os valores de referência: λ = 40 e μ = 80 dá o M/D/1 com Wq = 0,00625; λ = 25, μ = 30 e CV = 0,5 dá Lq = 2,6042):
+
+```powershell
+# M/D/1: serviço determinístico
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/models/mg1/calculate `
+  -ContentType "application/json" `
+  -Body '{"lambda": 40, "distribution": "deterministic", "mu": 80}'
+
+# M/G/1 com serviço lognormal (CV = 0,5)
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/models/mg1/calculate `
+  -ContentType "application/json" `
+  -Body '{"lambda": 25, "distribution": "lognormal", "mu": 30, "cv": 0.5}'
+
+# Comparação analítico × simulação (serviço Weibull)
+$c = Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/models/mg1/compare `
+  -ContentType "application/json" `
+  -Body '{"lambda": 25, "distribution": "weibull", "mean": 0.02, "cv": 0.8, "simulation_time": 2000, "replications": 10, "warmup_time": 100, "seed": 2026}'
+$c.all_within_ci
+$c.max_relative_error_pct
+
+# Distribuições disponíveis
+(Invoke-RestMethod -Uri http://127.0.0.1:8000/api/distributions).distributions | Select-Object key, label
+```
+
+**macOS / Linux:**
+
+```bash
+curl -s -X POST http://127.0.0.1:8000/api/models/mg1/calculate \
+  -H "Content-Type: application/json" \
+  -d '{"lambda": 25, "distribution": "lognormal", "mu": 30, "cv": 0.5}'
+```
+
+A resposta traz o nome do modelo (`M/G/1`, ou `M/D/1` com serviço determinístico), `service` (média, desvio padrão, CV, μ e parâmetros efetivos) e as métricas. Em `/simulate` e `/compare` são sete métricas (ρ, L, Lq, W, Wq, P0 e vazão). Os erros identificam o campo (`k`, `cv`, `mode`, `lambda` etc.).
+
 ### Experimentos (Fase 6)
 
 Os experimentos respondem às perguntas do tipo "e se...". O corpo usa as mesmas chaves de modelo das rotas (`mm1`, `mmc`, `mm1k`, `mmck`) e os mesmos nomes de campo (`lambda`, `mu`, `servers`, `capacity`).
@@ -285,7 +338,7 @@ Qualquer requisição inválida (nos endpoints de modelo e de experimentos) devo
 
 | `code` | Quando acontece | O que fazer |
 | --- | --- | --- |
-| `unstable_system` | λ ≥ μ (M/M/1) ou λ ≥ c·μ (M/M/c). Não se aplica à capacidade finita | Use λ < μ, ou λ < c·μ; ou limite a capacidade (K) |
+| `unstable_system` | λ ≥ μ (M/M/1), λ ≥ c·μ (M/M/c) ou λ·E[S] ≥ 1 (M/G/1). Não se aplica à capacidade finita | Use λ < μ, ou λ < c·μ; ou limite a capacidade (K); no M/G/1, reduza λ ou o tempo médio de serviço |
 | `invalid_parameter` | Valor fora da regra: zero ou negativo, `capacity` menor que `servers`, `replications` fora de 2 a 100, warm-up ≥ tempo simulado, semente fora do limite, simulação grande demais (veja [Desempenho](#7-desempenho)) | Corrija o valor indicado em `message` |
 | `invalid_request` | Campo ausente ou do tipo errado (por exemplo, texto onde se espera número). Traz a lista `fields` | Corrija os campos listados |
 | `insufficient_sample` | Tempo simulado tão curto que nenhum cliente foi medido | Aumente `simulation_time` |
@@ -467,7 +520,7 @@ VITE_DEV_API=http://127.0.0.1:8001 npm run dev              # bash
 
 ### Como usar
 
-1. **Escolha o modelo.** Os campos de servidores (c) e de capacidade (K) só aparecem nos modelos que os usam. Cada modelo guarda os valores digitados, então trocar de modelo não apaga o que você fez.
+1. **Escolha o modelo.** Os campos de servidores (c) e de capacidade (K) só aparecem nos modelos que os usam. No **M/G/1**, μ, c e K dão lugar ao seletor **Distribuição do serviço** e aos campos da distribuição; um resumo mostra E[S], desvio padrão, CV, μ e ρ antes de executar, e a tela avisa que o modelo deixa de ser markoviano (a aba Experimentos ainda não cobre o M/G/1). Cada modelo guarda os valores digitados, então trocar de modelo não apaga o que você fez.
 2. **Ajuste os parâmetros** do sistema e da simulação. Abaixo deles, a tela estima o custo (chegadas e segundos aproximados). O campo **Réplicas** aceita de 2 a 100 (com menos de 2 não há intervalo de confiança), e a semente em branco significa aleatória.
 3. **Clique em Comparar.** Aparecem o veredito (se o valor analítico está dentro do intervalo de confiança de cada métrica), quatro números de destaque, o gráfico de diferenças e a tabela completa. **Só calcular** mostra apenas o analítico, e **Só simular** apenas a simulação.
 4. **Explore as abas.** Gráficos mostra o valor de cada réplica, a média simulada e o analítico, e permite escolher a métrica. Réplicas traz a tabela por réplica. Detalhes mostra os parâmetros, a semente (com botão de copiar) e a resposta completa da API. Como o Comparar não devolve as réplicas individuais, as abas Gráficos e Réplicas têm o botão **Carregar réplicas**, que repete a simulação com a mesma semente e reproduz exatamente os mesmos números.

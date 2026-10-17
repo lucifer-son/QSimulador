@@ -26,10 +26,23 @@ export function DetailsTab({ result }: { result: ViewResult }) {
   const rows: [string, string][] = [
     ["Modelo", result.modelLabel],
     ["Chegadas λ", formatNumber(result.params.lambda)],
-    ["Serviço μ", formatNumber(result.params.mu)],
-    ["Servidores c", formatInteger(result.servers)],
-    ["Capacidade K", result.capacity === null ? "ilimitada" : formatInteger(result.capacity)],
   ];
+  if (result.service) {
+    const s = result.service;
+    rows.push(
+      ["Distribuição do serviço", s.label],
+      ["Tempo médio E[S]", `${formatNumber(Number(s.mean.toPrecision(6)))} s`],
+      ["Desvio padrão do serviço", `${formatNumber(Number(s.std.toPrecision(6)))} s`],
+      ["CV do serviço", formatNumber(Number(s.cv.toPrecision(6)))],
+      ["Serviço μ = 1/E[S]", `${formatNumber(Number(s.mu.toPrecision(6)))} req/s`],
+    );
+  } else {
+    rows.push(
+      ["Serviço μ", formatNumber(result.params.mu)],
+      ["Servidores c", formatInteger(result.servers)],
+      ["Capacidade K", result.capacity === null ? "ilimitada" : formatInteger(result.capacity)],
+    );
+  }
   if (result.action !== "calculate") {
     rows.push(
       ["Tempo simulado", `${formatNumber(result.simulationTime ?? 0)} s`],

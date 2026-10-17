@@ -9,12 +9,13 @@ Tudo o que sai daqui está em **segundos**, a unidade da interface (decisão 7).
 
 import csv
 import io
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 
 import numpy as np
 
 from app.domain.validation.errors import InvalidDatasetError
+from app.domain.validation.realdata import MAX_UPLOAD_BYTES
 
 REQUIRED_COLUMNS = ("timeStamp", "elapsed", "label", "success")
 OPTIONAL_COLUMNS = ("responseCode", "responseMessage", "failureMessage", "allThreads", "threadName")
@@ -52,6 +53,26 @@ class JMeterDataset:
             pick(self.response_code), pick(self.response_message),
             pick(self.failure_message), pick(self.all_threads),
         )
+
+
+@dataclass(frozen=True)
+class JMeterSummary:
+    """Resumo de uma janela do JTL, com tempo de resposta em milissegundos."""
+
+    samples_total: int
+    samples_used: int
+    label: str | None
+    include_failures: bool
+    trim_start_s: float
+    trim_end_s: float
+    window_seconds: float
+    throughput: float
+    mean_ms: float
+    users: int | None
+    users_max: int | None
+
+    def as_dict(self) -> dict:
+        return asdict(self)
 
 
 def _decode(content: bytes | str) -> str:
@@ -167,4 +188,65 @@ def parse_jtl(content: bytes | str) -> JMeterDataset:
         response_message=vec(optional.get("responseMessage"), object),
         failure_message=vec(optional.get("failureMessage"), object),
         all_threads=vec(optional.get("allThreads"), int),
+    )
+
+
+def summarize_jmeter(
+    filename: str,
+    content: bytes | str,
+    label: str | None = None,
+    trim_start_s: float = 0.0,
+    trim_end_s: float = 0.0,
+    include_failures: bool = False,
+) -> JMeterSummary:
+    """Valida e resume um JTL em uma janela, descartando aquecimento e encerramento."""
+    from app.realdata.metrics import compute_metrics
+
+    if not filename.lower().endswith(".csv"):
+        raise InvalidDatasetError("Envie um arquivo com extensão .csv.", "file")
+    size = len(content.encode("utf-8")) if isinstance(content, str) else len(content)
+    if size > MAX_UPLOAD_BYTES:
+        raise InvalidDatasetError(
+            f"O arquivo passa do limite de {MAX_UPLOAD_BYTES // (1024 * 1024)} MB.", "file"
+        )
+    for name, value in (("trim_start_s", trim_start_s), ("trim_end_s", trim_end_s)):
+        if not np.isfinite(value) or value < 0:
+            raise InvalidDatasetError(f"{name} deve ser um número não negativo.", name)
+
+    dataset = parse_jtl(content)
+    samples_total = len(dataset)
+    if label is not None:
+        dataset = dataset.select(dataset.label == label)
+        if len(dataset) == 0:
+            raise InvalidDatasetError(f"O rótulo {label!r} não foi encontrado no arquivo.", "label")
+
+    start, end = float(dataset.start[0]), float(dataset.end.max())
+    window_start, window_end = start + trim_start_s, end - trim_end_s
+    if window_end <= window_start:
+        raise InvalidDatasetError("Os intervalos descartados deixam uma janela sem duração.", "file")
+
+    in_window = (dataset.start >= window_start) & (dataset.start <= window_end)
+    if not include_failures:
+        in_window &= dataset.success
+    used = dataset.select(in_window)
+    if len(used) == 0:
+        raise InvalidDatasetError("Não há amostras na janela selecionada.", "file")
+
+    metrics = compute_metrics(dataset, window_start, window_end)
+    response_samples = used.elapsed if include_failures else used.elapsed[used.success]
+    if response_samples.size == 0:
+        raise InvalidDatasetError("Não há amostras bem-sucedidas na janela selecionada.", "file")
+
+    users = None if metrics.mean_users is None else int(round(metrics.mean_users))
+    users_max = None
+    if dataset.all_threads is not None:
+        user_window = (dataset.end >= window_start) & (dataset.end <= window_end)
+        if user_window.any():
+            users_max = int(dataset.all_threads[user_window].max())
+
+    return JMeterSummary(
+        samples_total=samples_total, samples_used=len(used), label=label,
+        include_failures=include_failures, trim_start_s=trim_start_s, trim_end_s=trim_end_s,
+        window_seconds=window_end - window_start, throughput=metrics.throughput,
+        mean_ms=float(response_samples.mean() * 1000), users=users, users_max=users_max,
     )

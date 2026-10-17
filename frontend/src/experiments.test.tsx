@@ -21,7 +21,7 @@ async function open(handler: FakeHandler = happy) {
   const fetchMock = mockFetch(handler);
   const user = userEvent.setup();
   render(<App />);
-  await user.click(screen.getByRole("button", { name: "M/M/1" }));
+  await user.selectOptions(screen.getByLabelText("Modelo"), "mm1");
   await user.click(screen.getByRole("button", { name: "Experimentos" }));
   return { user, fetchMock };
 }

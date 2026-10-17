@@ -148,10 +148,68 @@ def _levels_import_blocks(imported: dict) -> list[Block]:
     ]
 
 
+def _jmeter_summary_blocks(summary: dict, comparison: dict | None) -> list[Block]:
+    blocks: list[Block] = [
+        ("h2", "1. Dados medidos"),
+        ("table", (["Medida", "Valor"], [
+            ["Amostras totais / usadas", f"{summary['samples_total']} / {summary['samples_used']}"],
+            ["Vazão X (req/s)", num(summary["throughput"])],
+            ["Tempo médio de resposta W (s)", num(summary["mean_ms"] / 1000)],
+            ["Usuários", str(summary.get("users") or "—")],
+        ])),
+    ]
+    if comparison is None:
+        return blocks
+
+    blocks += [
+        ("h2", f"2. Comparação com o modelo {comparison['model']}"),
+        ("table", (["Métrica", "Medido", "Modelo", "Erro", "Medido no IC?"], [
+            [METRIC_LABEL.get(name, name), num(metric["measured"]), num(metric["analytical"]),
+             pct(metric.get("analytical_error_pct")), _yn(metric.get("measured_within_ci"))]
+            for name, metric in comparison["metrics"].items()
+        ])),
+        ("p", "L é medido derivado pela lei de Little; não é uma validação independente."),
+    ]
+    simulation = comparison.get("simulation")
+    if simulation:
+        blocks.append(("p", f"Simulação: {simulation['replications']} réplicas, semente "
+                            f"{simulation.get('seed')} (semente-base)."))
+    if comparison.get("warnings"):
+        blocks += [("h2", "3. Avisos e limitações"), ("ul", comparison["warnings"])]
+    return blocks
+
+
+def _levels_comparison_blocks(comparison: dict) -> list[Block]:
+    blocks: list[Block] = [
+        ("h2", "1. Comparação por nível de carga"),
+        ("table", (["Usuários", "Métrica", "Medido", "Modelo", "Erro"], [
+            [str(level["users"]), name, num(metric["measured"]), num(metric["analytical"]),
+             pct(metric.get("analytical_error_pct"))]
+            for level in comparison["levels"]
+            for name, metric in (("Vazão", level["throughput"]), ("Resposta", level["W"]))
+        ])),
+        ("p", "A calibração usa a lei da resposta interativa."),
+    ]
+    if comparison.get("warnings"):
+        blocks.append(("ul", comparison["warnings"]))
+    return blocks
+
+
 def build_blocks(title: str, analysis: dict | None, levels_import: dict | None,
                  comparison: dict | None) -> list[Block]:
     blocks: list[Block] = [("h1", title), ("p", f"Gerado pelo QSimulador em {datetime.now(timezone.utc):%d/%m/%Y %H:%M} (UTC).")]
     next_number = 1
+    if analysis and "samples_total" in analysis and "dataset" not in analysis:
+        legacy_comparison = next(
+            (item for item in (levels_import, comparison)
+             if item and "metrics" in item and "model" in item),
+            None,
+        )
+        blocks += _jmeter_summary_blocks(analysis, legacy_comparison)
+        return blocks
+    if comparison and "levels" in comparison and "model" in comparison and "comparison" not in comparison:
+        blocks += _levels_comparison_blocks(comparison)
+        return blocks
     if analysis:
         blocks += _analysis_blocks(analysis)
         next_number = 7 if len(analysis["levels"]) > 1 or analysis["levels"][0]["users"] else 6

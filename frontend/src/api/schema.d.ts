@@ -67,6 +67,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/models/mg1/calculate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Calculate
+         * @description Métricas analíticas (Pollaczek-Khinchine). Exige ρ = λ·E[S] < 1.
+         */
+        post: operations["calculate_api_models_mg1_calculate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/models/mg1/simulate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Simulate
+         * @description Simulação de eventos discretos com o serviço amostrado da distribuição escolhida.
+         */
+        post: operations["simulate_api_models_mg1_simulate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/models/mg1/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compare
+         * @description Compara o analítico com a simulação, métrica a métrica (erro e IC).
+         */
+        post: operations["compare_api_models_mg1_compare_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/distributions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Distributions
+         * @description Distribuições de serviço disponíveis, com os parâmetros de cada uma.
+         */
+        get: operations["list_distributions_api_distributions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/models/mmc/calculate": {
         parameters: {
             query?: never;
@@ -792,6 +872,37 @@ export interface components {
             /** Evidence */
             evidence: string;
         };
+        /** DistributionCatalogResponse */
+        DistributionCatalogResponse: {
+            /** Distributions */
+            distributions: components["schemas"]["DistributionOut"][];
+        };
+        /** DistributionOut */
+        DistributionOut: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Description */
+            description: string;
+            /**
+             * Accepts Mean
+             * @description Se verdadeiro, informe mean ou mu (média ou taxa de serviço).
+             */
+            accepts_mean: boolean;
+            /**
+             * Parameters
+             * @description Parâmetros próprios, além de mean/mu.
+             */
+            parameters: components["schemas"]["ParameterOut"][];
+            /**
+             * Example
+             * @description Exemplo válido de parâmetros (aceito pelas rotas do M/G/1).
+             */
+            example: {
+                [key: string]: number;
+            };
+        };
         /**
          * EmpiricalMetricsModel
          * @description Métricas medidas em uma janela (segundos e req/s).
@@ -1112,6 +1223,245 @@ export interface components {
             suggestions: components["schemas"]["LevelSuggestionsOut"];
             /** Warnings */
             warnings: string[];
+        };
+        /**
+         * MG1CalculateRequest
+         * @example {
+         *       "cv": 0.5,
+         *       "distribution": "lognormal",
+         *       "lambda": 25,
+         *       "mean": 0.02
+         *     }
+         * @example {
+         *       "distribution": "deterministic",
+         *       "lambda": 40,
+         *       "mu": 80
+         *     }
+         */
+        MG1CalculateRequest: {
+            /**
+             * Lambda
+             * @description Taxa média de chegada (λ).
+             */
+            lambda: number;
+            /**
+             * Distribution
+             * @description Distribuição do tempo de serviço (veja GET /api/distributions).
+             * @enum {string}
+             */
+            distribution: "deterministic" | "exponential" | "erlang" | "lognormal" | "weibull" | "uniform" | "triangular" | "truncated_normal";
+            /**
+             * Mean
+             * @description Tempo médio de serviço E[S] (exponencial, determinística, Erlang-k, lognormal, Weibull).
+             */
+            mean?: number | null;
+            /**
+             * Mu
+             * @description Alternativa à média: taxa de serviço μ = 1/E[S]. Informe mean ou mu, não os dois.
+             */
+            mu?: number | null;
+            /**
+             * K
+             * @description Etapas do Erlang-k (inteiro ≥ 1). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            k?: number | null;
+            /**
+             * Cv
+             * @description Coeficiente de variação (lognormal e Weibull). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            cv?: number | null;
+            /**
+             * Min
+             * @description Mínimo (uniforme e triangular). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            min?: number | null;
+            /**
+             * Mode
+             * @description Moda (triangular). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            mode?: number | null;
+            /**
+             * Max
+             * @description Máximo (uniforme e triangular). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            max?: number | null;
+            /**
+             * Loc
+             * @description Média da normal original (normal truncada em 0). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            loc?: number | null;
+            /**
+             * Scale
+             * @description Desvio padrão da normal original (normal truncada em 0). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            scale?: number | null;
+        };
+        /** MG1CalculateResponse */
+        MG1CalculateResponse: {
+            /** Model */
+            model: string;
+            service: components["schemas"]["ServiceOut"];
+            /** Rho */
+            rho: number;
+            /** L */
+            L: number;
+            /** Lq */
+            Lq: number;
+            /** W */
+            W: number;
+            /** Wq */
+            Wq: number;
+            /** P0 */
+            p0: number;
+        };
+        /** MG1ComparisonResponse */
+        MG1ComparisonResponse: {
+            /** Model */
+            model: string;
+            /** Lambda */
+            lambda: number;
+            service: components["schemas"]["ServiceOut"];
+            /** Simulation Time */
+            simulation_time: number;
+            /** Warmup Time */
+            warmup_time: number;
+            /** Replications */
+            replications: number;
+            /** Seed */
+            seed: number;
+            /** Confidence Level */
+            confidence_level: number;
+            /** Metrics */
+            metrics: {
+                [key: string]: components["schemas"]["app__api__schemas__MetricComparisonOut"];
+            };
+            /** All Within Ci */
+            all_within_ci: boolean | null;
+            /** Max Relative Error Pct */
+            max_relative_error_pct: number | null;
+        };
+        /**
+         * MG1SimulateRequest
+         * @example {
+         *       "cv": 0.5,
+         *       "distribution": "lognormal",
+         *       "lambda": 25,
+         *       "mean": 0.02,
+         *       "replications": 10,
+         *       "seed": 2026,
+         *       "simulation_time": 2000,
+         *       "warmup_time": 100
+         *     }
+         */
+        MG1SimulateRequest: {
+            /**
+             * Lambda
+             * @description Taxa média de chegada (λ).
+             */
+            lambda: number;
+            /**
+             * Distribution
+             * @description Distribuição do tempo de serviço (veja GET /api/distributions).
+             * @enum {string}
+             */
+            distribution: "deterministic" | "exponential" | "erlang" | "lognormal" | "weibull" | "uniform" | "triangular" | "truncated_normal";
+            /**
+             * Mean
+             * @description Tempo médio de serviço E[S] (exponencial, determinística, Erlang-k, lognormal, Weibull).
+             */
+            mean?: number | null;
+            /**
+             * Mu
+             * @description Alternativa à média: taxa de serviço μ = 1/E[S]. Informe mean ou mu, não os dois.
+             */
+            mu?: number | null;
+            /**
+             * K
+             * @description Etapas do Erlang-k (inteiro ≥ 1). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            k?: number | null;
+            /**
+             * Cv
+             * @description Coeficiente de variação (lognormal e Weibull). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            cv?: number | null;
+            /**
+             * Min
+             * @description Mínimo (uniforme e triangular). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            min?: number | null;
+            /**
+             * Mode
+             * @description Moda (triangular). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            mode?: number | null;
+            /**
+             * Max
+             * @description Máximo (uniforme e triangular). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            max?: number | null;
+            /**
+             * Loc
+             * @description Média da normal original (normal truncada em 0). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            loc?: number | null;
+            /**
+             * Scale
+             * @description Desvio padrão da normal original (normal truncada em 0). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            scale?: number | null;
+            /**
+             * Simulation Time
+             * @description Tempo simulado por replicação.
+             */
+            simulation_time: number;
+            /**
+             * Replications
+             * @description Número de replicações.
+             * @default 10
+             */
+            replications: number;
+            /**
+             * Warmup Time
+             * @description Período inicial descartado (transitório).
+             * @default 0
+             */
+            warmup_time: number;
+            /**
+             * Seed
+             * @description Semente aleatória. Se omitida, uma é sorteada e devolvida.
+             */
+            seed?: number | null;
+            /**
+             * Confidence Level
+             * @description Nível do intervalo de confiança (0 a 1).
+             * @default 0.95
+             */
+            confidence_level: number;
+        };
+        /** MG1SimulationResponse */
+        MG1SimulationResponse: {
+            /** Model */
+            model: string;
+            /** Lambda */
+            lambda: number;
+            service: components["schemas"]["ServiceOut"];
+            /** Simulation Time */
+            simulation_time: number;
+            /** Warmup Time */
+            warmup_time: number;
+            /** Replications */
+            replications: number;
+            /** Seed */
+            seed: number;
+            /** Confidence Level */
+            confidence_level: number;
+            /** Runs */
+            runs: components["schemas"]["ReplicationOut"][];
+            /** Summary */
+            summary: {
+                [key: string]: components["schemas"]["MetricSummaryOut"];
+            };
         };
         /**
          * MM1CalculateRequest
@@ -1582,6 +1932,23 @@ export interface components {
             population?: number | null;
             /** Think Time */
             think_time?: number | null;
+        };
+        /** ParameterOut */
+        ParameterOut: {
+            /**
+             * Name
+             * @description Nome do campo na API.
+             */
+            name: string;
+            /** Label */
+            label: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "float" | "int";
+            /** Description */
+            description: string;
         };
         /** ParameterSensitivityOut */
         ParameterSensitivityOut: {
@@ -2086,6 +2453,42 @@ export interface components {
             /** Points */
             points: components["schemas"]["SweepPointOut"][];
         };
+        /** ServiceOut */
+        ServiceOut: {
+            /** Distribution */
+            distribution: string;
+            /** Label */
+            label: string;
+            /**
+             * Mean
+             * @description Tempo médio de serviço E[S].
+             */
+            mean: number;
+            /**
+             * Std
+             * @description Desvio padrão do serviço.
+             */
+            std: number;
+            /** Variance */
+            variance: number;
+            /**
+             * Cv
+             * @description Coeficiente de variação (desvio / média).
+             */
+            cv: number;
+            /**
+             * Mu
+             * @description Taxa de serviço equivalente, 1/E[S].
+             */
+            mu: number;
+            /**
+             * Parameters
+             * @description Parâmetros efetivos, incluindo os derivados (ex.: forma do Weibull).
+             */
+            parameters: {
+                [key: string]: number;
+            };
+        };
         /**
          * SimulatedCompareRequest
          * @example {
@@ -2577,6 +2980,125 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    calculate_api_models_mg1_calculate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MG1CalculateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MG1CalculateResponse"];
+                };
+            };
+            /** @description Parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    simulate_api_models_mg1_simulate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MG1SimulateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MG1SimulationResponse"];
+                };
+            };
+            /** @description Parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    compare_api_models_mg1_compare_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MG1SimulateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MG1ComparisonResponse"];
+                };
+            };
+            /** @description Parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_distributions_api_distributions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DistributionCatalogResponse"];
                 };
             };
         };

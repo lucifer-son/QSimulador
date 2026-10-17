@@ -25,6 +25,7 @@ const setup = (handler: FakeHandler = happyPath) => {
 };
 const button = (name: string) => screen.getByRole("button", { name });
 const lambda = () => screen.getByLabelText(/Chegadas λ/);
+const modelSelect = () => screen.getByLabelText("Modelo");
 
 describe("estrutura da página", () => {
   it("tem um título de nível 1 com o nome do produto", () => {
@@ -36,7 +37,7 @@ describe("estrutura da página", () => {
 describe("formulário", () => {
   it("começa no M/M/c/K com os exemplos da documentação e a estimativa de custo", () => {
     setup();
-    expect(button("M/M/c/K")).toHaveAttribute("aria-pressed", "true");
+    expect(modelSelect()).toHaveValue("mmck");
     expect(lambda()).toHaveValue("25");
     expect(screen.getByLabelText("Servidores c")).toHaveValue("3");
     expect(screen.getByLabelText("Capacidade K")).toHaveValue("6");
@@ -45,15 +46,22 @@ describe("formulário", () => {
     expect(screen.getByText("Compare o analítico com a simulação")).toBeInTheDocument();
   });
 
+  it("oferece todos os modelos em um único seletor", () => {
+    setup();
+    expect(within(modelSelect()).getAllByRole("option").map((option) => option.textContent)).toEqual([
+      "M/M/1", "M/M/c", "M/M/1/K", "M/M/c/K", "M/G/1",
+    ]);
+  });
+
   it("mostra servidores e capacidade só nos modelos que usam", async () => {
     const { user } = setup();
-    await user.click(button("M/M/1"));
+    await user.selectOptions(modelSelect(), "mm1");
     expect(screen.queryByLabelText("Servidores c")).toBeNull();
     expect(screen.queryByLabelText("Capacidade K")).toBeNull();
-    await user.click(button("M/M/c"));
+    await user.selectOptions(modelSelect(), "mmc");
     expect(screen.getByLabelText("Servidores c")).toBeInTheDocument();
     expect(screen.queryByLabelText("Capacidade K")).toBeNull();
-    await user.click(button("M/M/1/K"));
+    await user.selectOptions(modelSelect(), "mm1k");
     expect(screen.queryByLabelText("Servidores c")).toBeNull();
     expect(screen.getByLabelText("Capacidade K")).toBeInTheDocument();
   });
@@ -62,9 +70,9 @@ describe("formulário", () => {
     const { user } = setup();
     await user.clear(lambda());
     await user.type(lambda(), "30");
-    await user.click(button("M/M/1"));
+    await user.selectOptions(modelSelect(), "mm1");
     expect(lambda()).toHaveValue("40"); // exemplo do M/M/1
-    await user.click(button("M/M/c/K"));
+    await user.selectOptions(modelSelect(), "mmck");
     expect(lambda()).toHaveValue("30"); // voltou o que foi digitado
   });
 
@@ -72,7 +80,7 @@ describe("formulário", () => {
     const { user } = setup();
     await user.clear(screen.getByLabelText("Réplicas"));
     await user.type(screen.getByLabelText("Réplicas"), "7");
-    await user.click(button("M/M/1"));
+    await user.selectOptions(modelSelect(), "mm1");
     expect(screen.getByLabelText("Réplicas")).toHaveValue("7");
   });
 
@@ -140,7 +148,7 @@ describe("ações", () => {
 
   it("usa a rota do modelo escolhido", async () => {
     const { user, fetchMock } = setup();
-    await user.click(button("M/M/1/K"));
+    await user.selectOptions(modelSelect(), "mm1k");
     await user.click(button("Só calcular"));
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     expect(fetchMock.mock.calls[0][0]).toBe("/api/models/mm1k/calculate");
@@ -233,7 +241,7 @@ describe("erros", () => {
     const { user } = setup(() => ({ status: 422, body: fx.errorUnstable }));
     await user.click(button("Comparar"));
     await screen.findByText("Sistema instável");
-    await user.click(button("M/M/1"));
+    await user.selectOptions(modelSelect(), "mm1");
     expect(lambda()).not.toHaveAttribute("aria-invalid");
   });
 });
@@ -341,5 +349,123 @@ describe("abas", () => {
     await user.click(button("Comparar"));
     expect(await screen.findByText(/As 9 métricas/)).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Resultados" })).toHaveAttribute("aria-selected", "true");
+  });
+});
+
+describe("serviço geral (M/G/1)", () => {
+  const mg1Handler: FakeHandler = (url) => {
+    if (url.endsWith("/compare")) return { body: fx.mg1Compare };
+    if (url.endsWith("/simulate")) return { body: fx.mg1Simulate };
+    return { body: fx.mg1Calculate };
+  };
+  const openMg1 = async (handler: FakeHandler = mg1Handler) => {
+    const ctx = setup(handler);
+    await ctx.user.selectOptions(modelSelect(), "mg1");
+    return ctx;
+  };
+  const distribution = () => screen.getByLabelText("Distribuição do serviço");
+
+  it("troca μ, servidores e capacidade pela distribuição do serviço", async () => {
+    await openMg1();
+    expect(modelSelect()).toHaveValue("mg1");
+    expect(lambda()).toHaveValue("25");
+    expect(distribution()).toHaveValue("lognormal");
+    expect(screen.getByLabelText("Tempo médio E[S] (s)")).toHaveValue("0.02");
+    expect(screen.getByLabelText("CV")).toHaveValue("0.5");
+    expect(screen.queryByLabelText(/Serviço μ/)).toBeNull();
+    expect(screen.queryByLabelText("Servidores c")).toBeNull();
+    expect(screen.queryByLabelText("Capacidade K")).toBeNull();
+    expect(screen.getByLabelText("Resumo do serviço")).toHaveTextContent("E[S] = 0,02 s · desvio = 0,01 s · CV = 0,5 · μ = 50 req/s · ρ = 0,5");
+    expect(screen.getByRole("note")).toHaveTextContent(/deixa de ser markoviano/);
+  });
+
+  it("os campos mudam conforme a distribuição e o resumo acompanha", async () => {
+    const { user } = await openMg1();
+    await user.selectOptions(distribution(), "uniform");
+    expect(screen.getByLabelText("Mínimo (s)")).toHaveValue("0.01");
+    expect(screen.getByLabelText("Máximo (s)")).toHaveValue("0.03");
+    expect(screen.queryByLabelText("CV")).toBeNull();
+    expect(screen.getByLabelText("Resumo do serviço")).toHaveTextContent("E[S] = 0,02 s");
+    await user.selectOptions(distribution(), "erlang");
+    expect(screen.getByLabelText("Etapas k")).toHaveValue("4");
+    await user.selectOptions(distribution(), "triangular");
+    expect(screen.getByLabelText("Moda (s)")).toBeInTheDocument();
+    await user.selectOptions(distribution(), "truncated_normal");
+    expect(screen.getByLabelText("Desvio da normal (s)")).toBeInTheDocument();
+    await user.selectOptions(distribution(), "deterministic");
+    expect(screen.getByLabelText("Resumo do serviço")).toHaveTextContent("CV = 0");
+    await user.selectOptions(distribution(), "exponential");
+    expect(screen.queryByRole("note")).toBeNull();           // exponencial é markoviano: sem aviso
+  });
+
+  it("Comparar: chama /api/models/mg1/compare com a distribuição e mostra o resultado", async () => {
+    const { user, fetchMock } = await openMg1();
+    await user.click(button("Comparar"));
+    expect(await screen.findByText(/As 7 métricas do analítico estão dentro do IC de 95%/)).toBeInTheDocument();
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/models/mg1/compare");
+    expect(JSON.parse(String(init!.body))).toEqual({
+      lambda: 25, distribution: "lognormal", mean: 0.02, cv: 0.5,
+      simulation_time: 2000, replications: 10, warmup_time: 100, seed: 2026,
+    });
+    expect(screen.getAllByRole("row")).toHaveLength(8);
+    await user.click(screen.getByRole("tab", { name: "Detalhes" }));
+    const details = within(screen.getByRole("tabpanel"));
+    expect(details.getByText("Distribuição do serviço")).toBeInTheDocument();
+    expect(details.getByText("Lognormal")).toBeInTheDocument();
+    expect(details.getByText("CV do serviço")).toBeInTheDocument();
+    expect(details.getByText("Serviço μ = 1/E[S]")).toBeInTheDocument();
+    expect(details.queryByText("Servidores c")).toBeNull();
+  });
+
+  it("Só calcular não envia campos de simulação", async () => {
+    const { user, fetchMock } = await openMg1();
+    await user.selectOptions(distribution(), "deterministic");
+    await user.click(button("Só calcular"));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/models/mg1/calculate");
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]!.body))).toEqual({ lambda: 25, distribution: "deterministic", mean: 0.02 });
+  });
+
+  it("campo inválido do serviço é marcado antes de chamar a API", async () => {
+    const { user, fetchMock } = await openMg1();
+    await user.selectOptions(distribution(), "erlang");
+    await user.clear(screen.getByLabelText("Etapas k"));
+    await user.type(screen.getByLabelText("Etapas k"), "2,5");
+    await user.click(button("Comparar"));
+    expect(await screen.findByText("Informe um número inteiro.")).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("erro de domínio da API aparece no campo certo", async () => {
+    const { user } = await openMg1(() => ({ status: 422, body: fx.errorMg1InvalidParameter }));
+    await user.selectOptions(distribution(), "triangular");
+    await user.click(button("Só calcular"));
+    const alerts = await screen.findAllByRole("alert");
+    expect(alerts.some((a) => /mode deve estar entre min e max/.test(a.textContent ?? ""))).toBe(true);
+    expect(screen.getByLabelText("Moda (s)")).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("sistema instável mostra a mensagem da API", async () => {
+    const { user } = await openMg1(() => ({ status: 422, body: fx.errorMg1Unstable }));
+    await user.click(button("Só calcular"));
+    expect(await screen.findByRole("heading", { name: "Sistema instável" })).toBeInTheDocument();
+    expect(screen.getAllByText(/ρ = λ·E\[S\] < 1/).length).toBeGreaterThan(0);
+  });
+
+  it("M/G/1 guarda os próprios valores ao trocar de modelo", async () => {
+    const { user } = await openMg1();
+    await user.selectOptions(distribution(), "weibull");
+    await user.selectOptions(modelSelect(), "mm1");
+    expect(lambda()).toHaveValue("40");
+    await user.selectOptions(modelSelect(), "mg1");
+    expect(distribution()).toHaveValue("weibull");
+  });
+
+  it("a aba Experimentos avisa que não cobre o M/G/1 e mantém o último modelo markoviano", async () => {
+    const { user } = await openMg1();
+    await user.click(screen.getByRole("button", { name: "Experimentos" }));
+    expect(await screen.findByText(/não cobrem o serviço geral/)).toBeInTheDocument();
+    expect(screen.getByText(/último modelo markoviano escolhido: M\/M\/c\/K/)).toBeInTheDocument();
   });
 });

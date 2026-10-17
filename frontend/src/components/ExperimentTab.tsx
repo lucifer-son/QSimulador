@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { SimText, SystemText } from "../domain/experiments";
-import type { ModelKey } from "../domain/types";
+import type { MarkovModelKey } from "../domain/types";
 import { SensitivityPanel } from "./SensitivityPanel";
 import { ServersPanel } from "./ServersPanel";
 import { SweepPanel } from "./SweepPanel";
@@ -15,7 +15,7 @@ const MODES: { key: Mode; label: string }[] = [
 
 interface Props {
   /** Modelo e valores do Laboratório: os experimentos partem do mesmo sistema. */
-  model: ModelKey;
+  model: MarkovModelKey;
   system: SystemText;
   sim: SimText;
 }

@@ -91,3 +91,41 @@ describe("fromCompare", () => {
     expect(r.metrics.find((m) => m.name === "L")!.withinCi).toBe(false);
   });
 });
+
+describe("M/G/1", () => {
+  const p = { lambda: 25, mu: 0, service: { distribution: "lognormal" as const, values: { mean: 0.02, cv: 0.5 } } };
+
+  it("calculate: sete métricas, serviço da API e μ efetivo no lugar da prévia", () => {
+    const r = fromCalculate("mg1", p, as<CalculateResponse>(fx.mg1Calculate));
+    expect(names(r)).toEqual(["rho", "L", "Lq", "W", "Wq", "p0"]);
+    expect(r).toMatchObject({ modelLabel: "M/G/1", servers: 1, capacity: null });
+    expect(r.service).toMatchObject({ distribution: "lognormal", mean: 0.02, cv: 0.5, mu: 50 });
+    expect(r.params.mu).toBe(50);
+    expect(r.metrics.find((m) => m.name === "Lq")!.analytical).toBe(fx.mg1Calculate.Lq);
+  });
+
+  it("M/D/1 vem com o próprio nome", () => {
+    const r = fromCalculate("mg1", p, as<CalculateResponse>(fx.mg1Md1Calculate));
+    expect(r.modelLabel).toBe("M/D/1");
+    expect(r.service!.cv).toBe(0);
+  });
+
+  it("simulate e compare: resumo, erro e serviço", () => {
+    const s = fromSimulate("mg1", p, as<SimulateResponse>(fx.mg1Simulate));
+    expect(names(s)).toEqual(["rho", "L", "Lq", "W", "Wq", "p0", "throughput"]);
+    expect(s.runs).toHaveLength(3);
+    expect(s).toMatchObject({ seed: 7, replications: 3, service: { distribution: "lognormal" } });
+    const c = fromCompare("mg1", p, as<CompareResponse>(fx.mg1Compare));
+    expect(c.service!.label).toBe("Lognormal");
+    expect(c.metrics.find((m) => m.name === "Wq")).toMatchObject({
+      analytical: fx.mg1Compare.metrics.Wq.analytical, errorPct: fx.mg1Compare.metrics.Wq.relative_error_pct,
+    });
+  });
+
+  it("os modelos markovianos não ganham service nem mudam o μ", () => {
+    const r = fromCalculate("mm1", params, as<CalculateResponse>(fx.mm1Calculate));
+    expect(r.service).toBeUndefined();
+    expect(r.params).toBe(params);
+  });
+});
+

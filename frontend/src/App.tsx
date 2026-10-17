@@ -7,16 +7,18 @@ import { ExperimentTab } from "./components/ExperimentTab";
 import { HistoryTab } from "./components/HistoryTab";
 import { RealDataTab } from "./components/RealDataTab";
 import { estimateText } from "./domain/estimate";
-import { MODEL_ORDER, MODELS } from "./domain/models";
+import { isMarkovModel, LAB_MODEL_ORDER, MODELS } from "./domain/models";
+import { serviceToText } from "./domain/service";
 import type { LabSnapshot } from "./domain/records";
 import { parseForm } from "./domain/request";
 import {
-  SYSTEM_FIELDS, type Action, type FieldErrors, type FieldKey, type FormValues, type ModelKey,
+  SYSTEM_FIELDS, type Action, type FieldErrors, type FieldKey, type FormValues, type MarkovModelKey,
+  type ModelKey, type SystemFieldKey,
 } from "./domain/types";
 import { RecordsProvider } from "./hooks/RecordsContext";
 import { useRunner } from "./hooks/useRunner";
 
-type SystemValues = Pick<FormValues, "lambda" | "mu" | "servers" | "capacity">;
+type SystemValues = Pick<FormValues, SystemFieldKey>;
 type SimValues = Pick<FormValues, "simulationTime" | "replications" | "warmupTime" | "seed">;
 
 const INITIAL_SIM: SimValues = { simulationTime: "2000", replications: "10", warmupTime: "100", seed: "2026" };
@@ -28,11 +30,13 @@ function initialTheme(): Theme {
 
 /** Cada modelo guarda os próprios valores: trocar de modelo não apaga o que foi digitado. */
 function initialSystems(): Record<ModelKey, SystemValues> {
-  return Object.fromEntries(MODEL_ORDER.map((k) => [k, { ...MODELS[k].example }])) as Record<ModelKey, SystemValues>;
+  return Object.fromEntries(LAB_MODEL_ORDER.map((k) => [k, { ...MODELS[k].example }])) as Record<ModelKey, SystemValues>;
 }
 
 export default function App() {
   const [model, setModel] = useState<ModelKey>("mmck");
+  // Experimentos só existem para modelos markovianos: ficam no último escolhido (e mantêm os resultados).
+  const [experimentModel, setExperimentModel] = useState<MarkovModelKey>("mmck");
   const [systems, setSystems] = useState(initialSystems);
   const [sim, setSim] = useState<SimValues>(INITIAL_SIM);
   const [localErrors, setLocalErrors] = useState<FieldErrors>({});
@@ -76,6 +80,7 @@ export default function App() {
 
   const handleModelChange = (next: ModelKey) => {
     setModel(next);
+    if (isMarkovModel(next)) setExperimentModel(next);
     setLocalErrors({});
     setApiErrors({});
   };
@@ -94,15 +99,19 @@ export default function App() {
   const handleReopenLab = ({ model: savedModel, parameters: p, result }: LabSnapshot) => {
     const text = (v: number | undefined, fallback: string) => (v === undefined ? fallback : String(v));
     setModel(savedModel);
+    if (isMarkovModel(savedModel)) setExperimentModel(savedModel);
     setSystems((prev) => {
       const current = prev[savedModel];
       return {
         ...prev,
         [savedModel]: {
+          ...current,
           lambda: String(p.lambda),
-          mu: String(p.mu),
+          // No M/G/1, μ é derivado da distribuição; o campo do formulário não existe.
+          mu: p.service ? current.mu : String(p.mu),
           servers: text(p.servers, current.servers),
           capacity: text(p.capacity, current.capacity),
+          ...(p.service ? serviceToText(p.service) : {}),
         },
       };
     });
@@ -185,7 +194,13 @@ export default function App() {
 
       {experimentsOpened && (
         <main className="layout layout-wide" hidden={activeTab !== "experimentos"}>
-          <ExperimentTab model={model} system={systems[model]} sim={sim} />
+          {model === "mg1" && (
+            <div className="panel banner banner-info" role="note">
+              Os experimentos ainda não cobrem o serviço geral (M/G/1). Esta aba usa o último modelo
+              markoviano escolhido: {MODELS[experimentModel].label}.
+            </div>
+          )}
+          <ExperimentTab model={experimentModel} system={systems[experimentModel]} sim={sim} />
         </main>
       )}
 

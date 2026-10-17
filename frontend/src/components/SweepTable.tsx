@@ -4,13 +4,13 @@ import { formatMetric, formatNumber, formatPercentNumber } from "../domain/forma
 import { VARIABLE_INFO, type SweepVariable } from "../domain/experiments";
 import { METRIC_INFO } from "../domain/metrics";
 import { MODELS } from "../domain/models";
-import type { MetricName, ModelKey } from "../domain/types";
+import type { MetricName, MarkovModelKey } from "../domain/types";
 
 const STATUS_LABEL = { unstable: "instável", invalid: "inválido" } as const;
 
 /** Tabela com todas as métricas de cada ponto (RF-38). Com simulação, mostra a média simulada embaixo. */
 export function SweepTable({ result }: { result: SweepResponse }) {
-  const model = result.model as ModelKey;
+  const model = result.model as MarkovModelKey;
   const variable = result.variable as SweepVariable;
   const firstOk = result.points.find((p) => p.metrics);
   const names: MetricName[] = MODELS[model].metrics.filter((n) => firstOk?.metrics && n in firstOk.metrics);

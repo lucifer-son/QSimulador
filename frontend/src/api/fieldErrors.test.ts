@@ -62,3 +62,21 @@ describe("fieldErrorsFromApi", () => {
     expect(fieldErrorsFromApi(new ApiError("http", "m"))).toEqual({});
   });
 });
+
+describe("serviço geral (M/G/1)", () => {
+  it("o erro de domínio aparece no campo da distribuição", () => {
+    const errors = fieldErrorsFromApi(fromFixture(fixtures.errorMg1InvalidParameter));
+    expect(errors).toEqual({ mode: "mode deve estar entre min e max (min ≤ moda ≤ max)." });
+  });
+
+  it("sistema instável aponta λ", () => {
+    expect(Object.keys(fieldErrorsFromApi(fromFixture(fixtures.errorMg1Unstable)))).toEqual(["lambda"]);
+  });
+
+  it("traduz os nomes dos parâmetros do serviço", () => {
+    const names = ["distribution", "mean", "k", "cv", "min", "mode", "max", "loc", "scale"];
+    const e = new ApiError("invalid_request", "m", names.map((field) => ({ field, message: "x" })));
+    expect(Object.keys(fieldErrorsFromApi(e)).sort()).toEqual([...names].sort());
+  });
+});
+

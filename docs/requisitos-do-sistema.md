@@ -4,7 +4,7 @@ Laboratório interativo de modelagem, simulação e análise de sistemas de fila
 
 Este documento especifica os **requisitos funcionais (RF)** e **não funcionais (RNF)** do sistema e os relaciona aos [Casos de Uso](casos-de-uso.md) e às [Histórias de Usuário](historias-de-usuario.md). Para instruções de execução, veja [`como-executar.md`](como-executar.md).
 
-**Versão:** 1.5 (Fase 8: Persistência em 15/10/2026)
+**Versão:** 1.6 (Fase 9: Serviço geral em 16/10/2026)
 
 ---
 
@@ -18,6 +18,7 @@ Este documento especifica os **requisitos funcionais (RF)** e **não funcionais 
 | 1.3 | Fechadas as divergências 1 a 4 da auditoria: P0 em todos os modelos, no analítico e na simulação (RF-03, RF-31); réplicas entre 2 e 100 (RF-06, RNF-12); limite de 1.000.000 de chegadas esperadas por réplica (RNF-12); e campo identificado em cada erro de regra (RF-28). Segue em aberto a divergência 5 (versões fixas, RNF-05). |
 | 1.4 | Fase 7 (backend): incluídos RF-39 a RF-44 e RNF-33 e RNF-34; RF-23 e RF-24 passam de **C** para **M** (requisito da disciplina); decisões em aberto 5 e 6 resolvidas. Na mesclagem, entraram RF-43 e RF-44 (relatório em Markdown e HTML), a simulação do M/M/c//N e a comparação medido × analítico × simulação. Ver `docs/plano-fase-7.md`. |
 | 1.5 | Fase 8 (persistência): RF-25, RF-26 e RNF-26 passam a ✅ (histórico com PostgreSQL opcional, rotas `/api/records`, Alembic e variáveis de ambiente); RNF-31 passa a ✅ (arquivo `LICENSE` na raiz). RNF-17 (Docker) segue 📋, adiado. Não há autenticação: o histórico usa um identificador anônimo por navegador. |
+| 1.6 | Fase 9 (serviço geral): incluídos RF-45 a RF-50 (M/D/1, M/G/1 por Pollaczek-Khinchine, oito distribuições de serviço, simulação, comparação com IC e validação com erro identificado), que correspondem aos RFC-01 a RFC-06 do [roadmap competitivo](roadmap-competitivo.md); incluída a seção 4.11; parâmetros do serviço na seção 6. As rotas seguem a convenção do repositório (`/calculate`, `/simulate`, `/compare`) e não os nomes provisórios do roadmap (`/analytic`). |
 
 ---
 
@@ -181,6 +182,19 @@ Com λ = taxa de chegada, μ = taxa de serviço e ρ = λ/μ, válidas apenas pa
 | RF-25 | O sistema deve salvar modelos, simulações e experimentos no PostgreSQL. | C | T | UC-09 | US-23 | ✅ |
 | RF-26 | O sistema deve listar e reabrir registros salvos, recuperando exatamente os dados gravados. | C | T | UC-09 | US-24 | ✅ |
 
+### 4.11 Serviço geral (Fase 9)
+
+| ID | Requisito | Prior. | Verif. | UC | US | Status |
+|----|-----------|--------|--------|----|----|--------|
+| RF-45 | O sistema deve calcular as métricas analíticas do M/D/1 (ρ, P₀, L, Lq, W, Wq) a partir de λ e do tempo de serviço constante. | M | T | UC-11 | US-29 | ✅ |
+| RF-46 | O sistema deve calcular as métricas analíticas do M/G/1 pela fórmula de Pollaczek-Khinchine, a partir de λ, da média e da variância do serviço, exigindo ρ = λ·E[S] < 1. | M | T | UC-11 | US-29 | ✅ |
+| RF-47 | O sistema deve oferecer oito distribuições de serviço (determinística, exponencial, Erlang-k, lognormal, Weibull, uniforme, triangular e normal truncada em zero) e informar média, variância e CV de cada uma; na normal truncada, os valores são os da distribuição truncada. | M | T | UC-11 | US-29 | ✅ |
+| RF-48 | O sistema deve simular o M/G/1 e o M/D/1 amostrando o tempo de serviço da distribuição escolhida, com réplicas independentes e semente reproduzível. | M | T | UC-11 | US-29 | ✅ |
+| RF-49 | O sistema deve comparar o analítico e a simulação do M/G/1, com erro relativo e indicação de o valor analítico estar dentro do IC. | M | T | UC-11 | US-29 | ✅ |
+| RF-50 | O sistema deve rejeitar parâmetros inválidos do serviço com erro que identifica o campo (ρ ≥ 1, k inteiro maior ou igual a 1, mín ≤ moda ≤ máx, parâmetros positivos, média ou μ, não ambos). | M | T | UC-11 | US-29 | ✅ |
+
+As rotas são `POST /api/models/mg1/calculate`, `/simulate` e `/compare` e `GET /api/distributions`. O M/D/1 é o M/G/1 com distribuição determinística e aparece com o próprio nome. A interface (RF-20) passa a oferecer o modelo M/G/1, com seletor de distribuição, campos que mudam conforme a escolha, resumo de média, desvio padrão e CV e aviso de que o modelo deixa de ser markoviano.
+
 ### 4.10 API
 
 | ID | Requisito | Prior. | Verif. | UC | US | Status |
@@ -296,6 +310,12 @@ Restrições de validação por parâmetro. Valores marcados como **(proposto)**
 | Eventos por réplica | Inteiro | — | — | 1.000.000 **(proposto)** |
 | c (servidores) | Inteiro | Maior ou igual a 1 | — | A definir |
 | K (capacidade) | Inteiro | Maior ou igual a c | — | A definir |
+| E[S] (`mean`) ou μ (`mu`) | Real | Maior que 0; informar um dos dois (M/G/1) | — | — |
+| k (Erlang) | Inteiro | De 1 a 1.000 | — | 1.000 |
+| CV (`cv`, lognormal e Weibull) | Real | De 0,01 a 10 | — | 10 |
+| min, mode, max (uniforme e triangular) | Real | min ≥ 0, max > min e min ≤ mode ≤ max | — | — |
+| loc, scale (normal truncada) | Real | scale > 0 e loc/scale ≥ −10 | — | — |
+| ρ = λ·E[S] (M/G/1) | Real | Menor que 1 | — | — |
 
 ---
 
@@ -338,6 +358,7 @@ Restrições de validação por parâmetro. Valores marcados como **(proposto)**
 | 6 | Experimentos | RF-21, RF-22, RF-38 |
 | 7 | JMeter | RF-23, RF-24, RF-39 a RF-44, RNF-25, RNF-33, RNF-34 |
 | 8 | PostgreSQL, Docker, deploy | RF-25, RF-26, RNF-17, RNF-26 |
+| 9 | Serviço geral (M/D/1 e M/G/1) | RF-45 a RF-50 |
 | Transversal | Qualidade, desempenho, segurança, observabilidade | RNF-05, RNF-06, RNF-08 a RNF-12, RNF-14, RNF-16, RNF-18, RNF-19, RNF-21 a RNF-23, RNF-27 a RNF-32 |
 
 ---
@@ -356,6 +377,7 @@ Restrições de validação por parâmetro. Valores marcados como **(proposto)**
 | UC-08 | RF-23, RF-24 |
 | UC-09 | RF-25, RF-26 |
 | UC-10 | RF-04 |
+| UC-11 | RF-45 a RF-50 |
 
 ---
 

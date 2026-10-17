@@ -97,3 +97,50 @@ describe("buildBody", () => {
     expect(buildBody("mm1", { ...params, seed: undefined }, "compare")).not.toHaveProperty("seed");
   });
 });
+
+describe("M/G/1 (serviço geral)", () => {
+  it("converte o formulário em λ, distribuição e parâmetros, sem μ", () => {
+    const r = parseForm(values("mg1"), "mg1", "compare");
+    expect(r).toMatchObject({
+      ok: true,
+      params: {
+        lambda: 25, simulationTime: 2000, replications: 10, warmupTime: 100, seed: 2026,
+        service: { distribution: "lognormal", values: { mean: 0.02, cv: 0.5 } },
+      },
+    });
+    if (r.ok) expect(r.params.mu).toBeCloseTo(50, 9);   // 1/E[S], só para exibição
+  });
+
+  it("corpo da requisição traz a distribuição e só os parâmetros dela", () => {
+    const r = parseForm(values("mg1", { distribution: "triangular", min: "0.01", mode: "0.02", max: "0.05" }), "mg1", "compare");
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(buildBody("mg1", r.params, "compare")).toEqual({
+        lambda: 25, distribution: "triangular", min: 0.01, mode: 0.02, max: 0.05,
+        simulation_time: 2000, replications: 10, warmup_time: 100, seed: 2026,
+      });
+      expect(buildBody("mg1", r.params, "calculate")).toEqual({
+        lambda: 25, distribution: "triangular", min: 0.01, mode: 0.02, max: 0.05,
+      });
+    }
+  });
+
+  it("aceita μ do M/M/1 vazio: o M/G/1 não usa o campo", () => {
+    expect(parseForm(values("mg1", { mu: "" }), "mg1", "calculate").ok).toBe(true);
+  });
+
+  it("junta os erros de λ, do serviço e da simulação", () => {
+    const r = parseForm(values("mg1", { lambda: "", distribution: "erlang", k: "1,5", simulationTime: "x" }), "mg1", "compare");
+    expect(r).toEqual({
+      ok: false,
+      errors: { lambda: "Informe um número.", k: "Informe um número inteiro.", simulationTime: "Informe um número." },
+    });
+  });
+
+  it("os modelos markovianos continuam sem service no corpo", () => {
+    const r = parseForm(values("mm1"), "mm1", "calculate");
+    expect(r.ok && r.params.service).toBeFalsy();
+    if (r.ok) expect(buildBody("mm1", r.params, "calculate")).toEqual({ lambda: 40, mu: 50 });
+  });
+});
+

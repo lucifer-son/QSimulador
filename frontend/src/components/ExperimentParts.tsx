@@ -3,7 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import type { ApiError } from "../api/client";
 import { MODELS } from "../domain/models";
 import { VARIABLE_INFO, type SweepVariable, type SystemText } from "../domain/experiments";
-import type { MetricName, ModelKey } from "../domain/types";
+import type { MetricName, MarkovModelKey } from "../domain/types";
 import type { ExperimentState } from "../hooks/useExperiment";
 import { metricTitle } from "./MetricsTable";
 import { ERROR_TITLES } from "./ResultsPanel";
@@ -11,7 +11,7 @@ import { ERROR_TITLES } from "./ResultsPanel";
 /** Parâmetros do Laboratório que o experimento mantém fixos (o que é varrido não aparece). */
 export function FixedParameters({
   model, system, skip, title = "Parâmetros fixos",
-}: { model: ModelKey; system: SystemText; skip?: SweepVariable; title?: string }) {
+}: { model: MarkovModelKey; system: SystemText; skip?: SweepVariable; title?: string }) {
   const info = MODELS[model];
   const items: [string, string][] = [["λ", system.lambda], ["μ", system.mu]];
   if (info.usesServers) items.push(["c", system.servers]);
@@ -96,7 +96,7 @@ export function ResultArea<T>({ state, idleTitle, idleText, loadingText, errorTi
 
 interface MetricSelectProps {
   id: string;
-  model: ModelKey;
+  model: MarkovModelKey;
   value: MetricName;
   available?: (name: MetricName) => boolean;
   onChange: (name: MetricName) => void;

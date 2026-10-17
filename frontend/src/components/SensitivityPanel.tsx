@@ -6,7 +6,7 @@ import {
   buildSensitivityBody, experimentFieldErrors, VARIABLE_INFO, type ExpErrors, type SweepVariable, type SystemText,
 } from "../domain/experiments";
 import { formatMetric, formatNumber, formatSignedPercent } from "../domain/format";
-import type { MetricName, ModelKey } from "../domain/types";
+import type { MetricName, MarkovModelKey } from "../domain/types";
 import { useExperiment } from "../hooks/useExperiment";
 import { useThemeColors } from "../hooks/useThemeColors";
 import { experimentRecord, experimentTitle } from "../domain/records";
@@ -18,7 +18,7 @@ import { TextField } from "./TextField";
 
 interface Props {
   active: boolean;
-  model: ModelKey;
+  model: MarkovModelKey;
   system: SystemText;
 }
 
@@ -85,7 +85,7 @@ export function SensitivityPanel({ active, model, system }: Props) {
   );
 }
 
-export function SensitivityResult({ result, model }: { result: SensitivityResponse; model: ModelKey }) {
+export function SensitivityResult({ result, model }: { result: SensitivityResponse; model: MarkovModelKey }) {
   const colors = useThemeColors();
   const [metric, setMetric] = useState<MetricName>("W");
   const shown = metric in result.base_metrics ? metric : "rho";

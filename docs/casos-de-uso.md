@@ -46,6 +46,7 @@ flowchart LR
         UC08[UC-08 Importar CSV do JMeter]
         UC09[UC-09 Salvar e consultar resultados]
         UC10[UC-10 Verificar estabilidade do sistema]
+        UC11[UC-11 Modelar serviço geral M/G/1]
     end
 
     U --> UC01
@@ -57,6 +58,8 @@ flowchart LR
     U --> UC07
     U --> UC08
     U --> UC09
+    U --> UC11
+    A --> UC11
     A --> UC02
     A --> UC03
     A --> UC04
@@ -65,6 +68,7 @@ flowchart LR
     UC04 -. inclui .-> UC02
     UC04 -. inclui .-> UC03
     UC05 -. estende .-> UC04
+    UC11 -. inclui .-> UC10
 ```
 
 ### Resumo
@@ -81,6 +85,7 @@ flowchart LR
 | UC-08 | Importar CSV do JMeter e comparar com o modelo | Usuário | 📋 |
 | UC-09 | Salvar e consultar modelos e resultados | Usuário | ✅ |
 | UC-10 | Verificar estabilidade do sistema | Sistema (incluído) | ✅ |
+| UC-11 | Modelar serviço geral (M/G/1 e M/D/1) | Usuário, Cliente de API | ✅ |
 
 > **Conferência de 08/10/2026:** os casos de uso implementados (UC-01 a UC-06 e UC-10) foram verificados executando o sistema. As divergências encontradas na auditoria em UC-02 (P0 não retornado), UC-03 (a simulação aceitava 1 réplica) e UC-04 (P0 simulado) foram fechadas. Os detalhes estão na seção 11 de [`requisitos-do-sistema.md`](requisitos-do-sistema.md).
 
@@ -308,6 +313,28 @@ flowchart LR
 
 ---
 
+### UC-11 — Modelar serviço geral (M/G/1 e M/D/1) ✅
+
+| Campo | Descrição |
+|-------|-----------|
+| **Ator principal** | Usuário, Cliente de API |
+| **Objetivo** | Analisar uma fila de um servidor cujo tempo de serviço não é exponencial e ver o efeito da variabilidade (CV) na fila. |
+| **Pré-condições** | λ válido, distribuição de serviço escolhida com parâmetros válidos e ρ = λ·E[S] < 1. |
+| **Pós-condições** | Métricas analíticas (Pollaczek-Khinchine), simulação e comparação com IC, junto da média, do desvio padrão e do CV do serviço. |
+
+**Fluxo principal**
+1. O usuário escolhe o modelo M/G/1.
+2. O usuário informa λ, escolhe a distribuição do serviço (determinística, exponencial, Erlang-k, lognormal, Weibull, uniforme, triangular ou normal truncada) e preenche os campos dela.
+3. A interface mostra E[S], desvio padrão, CV, μ e ρ, e avisa que o modelo deixa de ser markoviano.
+4. O sistema verifica a estabilidade (UC-10), calcula as métricas analíticas e executa a simulação com o serviço amostrado da distribuição.
+5. O sistema compara analítico e simulação, com erro relativo e indicação de IC, e retorna os resultados.
+
+**Fluxos alternativos**
+- **Distribuição determinística:** o modelo é o M/D/1 e aparece com esse nome.
+- **ρ ≥ 1 ou parâmetro inválido** (k não inteiro, mín > moda, valor não positivo): o sistema rejeita com mensagem que identifica o campo.
+
+---
+
 ## 5. Rastreabilidade
 
 | Caso de uso | Fase do roadmap | Componentes principais |
@@ -320,6 +347,7 @@ flowchart LR
 | UC-07 | Fase 6 — Experimentos | Módulo de experimentos |
 | UC-08 | Fase 7 — JMeter | Importador de CSV |
 | UC-09 | Fase 8 — Persistência e deploy | PostgreSQL, Docker |
+| UC-11 | Fase 9 — Serviço geral | Módulo de distribuições de serviço, M/G/1 analítico e simulado |
 
 ---
 

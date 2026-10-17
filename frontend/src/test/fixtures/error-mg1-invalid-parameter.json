@@ -1,0 +1,10 @@
+{
+  "code": "invalid_parameter",
+  "message": "mode deve estar entre min e max (min ≤ moda ≤ max).",
+  "fields": [
+    {
+      "field": "mode",
+      "message": "mode deve estar entre min e max (min ≤ moda ≤ max)."
+    }
+  ]
+}

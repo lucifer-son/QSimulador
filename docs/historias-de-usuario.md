@@ -40,6 +40,7 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 | E7 — Validação com JMeter | US-21 a US-22 | Fase 7 |
 | E8 — Persistência e implantação | US-23 a US-25 | Fase 8 |
 | E9 — API e qualidade | US-26 a US-28 | Transversal |
+| E10 — Serviço geral | US-29 | Fase 9 |
 
 ---
 
@@ -256,6 +257,20 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 
 ---
 
+### E10 — Serviço geral
+
+#### US-29 — Escolher a distribuição do tempo de serviço ✅ · M · UC-11
+> Como **estudante**, quero escolher uma distribuição para o tempo de serviço e ver o efeito da variabilidade (CV) na fila, para entender por que a variância importa.
+
+**Critérios de aceitação**
+- **Dado** λ e uma distribuição de serviço com seus parâmetros, **quando** solicito a análise, **então** recebo as métricas do M/G/1 (ou do M/D/1, se determinística) e vejo a média, o desvio padrão e o CV do serviço.
+- **Dado** o mesmo λ e a mesma média de serviço, **quando** aumento o CV, **então** o tempo de espera cresce.
+- **Dado** que o serviço não é exponencial, **quando** a tela é exibida, **então** há o aviso de que o modelo deixa de ser markoviano.
+- **Dado** ρ ≥ 1 ou um parâmetro inválido, **quando** solicito a análise, **então** o erro identifica o campo.
+- **Dado** a mesma semente, **quando** repito a simulação, **então** o resultado é idêntico.
+
+---
+
 ## 4. Rastreabilidade com os casos de uso
 
 | Caso de uso | Histórias |
@@ -270,6 +285,7 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 | UC-08 — JMeter | US-21, US-22 |
 | UC-09 — Persistência | US-23, US-24 |
 | UC-10 — Estabilidade | US-03 |
+| UC-11 — Serviço geral (M/G/1) | US-29 |
 | Transversais (API, qualidade, Docker) | US-25, US-26, US-27, US-28 |
 
 ---

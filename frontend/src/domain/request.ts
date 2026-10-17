@@ -1,12 +1,9 @@
+import { parseNumber } from "./number";
 import { MODELS } from "./models";
+import { parseService, serviceMoments } from "./service";
 import type { Action, FieldErrors, FieldKey, FormValues, ModelKey, Params } from "./types";
 
-/** Converte texto em número. Aceita vírgula decimal; rejeita vazio e lixo (ex.: "0x10"). */
-export function parseNumber(text: string): number {
-  const t = text.trim().replace(",", ".");
-  if (!/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(t)) return NaN;
-  return Number(t);
-}
+export { parseNumber };
 
 export type ParseResult =
   | { ok: true; params: Params }
@@ -34,7 +31,10 @@ export function parseForm(values: FormValues, model: ModelKey, action: Action): 
   };
 
   const lambda = read("lambda");
-  const mu = read("mu");
+  // M/G/1: o serviço é dado pela distribuição (média, forma...), não por μ.
+  const service = model === "mg1" ? parseService(values) : null;
+  if (service && !service.ok) Object.assign(errors, service.errors);
+  const mu = model === "mg1" ? undefined : read("mu");
   const servers = info.usesServers ? read("servers", true) : undefined;
   const capacity = info.usesCapacity ? read("capacity", true) : undefined;
 
@@ -50,6 +50,17 @@ export function parseForm(values: FormValues, model: ModelKey, action: Action): 
   }
 
   if (Object.keys(errors).length > 0) return { ok: false, errors };
+  if (service?.ok) {
+    // μ = 1/E[S] só para exibição (título, detalhes): a API devolve o valor efetivo.
+    const moments = serviceMoments(service.service.distribution, service.service.values);
+    return {
+      ok: true,
+      params: {
+        lambda: lambda!, mu: moments?.mu ?? 0, servers, capacity,
+        simulationTime, replications, warmupTime, seed, service: service.service,
+      },
+    };
+  }
   return {
     ok: true,
     params: { lambda: lambda!, mu: mu!, servers, capacity, simulationTime, replications, warmupTime, seed },
@@ -57,9 +68,11 @@ export function parseForm(values: FormValues, model: ModelKey, action: Action): 
 }
 
 /** Corpo JSON da requisição, com os nomes de campo da API. */
-export function buildBody(model: ModelKey, params: Params, action: Action): Record<string, number> {
+export function buildBody(model: ModelKey, params: Params, action: Action): Record<string, number | string> {
   const info = MODELS[model];
-  const body: Record<string, number> = { lambda: params.lambda, mu: params.mu };
+  const body: Record<string, number | string> =
+    model === "mg1" ? { lambda: params.lambda, distribution: params.service!.distribution, ...params.service!.values }
+      : { lambda: params.lambda, mu: params.mu };
   if (info.usesServers) body.servers = params.servers!;
   if (info.usesCapacity) body.capacity = params.capacity!;
   if (action !== "calculate") {

@@ -1,6 +1,6 @@
 import { MODELS } from "./models";
 import { parseNumber } from "./request";
-import type { ModelKey } from "./types";
+import type { MarkovModelKey } from "./types";
 
 export type SweepVariable = "lambda" | "mu" | "servers" | "capacity";
 
@@ -15,7 +15,7 @@ export const VARIABLE_INFO: Record<SweepVariable, { label: string; unit: string;
 export const HIGH_UTILIZATION = 0.8;
 
 /** Variáveis que o modelo permite varrer (c e K só onde existem). */
-export function sweepVariables(model: ModelKey): SweepVariable[] {
+export function sweepVariables(model: MarkovModelKey): SweepVariable[] {
   const info = MODELS[model];
   return [
     "lambda", "mu",
@@ -57,7 +57,7 @@ function numberOr(text: string, fallback: number): number {
 }
 
 /** Faixa sugerida para varrer `variable` em torno do sistema do Laboratório. */
-export function suggestRange(variable: SweepVariable, model: ModelKey, system: SystemText): RangeText {
+export function suggestRange(variable: SweepVariable, model: MarkovModelKey, system: SystemText): RangeText {
   const lambda = numberOr(system.lambda, 1);
   const mu = numberOr(system.mu, 1);
   const servers = MODELS[model].usesServers ? Math.max(1, Math.round(numberOr(system.servers, 1))) : 1;
@@ -86,13 +86,13 @@ export function suggestRange(variable: SweepVariable, model: ModelKey, system: S
 }
 
 /** Lista de servidores sugerida para comparar: o c do Laboratório e seus vizinhos. */
-export function suggestServers(model: ModelKey, system: SystemText): string {
+export function suggestServers(model: MarkovModelKey, system: SystemText): string {
   const c = MODELS[model].usesServers ? Math.max(1, Math.round(numberOr(system.servers, 1))) : 1;
   return [c - 1, c, c + 1].filter((n) => n >= 1).join(", ");
 }
 
 function readSystem(
-  model: ModelKey, system: SystemText, skip: SweepVariable | null, errors: ExpErrors,
+  model: MarkovModelKey, system: SystemText, skip: SweepVariable | null, errors: ExpErrors,
 ): Body {
   const read = reader(errors);
   const info = MODELS[model];
@@ -117,7 +117,7 @@ export interface SweepSimulationText extends SimText { enabled: boolean }
 
 /** Corpo do POST /api/experiments/sweep. Só confere o formato; as regras ficam na API. */
 export function buildSweepBody(
-  model: ModelKey, variable: SweepVariable, system: SystemText, range: RangeText, sim: SweepSimulationText,
+  model: MarkovModelKey, variable: SweepVariable, system: SystemText, range: RangeText, sim: SweepSimulationText,
 ): Built<Body> {
   const errors: ExpErrors = {};
   const read = reader(errors);
@@ -146,7 +146,7 @@ export function parseServerList(text: string): number[] | null {
 
 /** Corpo do POST /api/experiments/servers (compara M/M/c, ou M/M/c/K se o modelo tem capacidade). */
 export function buildServersBody(
-  model: ModelKey, system: SystemText, serversText: string, range: RangeText,
+  model: MarkovModelKey, system: SystemText, serversText: string, range: RangeText,
 ): Built<Body> {
   const errors: ExpErrors = {};
   const read = reader(errors);
@@ -160,7 +160,7 @@ export function buildServersBody(
 
 /** Corpo do POST /api/experiments/sensitivity. */
 export function buildSensitivityBody(
-  model: ModelKey, system: SystemText, deltaText: string,
+  model: MarkovModelKey, system: SystemText, deltaText: string,
 ): Built<Body> {
   const errors: ExpErrors = {};
   const read = reader(errors);

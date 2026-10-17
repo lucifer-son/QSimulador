@@ -1,5 +1,6 @@
 import { IconClock, IconPlayerPlay, IconPlayerStop } from "@tabler/icons-react";
-import { MODEL_ORDER, MODELS } from "../domain/models";
+import { LAB_MODEL_ORDER, MODELS } from "../domain/models";
+import { DISTRIBUTIONS, distributionInfo, serviceSummary } from "../domain/service";
 import type { Action, FieldErrors, FieldKey, FormValues, ModelKey } from "../domain/types";
 
 interface FieldProps {
@@ -34,6 +35,42 @@ function Field({ field, label, value, error, hint, onChange }: FieldProps) {
   );
 }
 
+function ServiceFields({ values, errors, onChange }: {
+  values: FormValues; errors: FieldErrors; onChange: (field: FieldKey, value: string) => void;
+}) {
+  const info = distributionInfo(values.distribution);
+  const summary = serviceSummary(values);
+  return (
+    <>
+      <div className={errors.distribution ? "field has-error" : "field"}>
+        <label htmlFor="field-distribution">Distribuição do serviço</label>
+        <select
+          id="field-distribution"
+          value={info.key}
+          onChange={(e) => onChange("distribution", e.target.value)}
+        >
+          {DISTRIBUTIONS.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
+        </select>
+      </div>
+      <div className="grid2">
+        {info.fields.map((f) => (
+          <Field
+            key={`${info.key}-${f.field}`} field={f.field} label={f.label} value={values[f.field]}
+            error={errors[f.field]} hint={f.hint} onChange={onChange}
+          />
+        ))}
+      </div>
+      {summary && <p className="service-summary" aria-label="Resumo do serviço">{summary}</p>}
+      {info.key !== "exponential" && (
+        <p className="field-hint" role="note">
+          Serviço não exponencial: o modelo deixa de ser markoviano. As médias seguem a fórmula de
+          Pollaczek-Khinchine, que usa só a média e a variância do serviço.
+        </p>
+      )}
+    </>
+  );
+}
+
 interface Props {
   model: ModelKey;
   values: FormValues;
@@ -62,40 +99,45 @@ export function ParametersPanel({
         onRun("compare");
       }}
     >
-      <fieldset className="models">
-        <legend>Modelo</legend>
-        <div className="segmented">
-          {MODEL_ORDER.map((key) => (
-            <button
-              key={key}
-              type="button"
-              className="seg"
-              aria-pressed={key === model}
-              onClick={() => onModelChange(key)}
-            >
-              {MODELS[key].label}
-            </button>
+      <div className="field model-select">
+        <label htmlFor="field-model">Modelo</label>
+        <select
+          id="field-model"
+          value={model}
+          onChange={(e) => onModelChange(e.target.value as ModelKey)}
+        >
+          {LAB_MODEL_ORDER.map((key) => (
+            <option key={key} value={key}>{MODELS[key].label}</option>
           ))}
-        </div>
-      </fieldset>
+        </select>
+      </div>
 
       <h2 className="group-title">Sistema</h2>
-      <div className="grid2">
-        <Field {...common} field="lambda" label="Chegadas λ (req/s)" value={values.lambda} error={errors.lambda} />
-        <Field
-          {...common} field="mu" value={values.mu} error={errors.mu}
-          label={multi ? "Serviço μ (por servidor)" : "Serviço μ (req/s)"}
-        />
-        {info.usesServers && (
-          <Field {...common} field="servers" label="Servidores c" value={values.servers} error={errors.servers} />
-        )}
-        {info.usesCapacity && (
+      {model === "mg1" ? (
+        <div className="stack">
+          <div className="grid2">
+            <Field {...common} field="lambda" label="Chegadas λ (req/s)" value={values.lambda} error={errors.lambda} />
+          </div>
+          <ServiceFields values={values} errors={errors} onChange={onChange} />
+        </div>
+      ) : (
+        <div className="grid2">
+          <Field {...common} field="lambda" label="Chegadas λ (req/s)" value={values.lambda} error={errors.lambda} />
           <Field
-            {...common} field="capacity" label="Capacidade K" value={values.capacity}
-            error={errors.capacity} hint="Fila + em atendimento"
+            {...common} field="mu" value={values.mu} error={errors.mu}
+            label={multi ? "Serviço μ (por servidor)" : "Serviço μ (req/s)"}
           />
-        )}
-      </div>
+          {info.usesServers && (
+            <Field {...common} field="servers" label="Servidores c" value={values.servers} error={errors.servers} />
+          )}
+          {info.usesCapacity && (
+            <Field
+              {...common} field="capacity" label="Capacidade K" value={values.capacity}
+              error={errors.capacity} hint="Fila + em atendimento"
+            />
+          )}
+        </div>
+      )}
 
       <h2 className="group-title">Simulação</h2>
       <div className="grid2">

@@ -119,18 +119,7 @@ span.nav-item { cursor: default; }
 .results { overflow: hidden; }
 
 /* ---------- Formulário ---------- */
-.models legend, .field label { font-size: 0.8rem; color: var(--text-secondary); }
-.models legend { margin-bottom: 4px; padding: 0; }
-
-.segmented { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-.seg {
-  padding: 7px 4px; border: 1px solid var(--border-strong); border-radius: var(--radius);
-  background: var(--surface); cursor: pointer; font-size: 0.9rem;
-}
-.seg:hover { background: var(--surface-2); }
-.seg[aria-pressed="true"] {
-  background: var(--accent-bg); color: var(--accent-text); border-color: var(--accent); font-weight: 600;
-}
+.field label { font-size: 0.8rem; color: var(--text-secondary); }
 
 .group-title {
   font-size: 0.75rem; font-weight: 500; color: var(--text-muted); margin: 18px 0 8px;
@@ -315,3 +304,10 @@ input[type="file"] { max-width: 100%; font-size: 0.85rem; }
 .history-main .note { margin-top: 0; }
 .history-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .history-view { min-width: 0; }
+
+/* ---------- Serviço geral (M/G/1) ---------- */
+.stack { display: flex; flex-direction: column; gap: 10px; }
+.service-summary {
+  margin: 0; padding: 8px 10px; font-size: 0.82rem; color: var(--text-secondary);
+  background: var(--surface-2); border-radius: var(--radius);
+}

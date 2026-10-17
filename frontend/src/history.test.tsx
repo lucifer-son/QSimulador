@@ -27,6 +27,7 @@ async function setup(records = new FakeRecords(true), handler: FakeHandler = hap
 }
 const button = (name: string | RegExp) => screen.getByRole("button", { name });
 const nav = (name: string) => screen.getByRole("button", { name, hidden: false });
+const modelSelect = () => screen.getByLabelText("Modelo");
 type User = ReturnType<typeof userEvent.setup>;
 
 /** Roda a comparação no Laboratório (M/M/c/K, λ = 25). */
@@ -263,7 +264,7 @@ describe("reabrir no Laboratório", () => {
     await user.click(await screen.findByRole("button", { name: "Reabrir no Laboratório" }));
 
     expect(nav("Laboratório")).toHaveAttribute("aria-current", "page");
-    expect(button("M/M/c/K")).toHaveAttribute("aria-pressed", "true");
+    expect(modelSelect()).toHaveValue("mmck");
     expect(screen.getByLabelText(/Chegadas λ/)).toHaveValue("30");
     expect(screen.getByLabelText("Servidores c")).toHaveValue("3");
     expect(screen.getByLabelText("Capacidade K")).toHaveValue("6");
@@ -276,21 +277,21 @@ describe("reabrir no Laboratório", () => {
   it("troca de modelo ao reabrir um registro de outro modelo", async () => {
     const records = new FakeRecords(true);
     const { user } = await setup(records);
-    await user.click(button("M/M/1"));
+    await user.selectOptions(modelSelect(), "mm1");
     await compare(user);       // a fixture é do M/M/c/K, mas o registro guarda M/M/1 + o resultado recebido
     await saveLab(user);
-    await user.click(button("M/M/c/K"));
+    await user.selectOptions(modelSelect(), "mmck");
     await user.click(nav("Histórico"));
     await user.click(await screen.findByRole("button", { name: "Abrir" }));
     await user.click(await screen.findByRole("button", { name: "Reabrir no Laboratório" }));
-    expect(button("M/M/1")).toHaveAttribute("aria-pressed", "true");
+    expect(modelSelect()).toHaveValue("mm1");
   });
 });
 
 describe("experimentos e dados reais", () => {
   it("salva uma varredura e a mostra de novo no Histórico", async () => {
     const { user, records } = await setup();
-    await user.click(button("M/M/1"));
+    await user.selectOptions(modelSelect(), "mm1");
     await user.click(nav("Experimentos"));
     await user.click(screen.getByRole("button", { name: "Gerar curva" }));
     await user.click(await screen.findByRole("button", { name: "Salvar no histórico" }));

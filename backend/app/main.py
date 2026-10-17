@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.errors import register_exception_handlers
 from app.api.experiments import router as experiments_router
+from app.api.mg1 import distributions_router, router as mg1_router
 from app.api.mm1 import router as mm1_router
 from app.api.queues import mm1k_router, mmc_router, mmck_router
 from app.api.finite_population import router as finite_population_router
@@ -61,6 +62,8 @@ def create_app(
 
     register_exception_handlers(application)
     application.include_router(mm1_router)
+    application.include_router(mg1_router)
+    application.include_router(distributions_router)
     application.include_router(mmc_router)
     application.include_router(mm1k_router)
     application.include_router(mmck_router)

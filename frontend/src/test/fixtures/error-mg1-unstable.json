@@ -1,0 +1,10 @@
+{
+  "code": "unstable_system",
+  "message": "O modelo não está em condição estável. Para M/G/1, é necessário que ρ = λ·E[S] < 1 (aqui, ρ = 1.2).",
+  "fields": [
+    {
+      "field": "lambda",
+      "message": "O modelo não está em condição estável. Para M/G/1, é necessário que ρ = λ·E[S] < 1 (aqui, ρ = 1.2)."
+    }
+  ]
+}

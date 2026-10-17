@@ -1,5 +1,5 @@
 import { formatCompactCount } from "./format";
-import { parseNumber } from "./request";
+import { parseNumber } from "./number";
 
 /** Velocidade medida do simulador (chegadas por segundo); varia com a máquina. */
 export const ARRIVALS_PER_SECOND = 80_000;

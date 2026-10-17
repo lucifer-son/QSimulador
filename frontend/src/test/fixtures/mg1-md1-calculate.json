@@ -1,0 +1,21 @@
+{
+  "model": "M/D/1",
+  "service": {
+    "distribution": "deterministic",
+    "label": "Determinística (M/D/1)",
+    "mean": 0.0125,
+    "std": 0.0,
+    "variance": 0.0,
+    "cv": 0.0,
+    "mu": 80.0,
+    "parameters": {
+      "mean": 0.0125
+    }
+  },
+  "rho": 0.5,
+  "L": 0.7500000000000001,
+  "Lq": 0.25,
+  "W": 0.018750000000000003,
+  "Wq": 0.00625,
+  "p0": 0.5
+}

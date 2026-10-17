@@ -8,7 +8,7 @@
 | Valores de teste | [valores-de-referencia.md](valores-de-referencia.md) |
 | Pré-requisito | Fase 8 concluída (persistência com Neon, aba Histórico, documentação acadêmica, arquivo LICENSE) |
 
-> **Sobre os identificadores.** Os requisitos e histórias deste documento usam IDs **provisórios** (`RFC-nn`, `RNC-nn`, `USC-nn`) para não colidir com os de [requisitos.md](requisitos.md) e [historias-de-usuario.md](historias-de-usuario.md). Ao fechar cada fase, eles são renumerados e incorporados a esses documentos (nova versão do requisitos.md).
+> **Sobre os identificadores.** Os requisitos e histórias deste documento usam IDs **provisórios** (`RFC-nn`, `RNC-nn`, `USC-nn`) para não colidir com os de [requisitos-do-sistema.md](requisitos-do-sistema.md) e [historias-de-usuario.md](historias-de-usuario.md). Ao fechar cada fase, eles são renumerados e incorporados a esses documentos (nova versão do requisitos-do-sistema.md).
 >
 > **Sobre as rotas.** Os caminhos de API citados são **propostas** no padrão `/api/models/{modelo}/...`. Devem ser alinhados à convenção real do repositório no início de cada fase, sem alterar rotas e esquemas existentes.
 
@@ -20,7 +20,7 @@ Cada fase foi dimensionada para caber em **um chat de trabalho** (plano, impleme
 
 | Fase | Título | Lacunas | Esforço | Marco |
 |---|---|---|---|---|
-| 9 | Serviço geral: M/D/1 e M/G/1 | L-01, L-02 | M | M1 |
+| 9 | Serviço geral: M/D/1 e M/G/1 ✅ | L-01, L-02 | M | M1 |
 | 10 | Erlang-B dedicado e M/G/c | L-03, L-04 | M | M1 |
 | 11 | Dimensionamento, nível de serviço e custo | L-05, L-06 | M | M1 |
 | 12 | Comparação de cenários | L-07 | M | M2 |
@@ -80,7 +80,7 @@ Observações:
 4. Simulações: tolerâncias estatísticas calibradas pela variação entre sementes (nunca valores exatos de números aleatórios) e verificação da Lei de Little.
 5. Resultados aproximados trazem o rótulo "aproximação" na API e na interface.
 6. Rotas e esquemas existentes continuam funcionando (sem quebra de compatibilidade).
-7. Documentação atualizada: `README.md`, `docs/como-executar.md`, `docs/requisitos.md`, `docs/casos-de-uso.md`, `docs/historias-de-usuario.md` e este roadmap (status da fase).
+7. Documentação atualizada: `README.md`, `docs/como-executar.md`, `docs/requisitos-do-sistema.md`, `docs/casos-de-uso.md`, `docs/historias-de-usuario.md` e este roadmap (status da fase).
 8. Entrega em `.zip` com caminhos relativos à raiz do repositório, listando arquivos **novos** e **alterados**, e comandos para PowerShell.
 9. Antes da implementação: plano em poucas linhas com as decisões relevantes, para aprovação.
 
@@ -102,10 +102,11 @@ Observações:
 
 | Item | Valor |
 |---|---|
+| Status | ✅ Concluída em 16/10/2026 (QSimulador 1.6) |
 | Lacunas | L-01, L-02 |
 | Esforço / prioridade | M / Alta |
 | Depende de | Fase 8 |
-| Requisitos | RFC-01 a RFC-06 |
+| Requisitos | RFC-01 a RFC-06 (oficiais: RF-45 a RF-50) |
 | História | USC-09: como estudante, quero escolher uma distribuição para o tempo de serviço e ver o efeito da variabilidade (CV) na fila, para entender por que a variância importa |
 
 ### Objetivo
@@ -125,6 +126,14 @@ Sair da suposição de serviço exponencial. Permitir serviço determinístico e
 **API (propostas)**: `POST /api/models/mg1/analytic`, `/simulate`, `/compare`; `GET /api/distributions` (lista e parâmetros).
 
 **Interface**: seletor "Distribuição do tempo de serviço" no formulário; campos dinâmicos por distribuição; exibição de média, desvio padrão e CV; aviso quando o modelo deixa de ser markoviano.
+
+### Registro da execução
+
+- **Rotas:** seguiram a convenção do repositório, `POST /api/models/mg1/calculate`, `/simulate` e `/compare` (e não `/analytic`), mais `GET /api/distributions`. Nenhuma rota anterior mudou.
+- **Identificadores oficiais:** RFC-01 a RFC-06 viraram RF-45 a RF-50 (requisitos-do-sistema.md, seção 4.11); USC-09 virou US-29 (épico E10) e o caso de uso é o UC-11.
+- **Parametrização:** média (`mean`) ou taxa (`mu`) mais a forma (`k` ou `cv`) para exponencial, determinística, Erlang-k, lognormal e Weibull; parâmetros próprios para uniforme, triangular e normal truncada, com média e μ calculados. A normal truncada usa a média e a variância da distribuição truncada.
+- **Interface:** o M/G/1 é um modelo do Laboratório (seletor de distribuição, campos dinâmicos, resumo de E[S], desvio padrão, CV, μ e ρ, e aviso de modelo não markoviano). Experimentos e Dados reais continuam só para os modelos markovianos.
+- **Validação:** valores exatos da seção 5 de [valores-de-referencia.md](valores-de-referencia.md) reproduzidos (M/D/1: Wq = 22,5 s; M/G/1: Lq = 2,6042), mais as propriedades CV = 1 e CV = 0.
 
 ### Fora de escopo
 
@@ -700,4 +709,4 @@ As decisões D-01 a D-05 estão na seção 10 de [analise-concorrente.md](analis
 | R-01 | Fase 15 é a mais complexa (muda o motor de simulação) | Isolar o motor de prioridade em módulo próprio e manter o motor atual intocado |
 | R-02 | Limite de tempo de funções na Vercel para simulações e PDF | Streaming, limites de eventos e réplicas, geração de PDF leve |
 | R-03 | Crescimento da interface (muitas abas) | Reavaliar a navegação ao fim da Fase 12 e da Fase 16 |
-| R-04 | Divergência entre numeração provisória e oficial de requisitos | Renumerar a cada fase concluída e registrar no controle de versões do requisitos.md |
+| R-04 | Divergência entre numeração provisória e oficial de requisitos | Renumerar a cada fase concluída e registrar no controle de versões do requisitos-do-sistema.md |

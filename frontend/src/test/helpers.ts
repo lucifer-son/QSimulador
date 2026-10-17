@@ -16,6 +16,12 @@ import realdataReport from "./fixtures/realdata-report.json";
 import mm1Calculate from "./fixtures/mm1-calculate.json";
 import mm1Compare from "./fixtures/mm1-compare.json";
 import mm1Simulate from "./fixtures/mm1-simulate.json";
+import errorMg1InvalidParameter from "./fixtures/error-mg1-invalid-parameter.json";
+import errorMg1Unstable from "./fixtures/error-mg1-unstable.json";
+import mg1Calculate from "./fixtures/mg1-calculate.json";
+import mg1Compare from "./fixtures/mg1-compare.json";
+import mg1Md1Calculate from "./fixtures/mg1-md1-calculate.json";
+import mg1Simulate from "./fixtures/mg1-simulate.json";
 import mmcCalculate from "./fixtures/mmc-calculate.json";
 import mmcCompare from "./fixtures/mmc-compare.json";
 import mmcSimulate from "./fixtures/mmc-simulate.json";
@@ -31,6 +37,7 @@ export const fixtures = {
   realdataCompareSimulated, realdataLevelsError, realdataLevelsImport, realdataReport,
   experimentSensitivityMm1, experimentServersMmc, experimentSweepMm1,
   mm1Calculate, mm1Compare, mm1Simulate,
+  mg1Calculate, mg1Compare, mg1Md1Calculate, mg1Simulate, errorMg1InvalidParameter, errorMg1Unstable,
   mmcCalculate, mmcCompare, mmcSimulate,
   mmckCalculate, mmckCompare, mmckSimulate,
 };

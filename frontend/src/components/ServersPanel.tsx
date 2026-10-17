@@ -8,7 +8,7 @@ import {
 } from "../domain/experiments";
 import { formatMetric, formatNumber } from "../domain/format";
 import { MODELS } from "../domain/models";
-import type { MetricName, ModelKey } from "../domain/types";
+import type { MetricName, MarkovModelKey } from "../domain/types";
 import { useExperiment } from "../hooks/useExperiment";
 import { useThemeColors } from "../hooks/useThemeColors";
 import { experimentRecord, experimentTitle } from "../domain/records";
@@ -20,7 +20,7 @@ import { TextField } from "./TextField";
 
 interface Props {
   active: boolean;
-  model: ModelKey;
+  model: MarkovModelKey;
   system: SystemText;
 }
 
@@ -117,7 +117,7 @@ export function ServersPanel({ active, model, system }: Props) {
   );
 }
 
-export function ServersResult({ result, model }: { result: ServerComparisonResponse; model: ModelKey }) {
+export function ServersResult({ result, model }: { result: ServerComparisonResponse; model: MarkovModelKey }) {
   const colors = useThemeColors();
   const [metric, setMetric] = useState<MetricName>("W");
   const has = (n: MetricName) => result.series.some((s) => s.points.some((p) => p.metrics && n in p.metrics));

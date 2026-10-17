@@ -1,14 +1,26 @@
 import { MODELS } from "../domain/models";
 import type {
-  Action, MetricName, MetricRow, ModelKey, Params, RunRow, ViewResult,
+  Action, MetricName, MetricRow, ModelKey, Params, RunRow, ServiceInfo, ViewResult,
 } from "../domain/types";
 import type { components } from "./schema";
 
 type S = components["schemas"];
 
-export type CalculateResponse = S["MM1CalculateResponse"] | S["QueueCalculateResponse"];
-export type SimulateResponse = S["SimulationResponse"] | S["QueueSimulationResponse"];
-export type CompareResponse = S["ComparisonResponse"] | S["QueueComparisonResponse"];
+export type CalculateResponse = S["MM1CalculateResponse"] | S["QueueCalculateResponse"] | S["MG1CalculateResponse"];
+export type SimulateResponse = S["SimulationResponse"] | S["QueueSimulationResponse"] | S["MG1SimulationResponse"];
+export type CompareResponse = S["ComparisonResponse"] | S["QueueComparisonResponse"] | S["MG1ComparisonResponse"];
+
+/** Só o M/G/1 devolve `service`: a descrição efetiva do tempo de serviço. */
+function serviceOf(res: unknown): Pick<ViewResult, "service"> {
+  const service = (res as { service?: ServiceInfo }).service;
+  return service ? { service } : {};
+}
+
+/** No M/G/1, μ vem da API (1/E[S] efetivo); o que o formulário calculou é só uma prévia. */
+function withApiMu(params: Params, res: unknown): Params {
+  const service = (res as { service?: ServiceInfo }).service;
+  return service ? { ...params, mu: service.mu } : params;
+}
 
 function shape(res: { servers?: number; capacity?: number | null }): { servers: number; capacity: number | null } {
   // As respostas do M/M/1 não trazem servers/capacity.
@@ -27,7 +39,8 @@ export function fromCalculate(model: ModelKey, params: Params, res: CalculateRes
     modelKey: model,
     modelLabel: res.model,
     ...shape(res as { servers?: number; capacity?: number | null }),
-    params,
+    params: withApiMu(params, res),
+    ...serviceOf(res),
     metrics: namesIn(model, values).map((name) => ({ name, analytical: values[name] })),
     raw: res,
   };
@@ -52,7 +65,8 @@ export function fromSimulate(model: ModelKey, params: Params, res: SimulateRespo
     modelKey: model,
     modelLabel: res.model,
     ...shape(res as { servers?: number; capacity?: number | null }),
-    params,
+    params: withApiMu(params, res),
+    ...serviceOf(res),
     seed: res.seed,
     replications: res.replications,
     simulationTime: res.simulation_time,
@@ -82,7 +96,8 @@ export function fromCompare(model: ModelKey, params: Params, res: CompareRespons
     modelKey: model,
     modelLabel: res.model,
     ...shape(res as { servers?: number; capacity?: number | null }),
-    params,
+    params: withApiMu(params, res),
+    ...serviceOf(res),
     seed: res.seed,
     replications: res.replications,
     simulationTime: res.simulation_time,

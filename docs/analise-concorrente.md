@@ -5,7 +5,7 @@
 | Versão | 1.0 |
 | Data da análise | 16/10/2026 |
 | Concorrente analisado | UtiliQueue (UtiliBox) — https://utiliboxapp.com.br/tools/teoria-das-filas/ |
-| Documentos relacionados | [roadmap-competitivo.md](roadmap-competitivo.md), [valores-de-referencia.md](valores-de-referencia.md), [requisitos.md](requisitos.md) |
+| Documentos relacionados | [roadmap-competitivo.md](roadmap-competitivo.md), [valores-de-referencia.md](valores-de-referencia.md), [requisitos-do-sistema.md](requisitos-do-sistema.md) |
 
 ---
 
