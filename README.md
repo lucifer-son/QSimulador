@@ -27,6 +27,8 @@ O projeto está em desenvolvimento. Os modelos **M/M/1**, **M/M/c**, **M/M/1/K**
 | Dados reais: análise do CSV do JMeter com recomendação do modelo, CSV agregado por nível de carga, M/M/c//N (analítico e simulação), comparação medido × analítico × simulação e relatório em Markdown e HTML (`/api/realdata`, aba Dados reais) | ✅ Implementado |
 | Persistência | ✅ Implementado |
 | Serviço geral: M/D/1 e M/G/1 (Pollaczek-Khinchine) com oito distribuições de serviço, simulação e comparação com IC (`/api/models/mg1`, `/api/distributions`, modelo M/G/1 no Laboratório) | ✅ Implementado (Fase 9) |
+| Erlang-B (M/M/c/c) com dimensionamento por bloqueio alvo e M/G/c por Allen–Cunneen (aproximação rotulada, com avisos de faixa), com simulação e comparação com IC (`/api/models/erlangb`, `/api/models/mgc`) | ✅ Implementado (Fase 10) |
+| Experimentos do M/G/1: varredura de λ, μ e da variabilidade do serviço (CV ou k), sensibilidade e comparação de distribuições com a mesma média (`/api/experiments/services`) | ✅ Implementado (Fase 10) |
 
 ---
 
@@ -88,7 +90,7 @@ Uma ferramenta de modelagem permite estudar esses fenômenos de forma controlada
 
 O QSimulador permite (ou permitirá) ao usuário:
 
-1. definir um modelo de filas (M/M/1, M/M/c, M/M/1/K, M/M/c/K ou M/G/1) e informar seus parâmetros ✅
+1. definir um modelo de filas (M/M/1, M/M/c, M/M/1/K, M/M/c/K, M/G/1, Erlang-B ou M/G/c) e informar seus parâmetros ✅
 2. obter métricas analíticas ✅
 3. executar uma simulação de eventos discretos com múltiplas replicações ✅
 4. comparar resultados analíticos e simulados, com erro relativo ✅
@@ -107,8 +109,12 @@ O QSimulador permite (ou permitirá) ao usuário:
 | M/M/1/K | 1 | K | ✅ Implementado |
 | M/M/c/K | c | K | ✅ Implementado |
 | M/G/1 (e M/D/1) | 1 | ilimitada | ✅ Implementado (serviço geral) |
+| Erlang-B (M/M/c/c) | c | c (sem fila) | ✅ Implementado (sistema de perda) |
+| M/G/c | c | ilimitada | ✅ Implementado (aproximação de Allen–Cunneen) |
 
 No **M/G/1** o tempo de serviço pode seguir qualquer uma de oito distribuições (determinística, exponencial, Erlang-k, lognormal, Weibull, uniforme, triangular e normal truncada em zero). O analítico usa a fórmula de Pollaczek-Khinchine, que depende só da média e da variância do serviço, e a simulação amostra o serviço da distribuição escolhida. Com serviço determinístico o modelo é o **M/D/1**, que aparece com o próprio nome. Com serviço não exponencial o modelo deixa de ser markoviano: o QSimulador avisa isso na interface.
+
+O **Erlang-B** modela um sistema de perda (ramais, leitos, vagas): quem chega com os c servidores ocupados é recusado. Mostra o bloqueio B(c, a), o tráfego oferecido a = λ/μ (em Erlangs) e carregado, a utilização e a vazão, e o campo **Bloqueio alvo** sugere o menor número de servidores que atende a meta. O **M/G/c** combina vários servidores com serviço geral. Não existe fórmula exata simples: o cálculo usa a aproximação de Allen–Cunneen, Lq ≈ Lq(M/M/c)·(1 + CV²)/2, marcada como aproximação na resposta (`exact`) e na tela. Ela é exata com c = 1 ou serviço exponencial e traz avisos quando ρ > 0,9 ou CV > 2; a comparação com a simulação mostra o erro. Não há P0 nem P(n) no M/G/c.
 
 Os modelos são implementados de forma modular, para que novos modelos possam ser adicionados sem alterar a interface ou o núcleo de simulação.
 
@@ -252,7 +258,7 @@ A interface é uma tela única de trabalho: à esquerda, o modelo e os parâmetr
 - **Comparar** (ação principal) chama `/compare` e mostra, nesta ordem, o veredito (se o analítico está dentro do IC), quatro números de destaque, o gráfico de diferenças e a tabela completa. **Só calcular** e **Só simular** são atalhos.
 - **Gráfico de diferenças:** as métricas têm escalas muito diferentes (ρ perto de 0,7 e vazão perto de 22, por exemplo), então todas aparecem como diferença percentual da simulação em relação ao analítico, com o IC. Se a barra cruza o zero, o valor analítico está dentro do intervalo.
 - **Abas:** Resultados, Gráficos (valor de cada réplica, média simulada e analítico), Réplicas (tabela por réplica) e Detalhes (parâmetros usados, semente e resposta completa da API).
-- **M/G/1:** ao escolher esse modelo, no lugar de μ, servidores e capacidade aparecem o seletor **Distribuição do serviço** e os campos da distribuição escolhida. Abaixo deles, um resumo mostra E[S], o desvio padrão, o CV, μ = 1/E[S] e ρ = λ·E[S] antes de executar. A aba Experimentos ainda não cobre o M/G/1 e continua no último modelo markoviano escolhido.
+- **M/G/1:** ao escolher esse modelo, no lugar de μ, servidores e capacidade aparecem o seletor **Distribuição do serviço** e os campos da distribuição escolhida. Abaixo deles, um resumo mostra E[S], o desvio padrão, o CV, μ = 1/E[S] e ρ = λ·E[S] antes de executar. A aba Experimentos cobre o M/G/1: além de λ e μ, varre a variabilidade do serviço (CV na lognormal e na Weibull; k no Erlang) e compara distribuições com a mesma média. O Erlang-B e o M/G/c ainda não têm experimentos; nesses modelos a aba continua no último modelo compatível.
 - **Execução:** estimativa de custo antes de rodar, indicador de progresso e botão para cancelar.
 - **Erros:** os erros da API aparecem no campo certo do formulário. A tela só confere o formato (número, inteiro); as regras do modelo (λ < c·μ, capacidade ≥ servidores etc.) ficam na API.
 - **Semente:** o resultado mostra a semente usada. O `/compare` não devolve as réplicas individuais, então as abas Gráficos e Réplicas repetem a simulação com a mesma semente, que reproduz exatamente as mesmas réplicas.
@@ -327,10 +333,13 @@ qsimulador/
     │   ├── analytical/
     │   │   ├── mm1.py             # modelo analítico M/M/1
     │   │   ├── mg1.py             # M/G/1 e M/D/1 (Pollaczek-Khinchine)
+    │   │   ├── erlangb.py         # Erlang-B (M/M/c/c) e dimensionamento por bloqueio alvo
+    │   │   ├── mgc.py             # M/G/c (Allen–Cunneen)
     │   │   └── mmck.py            # M/M/c (Erlang C), M/M/1/K e M/M/c/K
     │   ├── simulation/
     │   │   ├── mm1.py             # simulação M/M/1 com SimPy
     │   │   ├── mmck.py            # simulação de M/M/c, M/M/1/K e M/M/c/K
+    │   │   ├── mgc.py             # simulação do M/G/c (motor do M/M/c/K com serviço amostrado)
     │   │   ├── mg1.py             # simulação do M/G/1 (serviço amostrado da distribuição)
     │   │   ├── results.py         # estruturas de resultado
     │   │   └── stats.py           # média e intervalo de confiança entre réplicas
@@ -342,7 +351,8 @@ qsimulador/
     │   ├── experiments/           # varredura, comparação de servidores e sensibilidade
     │   ├── analysis/
     │   │   ├── comparison.py      # comparação analítico × simulação
-    │   │   └── comparison_mg1.py  # comparação do M/G/1
+    │   │   ├── comparison_mg1.py  # comparação do M/G/1
+    │   │   └── comparison_phase10.py  # comparação do Erlang-B e do M/G/c
     │   └── persistence/           # histórico: configuração, modelo, repositório e acesso ao banco
     └── tests/
 ```
@@ -567,7 +577,7 @@ Toda requisição inválida devolve HTTP 422 com `{"code", "message", "fields"?}
 
 | `code` | Quando acontece |
 | --- | --- |
-| `unstable_system` | λ ≥ μ (M/M/1), λ ≥ c·μ (M/M/c) ou λ·E[S] ≥ 1 (M/G/1). Não se aplica à capacidade finita |
+| `unstable_system` | λ ≥ μ (M/M/1), λ ≥ c·μ (M/M/c) ou λ·E[S] ≥ 1 (M/G/1) ou λ·E[S] ≥ c (M/G/c). Não se aplica à capacidade finita nem ao Erlang-B |
 | `invalid_parameter` | Valor fora da regra (zero, negativo, `capacity` menor que `servers`, `servers` acima de 1.000, `capacity` acima de 100.000, `replications` fora de 2 a 100, warm-up ≥ tempo simulado, mais de 1.000.000 de chegadas esperadas por réplica ou de 5.000.000 no total) |
 | `invalid_request` | Campo ausente ou do tipo errado (inclui a lista `fields`) |
 | `insufficient_sample` | Tempo simulado tão curto que nenhum cliente foi medido |
@@ -589,6 +599,7 @@ Toda requisição inválida devolve HTTP 422 com `{"code", "message", "fields"?}
 - **Testes do frontend:** formatação, conversão do formulário em requisição, cliente HTTP e tradução de erros por campo, mapeamento das respostas (com respostas reais da API gravadas como fixtures), construção dos gráficos e fluxos completos da tela com a API simulada (comparar, calcular, simular, erros, cancelamento, abas e reprodução por semente). Um teste de contrato opcional roda o mesmo cliente contra a API de verdade e confere se as fixtures ainda têm o formato real.
 
 - **Testes do serviço geral (M/D/1 e M/G/1):** valores exatos de [`docs/valores-de-referencia.md`](docs/valores-de-referencia.md) (M/D/1 com λ = 40 e μ = 80 dá Wq = 22,5 s; M/G/1 com λ = 25, μ = 30 e CV = 0,5 dá Lq = 2,6042), propriedades (CV = 1 reproduz o M/M/1, CV = 0 reproduz o M/D/1, M/D/1 tem metade da fila do M/M/1), média e variância de uma amostra grande de cada uma das oito distribuições (tolerância calibrada pela variação entre sementes), validação com o campo identificado, simulação × analítico com IC e Lei de Little.
+- **Testes da Fase 10 (Erlang-B, M/G/c e experimentos do M/G/1):** os 15 valores da seção 2 de [`docs/valores-de-referencia.md`](docs/valores-de-referencia.md) e o exemplo M/M/15/15 (bloqueio de 33%), as propriedades (bloqueio decrescente em c e crescente em a, M/M/c/K com K = c idêntico ao Erlang-B, M/G/c com CV = 1 igual ao M/M/c e com c = 1 igual ao M/G/1 nas oito distribuições, Lei de Little), o dimensionamento mínimo, a estabilidade numérica com c = 1.000, os avisos de faixa, os experimentos do M/G/1 conferidos com a fórmula de Pollaczek-Khinchine, e simulação × analítico com IC.
 
 Para executar: `python -m pytest` (dentro de `backend/`) e `npm test` (dentro de `frontend/`).
 
@@ -642,7 +653,8 @@ users,avg_ms,p90_ms,throughput,error_rate
 - [x] **Fase 6 — Experimentação:** varredura de λ, μ, c e K (com simulação opcional por ponto), comparação de servidores e análise de sensibilidade.
 - [x] **Fase 7 — Dados reais:** importação do CSV do JMeter, verificação dos dados, recomendação do melhor modelo, comparação com o modelo e relatórios experimentais. **Feito (backend):** modelos M/M/1//N e M/M/c//N, leitor do JTL, métricas empíricas, diagnósticos, recomendador e rotas `/api/realdata/analyze` e `/compare`. **Também feito:** aba *Dados reais* no frontend. **Também feito (acréscimos):** simulação do M/M/c//N, CSV agregado por nível de carga (`/api/realdata/import/levels`), comparação medido × analítico × simulação (`/api/realdata/compare-simulated`), relatório em Markdown e HTML (`/api/realdata/report`) e OpenAPI regenerado.
 - [x] **Fase 8 — Persistência e publicação:** PostgreSQL, Docker, deploy e documentação acadêmica. **Feito:** histórico com PostgreSQL opcional (salvar, listar, reabrir, renomear e excluir resultados do Laboratório, dos experimentos e da análise do JMeter; rotas `/api/records`; migrações com Alembic; configuração por variáveis de ambiente), aba *Histórico* no frontend, arquivo `LICENSE` e [documentação acadêmica](docs/documentacao-academica.md). **Falta:** Docker (`docker compose up`).
-- [x] **Fase 9 — Serviço geral:** M/D/1 e M/G/1 (Pollaczek-Khinchine) com oito distribuições de serviço, simulação com o serviço amostrado da distribuição, comparação analítico × simulação com IC, rotas `/api/models/mg1/*` e `GET /api/distributions`, e modelo M/G/1 no Laboratório. As Fases 10 a 20 (Erlang-B, M/G/c, dimensionamento, cenários prontos, PDF e outras) estão no [roadmap competitivo](docs/roadmap-competitivo.md).
+- [x] **Fase 9 — Serviço geral:** M/D/1 e M/G/1 (Pollaczek-Khinchine) com oito distribuições de serviço, simulação com o serviço amostrado da distribuição, comparação analítico × simulação com IC, rotas `/api/models/mg1/*` e `GET /api/distributions`, e modelo M/G/1 no Laboratório. As Fases 11 a 21 (dimensionamento, cenários, testes de hipótese, PDF e outras) estão no [roadmap competitivo](docs/roadmap-competitivo.md).
+- [x] **Fase 10 — Erlang-B e M/G/c:** Erlang-B dedicado (recursão estável, tráfego oferecido e carregado, dimensionamento por bloqueio alvo), M/G/c por Allen–Cunneen com marca de aproximação e avisos de faixa, simulação e comparação com IC nos dois modelos, e experimentos do M/G/1 (varredura de λ, μ e CV ou k, sensibilidade e comparação de distribuições). Rotas `/api/models/erlangb`, `/api/models/mgc` e `/api/experiments/services`.
 
 ### Possíveis extensões
 

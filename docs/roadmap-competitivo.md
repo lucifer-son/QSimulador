@@ -21,7 +21,7 @@ Cada fase foi dimensionada para caber em **um chat de trabalho** (plano, impleme
 | Fase | Título | Lacunas | Esforço | Marco |
 |---|---|---|---|---|
 | 9 | Serviço geral: M/D/1 e M/G/1 ✅ | L-01, L-02 | M | M1 |
-| 10 | Erlang-B dedicado e M/G/c | L-03, L-04 | M | M1 |
+| 10 | Erlang-B dedicado e M/G/c ✅ | L-03, L-04 | M | M1 |
 | 11 | Dimensionamento, nível de serviço e custo | L-05, L-06 | M | M1 |
 | 12 | Comparação de cenários | L-07 | M | M2 |
 | 13 | Gráficos de distribuição e ajuste de amostras | L-08, L-09 | M | M2 |
@@ -32,6 +32,7 @@ Cada fase foi dimensionada para caber em **um chat de trabalho** (plano, impleme
 | 18 | Docker, qualidade e publicação | pendências do projeto | M | M4 |
 | 19 | Redes de filas | L-17 (parte) | G | M5 (opcional) |
 | 20 | Turnos, falhas e abandono | L-17 (parte) | G | M5 (opcional) |
+| 21 | Testes de hipótese e validação estatística | L-18 | M | M2 (executar após as Fases 12 e 13) |
 
 ### Marcos
 
@@ -161,7 +162,8 @@ M/G/c (Fase 10); ajuste de distribuição a partir de amostras (Fase 13); chegad
 | Lacunas | L-03, L-04 |
 | Esforço / prioridade | M / Alta |
 | Depende de | Fase 9 |
-| Requisitos | RFC-07 a RFC-11 |
+| Status | ✅ Concluída em 20/10/2026 (QSimulador 1.7) |
+| Requisitos | RFC-07 a RFC-11 (oficiais: RF-51 a RF-55; mais RF-56, experimentos do M/G/1) |
 | História | USC-10: como analista de capacidade, quero calcular bloqueio e o número de recursos para uma meta de bloqueio, para dimensionar ramais, leitos ou licenças |
 
 ### Objetivo
@@ -182,9 +184,19 @@ Expor o sistema de perda pura como modelo de primeira classe e estender o servi�
 
 **Interface**: modelos "Erlang-B (perda)" e "M/G/c" no seletor; campo "bloqueio alvo" que sugere c; selo "aproximação" no M/G/c com o erro medido.
 
+### Registro da execução
+
+- **Rotas:** convenção do repositório, `POST /api/models/erlangb/calculate`, `/simulate`, `/compare` e `/size`, e `POST /api/models/mgc/calculate`, `/simulate` e `/compare` (e não `/analytic`). Nenhuma rota anterior mudou.
+- **Identificadores oficiais:** RFC-07 a RFC-11 viraram RF-51 a RF-55 (requisitos-do-sistema.md, seção 4.12); USC-10 virou US-30 e o caso de uso é o UC-12.
+- **Erlang-B:** módulo próprio (recursão estável), conferido contra o M/M/c/K com K = c, que também é o motor da simulação. O bloqueio é insensível à distribuição do serviço. A comparação omite P₀ quando ele é menor que 1e-4, porque "sistema vazio" é raro demais para a simulação observar (com 20 Erlangs e 15 servidores, P₀ ≈ 1e-8); o valor analítico continua no `/calculate`.
+- **M/G/c:** Allen–Cunneen, sem P₀ nem P(n); entram ρ, L, Lq, W, Wq, vazão e P(esperar) (Erlang C). A resposta traz `exact` (verdadeiro com c = 1 ou CV = 1, em que a fórmula é a de Pollaczek-Khinchine ou a do M/M/c) e `warnings` (ρ > 0,9 ou CV > 2, limiares propostos). Com λ = 80, c = 10, E[S] = 0,1 e CV = 1,5, a aproximação ficou cerca de 15% acima da simulação em Lq; com serviço determinístico, cerca de 6% abaixo.
+- **Interface:** modelos "Erlang-B (perda)" e "M/G/c" no seletor, campo "Bloqueio alvo" que sugere c e aplica ao formulário, nota de aproximação (exata ou aproximada, com os avisos) no M/G/c. Experimentos continuam só para os markovianos e o M/G/1.
+- **Experimentos do M/G/1 (acréscimo pedido na aprovação do plano):** varredura de λ, μ (muda a escala do serviço e preserva o CV) e da variabilidade (CV na lognormal e na Weibull, k no Erlang), sensibilidade a esses parâmetros, e a nova aba "Comparar distribuições" (`POST /api/experiments/services`), com a mesma média e curvas de determinística, Erlang-4, exponencial e lognormais (CV 1,5 e 2).
+- **Validação:** os 15 valores da seção 2 de [valores-de-referencia.md](valores-de-referencia.md), o exemplo M/M/15/15 (bloqueio de 33%), as propriedades (monotonicidade, M/M/c/K com K = c, CV = 1 e c = 1 do M/G/c) e a simulação contra o analítico.
+
 ### Fora de escopo
 
-Dimensionamento com custo e SLA (Fase 11); Engset (já coberto por M/M/c//N).
+Dimensionamento com custo e SLA (Fase 11); Engset (já coberto por M/M/c//N); experimentos do Erlang-B e do M/G/c.
 
 ### Testes
 
@@ -616,6 +628,40 @@ Manutenção preventiva programada; abandono com distribuição de paciência ge
 
 ---
 
+## Fase 21: Testes de hipótese e validação estatística
+
+| Item | Valor |
+|---|---|
+| Lacunas | L-18 (nova): a comparação entre medido e modelo usa erro relativo e IC, sem teste de hipótese formal |
+| Esforço / prioridade | M / Média |
+| Depende de | Fase 7 (JMeter), Fase 12 (cenários) e Fase 13 (ajuste de distribuição) |
+| Requisitos | a definir no planejamento da fase |
+| História | como analista, quero que a comparação entre o JMeter e o modelo seja apresentada como teste de hipótese, com hipóteses explícitas e IC da diferença, para saber se o modelo representa o sistema medido sem confundir significância com qualidade |
+
+### Objetivo
+
+Apresentar a validação do modelo como inferência estatística correta, e não só como erro percentual. O pedido nasceu na aprovação da Fase 10: a comparação da importação do JMeter já mede o erro e confere se o medido cai no IC da simulação; esta fase a reformula como teste.
+
+### Onde os testes entram
+
+1. **Premissas do modelo nos dados do JMeter:** chegadas de Poisson, serviço exponencial, estabilidade na janela. Compartilha o ajuste de distribuição da Fase 13 (p-valor por Monte Carlo ou Lilliefors; o KS simples não vale quando os parâmetros são estimados da própria amostra).
+2. **Medido × modelo ou simulação:** H₀: o modelo prevê a média medida. O teste compara a **diferença** (medido por lotes menos simulado por réplicas) com o IC dessa diferença, com incerteza dos dois lados.
+3. **Comparar cenários ou servidores:** IC da diferença, com a mesma semente dos dois lados (Fase 12).
+4. **Validar o simulador contra o analítico:** já feito com IC e cobertura calibrada pela variação entre sementes.
+
+### Cuidados de método
+
+- **Autocorrelação:** tempos de resposta em fila não são independentes; um t ou KS ingênuo dá p-valores pequenos demais. Usar médias por lotes ou janelas.
+- **p-valor não mede qualidade:** com milhões de linhas, qualquer diferença minúscula é "significativa", e não rejeitar não prova que o modelo está certo. Apresentar as hipóteses, o IC da diferença e uma **margem de equivalência** configurável (por exemplo, 10%), no estilo do teste de equivalência TOST.
+- **Várias métricas:** correção de comparações múltiplas (Holm).
+- **Limite que nenhum teste resolve:** o JMeter é um sistema fechado; o aviso existente continua valendo.
+
+### Fora de escopo
+
+Testes não paramétricos de séries longas e modelos de regressão além da tendência já existente.
+
+---
+
 ## 4. Rastreabilidade
 
 | Lacuna | Descrição curta | Fase | Requisitos provisórios |
@@ -637,6 +683,7 @@ Manutenção preventiva programada; abandono com distribuição de paciência ge
 | L-15 | PDF | 17 | RFC-41 |
 | L-16 | Animação | 17 | RFC-42, RFC-43 |
 | L-17 | Redes, turnos, falhas e abandono | 19 e 20 | RFC-49 a RFC-56 |
+| L-18 | Testes de hipótese e validação estatística | 21 | a definir |
 | — | Pendências do projeto | 18 | RFC-44 a RFC-48 |
 
 ## 5. Lista de requisitos funcionais provisórios

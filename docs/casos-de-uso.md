@@ -47,6 +47,7 @@ flowchart LR
         UC09[UC-09 Salvar e consultar resultados]
         UC10[UC-10 Verificar estabilidade do sistema]
         UC11[UC-11 Modelar serviço geral M/G/1]
+        UC12[UC-12 Dimensionar perda e M/G/c]
     end
 
     U --> UC01
@@ -86,6 +87,7 @@ flowchart LR
 | UC-09 | Salvar e consultar modelos e resultados | Usuário | ✅ |
 | UC-10 | Verificar estabilidade do sistema | Sistema (incluído) | ✅ |
 | UC-11 | Modelar serviço geral (M/G/1 e M/D/1) | Usuário, Cliente de API | ✅ |
+| UC-12 | Dimensionar sistema de perda (Erlang-B) e modelar M/G/c | Usuário, Cliente de API | ✅ |
 
 > **Conferência de 08/10/2026:** os casos de uso implementados (UC-01 a UC-06 e UC-10) foram verificados executando o sistema. As divergências encontradas na auditoria em UC-02 (P0 não retornado), UC-03 (a simulação aceitava 1 réplica) e UC-04 (P0 simulado) foram fechadas. Os detalhes estão na seção 11 de [`requisitos-do-sistema.md`](requisitos-do-sistema.md).
 
@@ -333,6 +335,30 @@ flowchart LR
 - **Distribuição determinística:** o modelo é o M/D/1 e aparece com esse nome.
 - **ρ ≥ 1 ou parâmetro inválido** (k não inteiro, mín > moda, valor não positivo): o sistema rejeita com mensagem que identifica o campo.
 
+### UC-12 — Dimensionar sistema de perda (Erlang-B) e modelar M/G/c ✅
+
+| Campo | Descrição |
+|-------|-----------|
+| **Ator principal** | Usuário, Cliente de API |
+| **Objetivo** | Calcular o bloqueio de um sistema sem fila (ramais, leitos, vagas), achar o número de recursos para uma meta de bloqueio, ou analisar uma fila de vários servidores com serviço geral. |
+| **Pré-condições** | λ, μ (ou a distribuição de serviço) e c válidos; no M/G/c, ρ = λ·E[S]/c < 1. |
+| **Pós-condições** | Erlang-B: bloqueio, tráfego oferecido e carregado, utilização e vazão. M/G/c: métricas aproximadas, marca de aproximação e avisos de faixa. Simulação e comparação com IC nos dois modelos. |
+
+**Fluxo principal (Erlang-B)**
+1. O usuário escolhe o modelo Erlang-B (perda) e informa λ, μ e o número de servidores c.
+2. Opcionalmente informa o bloqueio alvo e pede a sugestão de c; o sistema devolve o menor c que atende e o usuário pode aplicá-lo ao formulário.
+3. O sistema calcula o bloqueio e as demais métricas, simula (motor M/M/c/K com K = c) e compara com o analítico.
+
+**Fluxo principal (M/G/c)**
+1. O usuário escolhe o modelo M/G/c, informa λ, c e a distribuição do serviço.
+2. O sistema verifica ρ < 1, calcula pela aproximação de Allen–Cunneen e marca o resultado como aproximado, com avisos se ρ > 0,9 ou CV > 2.
+3. Ao comparar, o sistema simula o M/G/c e mostra o erro da aproximação contra a simulação.
+
+**Fluxos alternativos**
+- **c = 1 ou serviço exponencial:** a fórmula coincide com o resultado exato (Pollaczek-Khinchine ou Erlang C) e a tela diz que é exata.
+- **ρ ≥ 1 (M/G/c):** o sistema rejeita com erro identificando λ. O Erlang-B não tem condição de estabilidade.
+- **Bloqueio alvo inatingível** (nem 1.000 servidores bastam) ou fora de (0, 1): erro identificando `target_blocking`.
+
 ---
 
 ## 5. Rastreabilidade
@@ -348,6 +374,7 @@ flowchart LR
 | UC-08 | Fase 7 — JMeter | Importador de CSV |
 | UC-09 | Fase 8 — Persistência e deploy | PostgreSQL, Docker |
 | UC-11 | Fase 9 — Serviço geral | Módulo de distribuições de serviço, M/G/1 analítico e simulado |
+| UC-12 | Fase 10 — Erlang-B e M/G/c | Erlang-B (recursão estável), dimensionamento, Allen–Cunneen, simulação reaproveitando o motor do M/M/c/K |
 
 ---
 

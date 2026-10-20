@@ -54,7 +54,7 @@ Quando o ambiente virtual está ativo, o prompt começa com `(.venv)`. **Todos o
 python -m pytest
 ```
 
-Todos os testes devem passar (935 no backend na Fase 9; os que dependem de um PostgreSQL real são ignorados quando `QSIMULADOR_TEST_POSTGRES_URL` não está definida). Um aviso de depreciação do Starlette sobre o `httpx` pode aparecer e é inofensivo.
+Todos os testes devem passar (1.108 no backend na Fase 10; os que dependem de um PostgreSQL real são ignorados quando `QSIMULADOR_TEST_POSTGRES_URL` não está definida). Um aviso de depreciação do Starlette sobre o `httpx` pode aparecer e é inofensivo.
 
 ---
 
@@ -172,9 +172,12 @@ Abra **http://127.0.0.1:8000/docs** no navegador. A página lista os endpoints, 
 | `POST /api/models/mmc/calculate` · `/simulate` · `/compare` | M/M/c (fila ilimitada). Entrada extra: `servers` |
 | `POST /api/models/mm1k/calculate` · `/simulate` · `/compare` | M/M/1/K. Entrada extra: `capacity` |
 | `POST /api/models/mmck/calculate` · `/simulate` · `/compare` | M/M/c/K. Entradas extras: `servers` e `capacity` |
+| `POST /api/models/erlangb/calculate` · `/simulate` · `/compare` · `/size` | Erlang-B (sistema de perda M/M/c/c) e dimensionamento por bloqueio alvo ([detalhes](#erlang-b-e-mgc-fase-10)) |
+| `POST /api/models/mgc/calculate` · `/simulate` · `/compare` | M/G/c por Allen–Cunneen (aproximação), com `exact` e `warnings` ([detalhes](#erlang-b-e-mgc-fase-10)) |
+| `POST /api/experiments/services` | M/G/1: compara distribuições de serviço variando λ ([detalhes](#experimentos-fase-6)) |
 | `POST /api/models/mg1/calculate` · `/simulate` · `/compare` | M/G/1 e M/D/1 (serviço geral). Entradas: `lambda`, `distribution` e os parâmetros dela, no lugar de `mu` ([detalhes](#serviço-geral-mg1-e-md1-fase-9)) |
 | `GET /api/distributions` | Lista as oito distribuições de serviço e seus parâmetros |
-| `POST /api/experiments/sweep` | Varredura de λ, μ, c ou K ([detalhes](#experimentos-fase-6)) |
+| `POST /api/experiments/sweep` | Varredura de λ, μ, c ou K; no M/G/1, também do CV ou k do serviço ([detalhes](#experimentos-fase-6)) |
 | `POST /api/experiments/servers` | Comparação de números de servidores |
 | `POST /api/experiments/sensitivity` | Análise de sensibilidade |
 | `GET/POST /api/records` · `GET/PATCH/DELETE /api/records/{id}` | Histórico de resultados com PostgreSQL ([detalhes](#histórico-com-postgresql-fase-8)) |
@@ -305,9 +308,42 @@ curl -s -X POST http://127.0.0.1:8000/api/models/mg1/calculate \
 
 A resposta traz o nome do modelo (`M/G/1`, ou `M/D/1` com serviço determinístico), `service` (média, desvio padrão, CV, μ e parâmetros efetivos) e as métricas. Em `/simulate` e `/compare` são sete métricas (ρ, L, Lq, W, Wq, P0 e vazão). Os erros identificam o campo (`k`, `cv`, `mode`, `lambda` etc.).
 
+### Erlang-B e M/G/c (Fase 10)
+
+**Erlang-B** é o sistema de perda M/M/c/c: sem fila, quem chega com os c servidores ocupados é recusado. As rotas `/api/models/erlangb/calculate`, `/simulate` e `/compare` recebem `lambda`, `mu` e `servers` (a capacidade é igual a c). Não há condição de estabilidade. A resposta traz o bloqueio (`p_block`), `offered_load` (a = λ/μ, em Erlangs), `carried_load`, `lost_rate`, a utilização por servidor (`rho`), a vazão e as demais métricas do M/M/c/K com K = c. A simulação usa o motor do M/M/c/K; na comparação, P0 é omitido quando é menor que 1e-4, porque a simulação não consegue observar um sistema vazio tão raro.
+
+`POST /api/models/erlangb/size` devolve o menor número de servidores que mantém o bloqueio em no máximo `target_blocking` (uma probabilidade entre 0 e 1), com o bloqueio obtido (`blocking`) e o do número anterior (`blocking_previous`).
+
+**M/G/c** combina c servidores com serviço geral (`/api/models/mgc/calculate`, `/simulate` e `/compare`; entradas: `lambda`, `servers`, `distribution` e os parâmetros dela, como no M/G/1). O cálculo é a aproximação de Allen–Cunneen, Lq ≈ Lq(M/M/c)·(1 + CV²)/2. A resposta traz `exact` (verdadeiro com c = 1 ou CV = 1) e `warnings` (ρ > 0,9 ou CV > 2). O M/G/c não define P0 nem P(n): as métricas são ρ, L, Lq, W, Wq, vazão e P(esperar).
+
+```powershell
+# Erlang-B: 20 Erlangs em 15 servidores (bloqueio de 33%)
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/models/erlangb/calculate `
+  -ContentType "application/json" -Body '{"lambda": 20, "mu": 1, "servers": 15}'
+
+# Quantos servidores para no máximo 1% de bloqueio?
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/models/erlangb/size `
+  -ContentType "application/json" -Body '{"lambda": 20, "mu": 1, "target_blocking": 0.01}'
+
+# M/G/c: 10 servidores, serviço lognormal com CV = 1,5
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/models/mgc/calculate `
+  -ContentType "application/json" `
+  -Body '{"lambda": 80, "servers": 10, "distribution": "lognormal", "mean": 0.1, "cv": 1.5}'
+```
+
+No site, escolha **Erlang-B (perda)** ou **M/G/c** no seletor de modelo. No Erlang-B, o campo **Bloqueio alvo (%)** com o botão **Sugerir c** calcula o menor c e o botão **Usar c** o aplica ao formulário. No M/G/c, uma nota diz se a aproximação é exata neste caso ou aproximada e mostra os avisos de faixa; use **Comparar** para ver o erro da aproximação contra a simulação.
+
 ### Experimentos (Fase 6)
 
 Os experimentos respondem às perguntas do tipo "e se...". O corpo usa as mesmas chaves de modelo das rotas (`mm1`, `mmc`, `mm1k`, `mmck`) e os mesmos nomes de campo (`lambda`, `mu`, `servers`, `capacity`).
+
+**M/G/1 nos experimentos:** use `model: "mg1"` e o objeto `service` (`distribution` e os parâmetros, como em `/api/models/mg1`) no lugar de `mu`. Na varredura, `variable` pode ser `lambda`, `mu` (muda a escala do serviço e preserva o CV), `cv` (lognormal e Weibull) ou `k` (Erlang), mantendo a média E[S]; para as demais distribuições, só `lambda` e `mu`. A sensibilidade perturba λ, μ e o CV (o k do Erlang varia ±1). `POST /api/experiments/services` compara de 2 a 8 distribuições (`services`, uma lista de objetos como o `service`) variando λ de `start` a `end`:
+
+```powershell
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/experiments/sweep `
+  -ContentType "application/json" `
+  -Body '{"model": "mg1", "variable": "cv", "start": 0.25, "end": 3, "step": 0.25, "lambda": 25, "service": {"distribution": "lognormal", "mean": 0.02, "cv": 1}}'
+```
 
 **Varredura** (`/api/experiments/sweep`): varia um parâmetro (`variable`) de `start` a `end`, com `step`; os demais são os valores fixos do modelo (o parâmetro varrido, se enviado, é ignorado). `servers` e `capacity` exigem faixa inteira. A faixa tem no máximo 200 pontos.
 
@@ -338,7 +374,7 @@ Qualquer requisição inválida (nos endpoints de modelo e de experimentos) devo
 
 | `code` | Quando acontece | O que fazer |
 | --- | --- | --- |
-| `unstable_system` | λ ≥ μ (M/M/1), λ ≥ c·μ (M/M/c) ou λ·E[S] ≥ 1 (M/G/1). Não se aplica à capacidade finita | Use λ < μ, ou λ < c·μ; ou limite a capacidade (K); no M/G/1, reduza λ ou o tempo médio de serviço |
+| `unstable_system` | λ ≥ μ (M/M/1), λ ≥ c·μ (M/M/c) ou λ·E[S] ≥ 1 (M/G/1) ou λ·E[S] ≥ c (M/G/c). Não se aplica à capacidade finita nem ao Erlang-B | Use λ < μ, ou λ < c·μ; ou limite a capacidade (K); no M/G/1, reduza λ ou o tempo médio de serviço |
 | `invalid_parameter` | Valor fora da regra: zero ou negativo, `capacity` menor que `servers`, `replications` fora de 2 a 100, warm-up ≥ tempo simulado, semente fora do limite, simulação grande demais (veja [Desempenho](#7-desempenho)) | Corrija o valor indicado em `message` |
 | `invalid_request` | Campo ausente ou do tipo errado (por exemplo, texto onde se espera número). Traz a lista `fields` | Corrija os campos listados |
 | `insufficient_sample` | Tempo simulado tão curto que nenhum cliente foi medido | Aumente `simulation_time` |
@@ -520,12 +556,12 @@ VITE_DEV_API=http://127.0.0.1:8001 npm run dev              # bash
 
 ### Como usar
 
-1. **Escolha o modelo.** Os campos de servidores (c) e de capacidade (K) só aparecem nos modelos que os usam. No **M/G/1**, μ, c e K dão lugar ao seletor **Distribuição do serviço** e aos campos da distribuição; um resumo mostra E[S], desvio padrão, CV, μ e ρ antes de executar, e a tela avisa que o modelo deixa de ser markoviano (a aba Experimentos ainda não cobre o M/G/1). Cada modelo guarda os valores digitados, então trocar de modelo não apaga o que você fez.
+1. **Escolha o modelo.** Os campos de servidores (c) e de capacidade (K) só aparecem nos modelos que os usam. No **M/G/1**, μ, c e K dão lugar ao seletor **Distribuição do serviço** e aos campos da distribuição; um resumo mostra E[S], desvio padrão, CV, μ e ρ antes de executar, e a tela avisa que o modelo deixa de ser markoviano (a aba Experimentos cobre o M/G/1, mas ainda não o Erlang-B nem o M/G/c). Cada modelo guarda os valores digitados, então trocar de modelo não apaga o que você fez.
 2. **Ajuste os parâmetros** do sistema e da simulação. Abaixo deles, a tela estima o custo (chegadas e segundos aproximados). O campo **Réplicas** aceita de 2 a 100 (com menos de 2 não há intervalo de confiança), e a semente em branco significa aleatória.
 3. **Clique em Comparar.** Aparecem o veredito (se o valor analítico está dentro do intervalo de confiança de cada métrica), quatro números de destaque, o gráfico de diferenças e a tabela completa. **Só calcular** mostra apenas o analítico, e **Só simular** apenas a simulação.
 4. **Explore as abas.** Gráficos mostra o valor de cada réplica, a média simulada e o analítico, e permite escolher a métrica. Réplicas traz a tabela por réplica. Detalhes mostra os parâmetros, a semente (com botão de copiar) e a resposta completa da API. Como o Comparar não devolve as réplicas individuais, as abas Gráficos e Réplicas têm o botão **Carregar réplicas**, que repete a simulação com a mesma semente e reproduz exatamente os mesmos números.
 5. **Cancele** uma execução demorada com o botão que substitui o Comparar enquanto ela roda.
-6. **Experimente a aba Experimentos.** Ela parte do modelo e dos valores do Laboratório e tem três modos: **Varredura de parâmetro** (curva e tabela de todas as métricas, com faixa sugerida, simulação opcional por ponto, trecho instável sombreado e alta utilização marcada), **Comparar servidores** (uma curva por número de servidores) e **Sensibilidade** (gráfico de barras e elasticidade por parâmetro). Os resultados de cada modo permanecem ao alternar entre abas.
+6. **Experimente a aba Experimentos.** Ela parte do modelo e dos valores do Laboratório e tem três modos: **Varredura de parâmetro** (curva e tabela de todas as métricas, com faixa sugerida, simulação opcional por ponto, trecho instável sombreado e alta utilização marcada), **Comparar servidores** (uma curva por número de servidores) e **Sensibilidade** (gráfico de barras e elasticidade por parâmetro). No M/G/1, o segundo modo vira **Comparar distribuições** (uma curva por distribuição, todas com a mesma média) e a varredura inclui o CV ou k do serviço. Os resultados de cada modo permanecem ao alternar entre abas.
 
 Como ler o gráfico de diferenças: cada linha é uma métrica, mostrada como a diferença percentual da média simulada em relação ao analítico, com a barra do intervalo de confiança. Se a barra **cruza o zero**, o valor analítico está dentro do intervalo. Métricas com valor analítico igual a 0 (como a probabilidade de recusa no M/M/c) não têm diferença relativa e aparecem em uma nota abaixo do gráfico.
 
@@ -628,7 +664,7 @@ O histórico guarda resultados para reabri-los depois. É **opcional** (RNF-18):
 | Tela | Tipo do registro | Ao reabrir |
 | --- | --- | --- |
 | Laboratório (Calcular, Simular, Comparar) | `model`, `simulation` ou `comparison` | **Reabrir no Laboratório** devolve o modelo, os parâmetros e o resultado, sem recalcular |
-| Experimentos (varredura, servidores, sensibilidade) | `experiment` | O resultado aparece na própria aba Histórico |
+| Experimentos (varredura, servidores ou distribuições, sensibilidade) | `experiment` | O resultado aparece na própria aba Histórico |
 | Dados reais, análise do JTL do JMeter | `realdata` | O resultado aparece na própria aba Histórico |
 
 A importação de níveis de carga (CSV agregado) ainda não é salva. Os dados ficam em JSONB, como a API os devolveu; ao reabrir, os valores voltam iguais (a ordem das chaves do objeto pode mudar, o que não altera o significado).

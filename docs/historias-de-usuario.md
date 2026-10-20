@@ -41,6 +41,7 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 | E8 — Persistência e implantação | US-23 a US-25 | Fase 8 |
 | E9 — API e qualidade | US-26 a US-28 | Transversal |
 | E10 — Serviço geral | US-29 | Fase 9 |
+| E11 — Perda e vários servidores | US-30, US-31 | Fase 10 |
 
 ---
 
@@ -269,6 +270,26 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 - **Dado** ρ ≥ 1 ou um parâmetro inválido, **quando** solicito a análise, **então** o erro identifica o campo.
 - **Dado** a mesma semente, **quando** repito a simulação, **então** o resultado é idêntico.
 
+### E11 — Perda e vários servidores
+
+#### US-30 — Dimensionar ramais, leitos ou licenças por bloqueio alvo ✅ · M · UC-12
+> Como **analista de capacidade**, quero calcular o bloqueio e o número de recursos para uma meta de bloqueio, para dimensionar ramais, leitos ou licenças.
+
+**Critérios de aceitação**
+- **Dado** λ, μ e c, **quando** calculo o Erlang-B, **então** vejo o bloqueio, o tráfego oferecido e carregado e a utilização; com 20 Erlangs e 15 servidores o bloqueio é 33%.
+- **Dado** um bloqueio alvo, **quando** peço a sugestão, **então** recebo o menor c que atende e posso aplicá-lo ao formulário.
+- **Dado** um M/G/c, **quando** a tela é exibida, **então** o resultado está marcado como aproximação (ou como exato, se c = 1 ou o serviço é exponencial) e há aviso se ρ > 0,9 ou CV > 2.
+- **Dado** o M/G/c, **quando** comparo com a simulação, **então** vejo o erro da aproximação.
+
+#### US-31 — Explorar o efeito da variabilidade do serviço nos experimentos ✅ · M · UC-07, UC-11
+> Como **estudante**, quero variar o CV do serviço e comparar distribuições com a mesma média nos experimentos do M/G/1, para ver quanto a variabilidade piora a fila.
+
+**Critérios de aceitação**
+- **Dado** o M/G/1 no Laboratório, **quando** abro Experimentos, **então** o experimento usa o M/G/1 (e não o último modelo markoviano).
+- **Dado** serviço lognormal, Weibull ou Erlang, **quando** varro o CV (ou k), **então** a espera cresce com o CV e a utilização não muda.
+- **Dado** duas ou mais distribuições com a mesma média, **quando** comparo, **então** vejo uma curva por distribuição e onde cada uma satura.
+- **Dado** a análise de sensibilidade, **quando** o serviço tem parâmetro de forma, **então** o CV (ou k) aparece entre os parâmetros.
+
 ---
 
 ## 4. Rastreabilidade com os casos de uso
@@ -281,11 +302,12 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 | UC-04 — Comparar analítico × simulação | US-09, US-10, US-11 |
 | UC-05 — Visualizar gráficos | US-12, US-13, US-14, US-15 |
 | UC-06 — M/M/c e capacidade finita | US-16, US-17, US-18 |
-| UC-07 — Experimentos | US-19, US-20 |
+| UC-07 — Experimentos | US-19, US-20, US-31 |
 | UC-08 — JMeter | US-21, US-22 |
 | UC-09 — Persistência | US-23, US-24 |
 | UC-10 — Estabilidade | US-03 |
-| UC-11 — Serviço geral (M/G/1) | US-29 |
+| UC-11 — Serviço geral (M/G/1) | US-29, US-31 |
+| UC-12 — Erlang-B e M/G/c | US-30 |
 | Transversais (API, qualidade, Docker) | US-25, US-26, US-27, US-28 |
 
 ---
