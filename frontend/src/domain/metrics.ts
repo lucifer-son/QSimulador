@@ -3,6 +3,8 @@ import type { MetricName } from "./types";
 // A ordem segue a especificação: ρ, L, Lq, W, Wq, P0; depois vazão e as probabilidades de espera e recusa.
 export const MM1_METRICS: MetricName[] = ["rho", "L", "Lq", "W", "Wq", "p0", "throughput"];
 export const QUEUE_METRICS: MetricName[] = [...MM1_METRICS, "p_wait", "p_block"];
+/** M/G/c (Allen–Cunneen): a aproximação não define P0 nem P(n). */
+export const MGC_METRICS: MetricName[] = ["rho", "L", "Lq", "W", "Wq", "throughput", "p_wait"];
 
 export interface MetricInfo {
   label: string;

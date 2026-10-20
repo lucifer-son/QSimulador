@@ -1,5 +1,6 @@
 import { IconClock, IconPlayerPlay, IconPlayerStop } from "@tabler/icons-react";
-import { LAB_MODEL_ORDER, MODELS } from "../domain/models";
+import { LAB_MODEL_ORDER, MODELS, usesService } from "../domain/models";
+import { ErlangSizing } from "./ErlangSizing";
 import { DISTRIBUTIONS, distributionInfo, serviceSummary } from "../domain/service";
 import type { Action, FieldErrors, FieldKey, FormValues, ModelKey } from "../domain/types";
 
@@ -35,8 +36,8 @@ function Field({ field, label, value, error, hint, onChange }: FieldProps) {
   );
 }
 
-function ServiceFields({ values, errors, onChange }: {
-  values: FormValues; errors: FieldErrors; onChange: (field: FieldKey, value: string) => void;
+function ServiceFields({ model, values, errors, onChange }: {
+  model: ModelKey; values: FormValues; errors: FieldErrors; onChange: (field: FieldKey, value: string) => void;
 }) {
   const info = distributionInfo(values.distribution);
   const summary = serviceSummary(values);
@@ -61,7 +62,12 @@ function ServiceFields({ values, errors, onChange }: {
         ))}
       </div>
       {summary && <p className="service-summary" aria-label="Resumo do serviço">{summary}</p>}
-      {info.key !== "exponential" && (
+      {model === "mgc" ? (
+        <p className="field-hint" role="note">
+          Com vários servidores não há fórmula exata: o cálculo usa a aproximação de Allen–Cunneen, que escala
+          a fila do M/M/c por (1 + CV²)/2. É exata com c = 1 ou serviço exponencial; a simulação mostra o erro nos demais casos.
+        </p>
+      ) : info.key !== "exponential" && (
         <p className="field-hint" role="note">
           Serviço não exponencial: o modelo deixa de ser markoviano. As médias seguem a fórmula de
           Pollaczek-Khinchine, que usa só a média e a variância do serviço.
@@ -113,12 +119,15 @@ export function ParametersPanel({
       </div>
 
       <h2 className="group-title">Sistema</h2>
-      {model === "mg1" ? (
+      {usesService(model) ? (
         <div className="stack">
           <div className="grid2">
             <Field {...common} field="lambda" label="Chegadas λ (req/s)" value={values.lambda} error={errors.lambda} />
+            {info.usesServers && (
+              <Field {...common} field="servers" label="Servidores c" value={values.servers} error={errors.servers} />
+            )}
           </div>
-          <ServiceFields values={values} errors={errors} onChange={onChange} />
+          <ServiceFields model={model} values={values} errors={errors} onChange={onChange} />
         </div>
       ) : (
         <div className="grid2">
@@ -137,6 +146,19 @@ export function ParametersPanel({
             />
           )}
         </div>
+      )}
+
+      {model === "erlangb" && (
+        <ErlangSizing
+          lambda={values.lambda} mu={values.mu}
+          onApply={(servers) => onChange("servers", String(servers))}
+        />
+      )}
+      {model === "erlangb" && (
+        <p className="field-hint" role="note">
+          Sistema de perda: sem fila, quem chega com todos os servidores ocupados é recusado.
+          Tráfego oferecido a = λ/μ, em Erlangs.
+        </p>
       )}
 
       <h2 className="group-title">Simulação</h2>

@@ -2,8 +2,10 @@ import { IconAlertCircle, IconChartLine, IconPlayerPlay, IconPlayerStop } from "
 import { useEffect, useState, type ReactNode } from "react";
 import type { ApiError } from "../api/client";
 import { MODELS } from "../domain/models";
-import { VARIABLE_INFO, type SweepVariable, type SystemText } from "../domain/experiments";
-import type { MetricName, MarkovModelKey } from "../domain/types";
+import { toText, VARIABLE_INFO, type SweepVariable, type SystemText } from "../domain/experiments";
+import { distributionInfo } from "../domain/service";
+import type { ExperimentModelKey, MetricName } from "../domain/types";
+import { serviceMomentsOf } from "../domain/experiments";
 import type { ExperimentState } from "../hooks/useExperiment";
 import { metricTitle } from "./MetricsTable";
 import { ERROR_TITLES } from "./ResultsPanel";
@@ -11,12 +13,15 @@ import { ERROR_TITLES } from "./ResultsPanel";
 /** Parâmetros do Laboratório que o experimento mantém fixos (o que é varrido não aparece). */
 export function FixedParameters({
   model, system, skip, title = "Parâmetros fixos",
-}: { model: MarkovModelKey; system: SystemText; skip?: SweepVariable; title?: string }) {
+}: { model: ExperimentModelKey; system: SystemText; skip?: SweepVariable; title?: string }) {
   const info = MODELS[model];
-  const items: [string, string][] = [["λ", system.lambda], ["μ", system.mu]];
+  const items: [string, string][] = [["λ", system.lambda]];
+  if (model !== "mg1") items.push(["μ", system.mu]);
   if (info.usesServers) items.push(["c", system.servers]);
   if (info.usesCapacity) items.push(["K", system.capacity]);
   const symbol: Record<string, SweepVariable> = { "λ": "lambda", "μ": "mu", c: "servers", K: "capacity" };
+  const moments = model === "mg1" ? serviceMomentsOf(system) : null;
+  const serviceLabel = distributionInfo(system.distribution ?? "lognormal").label;
   return (
     <div className="fixed-params">
       <h2 className="group-title">{title}</h2>
@@ -25,6 +30,12 @@ export function FixedParameters({
         {items.filter(([s]) => symbol[s] !== skip).map(([s, v]) => (
           <li key={s}><span>{s}</span><strong>{v || "—"}</strong></li>
         ))}
+        {model === "mg1" && skip !== "mu" && skip !== "cv" && skip !== "k" && (
+          <li><span>Serviço</span><strong>{serviceLabel}{moments ? `, E[S] = ${toText(moments.mean)} s, CV = ${toText(moments.cv)}` : ""}</strong></li>
+        )}
+        {model === "mg1" && (skip === "mu" || skip === "cv" || skip === "k") && (
+          <li><span>Serviço</span><strong>{serviceLabel}{moments ? `, a partir de E[S] = ${toText(moments.mean)} s` : ""}</strong></li>
+        )}
       </ul>
     </div>
   );
@@ -96,7 +107,7 @@ export function ResultArea<T>({ state, idleTitle, idleText, loadingText, errorTi
 
 interface MetricSelectProps {
   id: string;
-  model: MarkovModelKey;
+  model: ExperimentModelKey;
   value: MetricName;
   available?: (name: MetricName) => boolean;
   onChange: (name: MetricName) => void;

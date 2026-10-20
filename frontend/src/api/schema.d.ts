@@ -327,6 +327,146 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/models/erlangb/calculate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Erlangb Calculate
+         * @description Métricas do sistema de perda: bloqueio de Erlang B, tráfego carregado e utilização.
+         */
+        post: operations["erlangb_calculate_api_models_erlangb_calculate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/models/erlangb/simulate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Erlangb Simulate
+         * @description Simulação do sistema de perda: o motor do M/M/c/K com capacidade K = c.
+         */
+        post: operations["erlangb_simulate_api_models_erlangb_simulate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/models/erlangb/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Erlangb Compare
+         * @description Compara o Erlang-B analítico com a simulação, métrica a métrica (erro e IC).
+         */
+        post: operations["erlangb_compare_api_models_erlangb_compare_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/models/erlangb/size": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Erlangb Size Route
+         * @description Menor número de servidores (linhas, canais) que mantém o bloqueio abaixo do alvo.
+         */
+        post: operations["erlangb_size_route_api_models_erlangb_size_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/models/mgc/calculate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mgc Calculate
+         * @description Aproximação de Allen–Cunneen. Exige ρ = λ·E[S]/c < 1.
+         */
+        post: operations["mgc_calculate_api_models_mgc_calculate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/models/mgc/simulate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mgc Simulate
+         * @description Simulação de eventos discretos com o serviço amostrado da distribuição escolhida.
+         */
+        post: operations["mgc_simulate_api_models_mgc_simulate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/models/mgc/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mgc Compare
+         * @description Compara a aproximação com a simulação: o erro mostra a precisão da aproximação.
+         */
+        post: operations["mgc_compare_api_models_mgc_compare_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/experiments/sweep": {
         parameters: {
             query?: never;
@@ -384,6 +524,26 @@ export interface paths {
          * @description Mede quanto cada métrica muda ao perturbar cada parâmetro em torno do ponto base.
          */
         post: operations["sensitivity_api_experiments_sensitivity_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/experiments/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compare Services
+         * @description Compara distribuições de serviço no M/G/1, variando λ na mesma faixa para todas.
+         */
+        post: operations["compare_services_api_experiments_services_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -975,6 +1135,183 @@ export interface components {
                 [key: string]: components["schemas"]["SummaryOut"];
             };
         };
+        /**
+         * ErlangBCalculateRequest
+         * @example {
+         *       "lambda": 20,
+         *       "mu": 1,
+         *       "servers": 15
+         *     }
+         */
+        ErlangBCalculateRequest: {
+            /**
+             * Lambda
+             * @description Taxa média de chegada (λ).
+             */
+            lambda: number;
+            /**
+             * Mu
+             * @description Taxa média de serviço (μ).
+             */
+            mu: number;
+            /**
+             * Servers
+             * @description Número de servidores (c).
+             */
+            servers: number;
+        };
+        /** ErlangBCalculateResponse */
+        ErlangBCalculateResponse: {
+            /** Model */
+            model: string;
+            /** Servers */
+            servers: number;
+            /** Capacity */
+            capacity: number | null;
+            /** Rho */
+            rho: number;
+            /** L */
+            L: number;
+            /** Lq */
+            Lq: number;
+            /** W */
+            W: number;
+            /** Wq */
+            Wq: number;
+            /** P0 */
+            p0: number;
+            /** Throughput */
+            throughput: number;
+            /** P Wait */
+            p_wait: number;
+            /** P Block */
+            p_block: number;
+            /**
+             * Offered Load
+             * @description Tráfego oferecido a = λ/μ, em Erlangs.
+             */
+            offered_load: number;
+            /**
+             * Carried Load
+             * @description Tráfego carregado a·(1 − B): servidores ocupados em média.
+             */
+            carried_load: number;
+            /**
+             * Lost Rate
+             * @description Chegadas perdidas por unidade de tempo, λ·B.
+             */
+            lost_rate: number;
+        };
+        /**
+         * ErlangBSimulateRequest
+         * @example {
+         *       "lambda": 20,
+         *       "mu": 1,
+         *       "replications": 10,
+         *       "seed": 2026,
+         *       "servers": 15,
+         *       "simulation_time": 2000,
+         *       "warmup_time": 100
+         *     }
+         */
+        ErlangBSimulateRequest: {
+            /**
+             * Lambda
+             * @description Taxa média de chegada (λ).
+             */
+            lambda: number;
+            /**
+             * Mu
+             * @description Taxa média de serviço (μ).
+             */
+            mu: number;
+            /**
+             * Simulation Time
+             * @description Tempo simulado por replicação.
+             */
+            simulation_time: number;
+            /**
+             * Replications
+             * @description Número de replicações.
+             * @default 10
+             */
+            replications: number;
+            /**
+             * Warmup Time
+             * @description Período inicial descartado (transitório).
+             * @default 0
+             */
+            warmup_time: number;
+            /**
+             * Seed
+             * @description Semente aleatória. Se omitida, uma é sorteada e devolvida.
+             */
+            seed?: number | null;
+            /**
+             * Confidence Level
+             * @description Nível do intervalo de confiança (0 a 1).
+             * @default 0.95
+             */
+            confidence_level: number;
+            /**
+             * Servers
+             * @description Número de servidores (c).
+             */
+            servers: number;
+        };
+        /**
+         * ErlangBSizeRequest
+         * @example {
+         *       "lambda": 20,
+         *       "mu": 1,
+         *       "target_blocking": 0.01
+         *     }
+         */
+        ErlangBSizeRequest: {
+            /**
+             * Lambda
+             * @description Taxa média de chegada (λ).
+             */
+            lambda: number;
+            /**
+             * Mu
+             * @description Taxa média de serviço de cada servidor (μ).
+             */
+            mu: number;
+            /**
+             * Target Blocking
+             * @description Bloqueio máximo aceitável, entre 0 e 1 (ex.: 0,01 = 1%).
+             */
+            target_blocking: number;
+        };
+        /** ErlangBSizeResponse */
+        ErlangBSizeResponse: {
+            /** Target Blocking */
+            target_blocking: number;
+            /**
+             * Servers
+             * @description Menor número de servidores com bloqueio ≤ alvo.
+             */
+            servers: number;
+            /**
+             * Blocking
+             * @description Bloqueio B(c, a) com esse número de servidores.
+             */
+            blocking: number;
+            /**
+             * Blocking Previous
+             * @description Bloqueio com um servidor a menos (nulo se c = 1).
+             */
+            blocking_previous: number | null;
+            /** Offered Load */
+            offered_load: number;
+            /** Carried Load */
+            carried_load: number;
+            /** Rho */
+            rho: number;
+            /** Lost Rate */
+            lost_rate: number;
+        };
         /** ErrorResponse */
         ErrorResponse: {
             /** Code */
@@ -1240,11 +1577,6 @@ export interface components {
          */
         MG1CalculateRequest: {
             /**
-             * Lambda
-             * @description Taxa média de chegada (λ).
-             */
-            lambda: number;
-            /**
              * Distribution
              * @description Distribuição do tempo de serviço (veja GET /api/distributions).
              * @enum {string}
@@ -1295,6 +1627,11 @@ export interface components {
              * @description Desvio padrão da normal original (normal truncada em 0). Ignorado pelas distribuições que não usam este parâmetro.
              */
             scale?: number | null;
+            /**
+             * Lambda
+             * @description Taxa média de chegada (λ).
+             */
+            lambda: number;
         };
         /** MG1CalculateResponse */
         MG1CalculateResponse: {
@@ -1355,10 +1692,131 @@ export interface components {
          */
         MG1SimulateRequest: {
             /**
+             * Distribution
+             * @description Distribuição do tempo de serviço (veja GET /api/distributions).
+             * @enum {string}
+             */
+            distribution: "deterministic" | "exponential" | "erlang" | "lognormal" | "weibull" | "uniform" | "triangular" | "truncated_normal";
+            /**
+             * Mean
+             * @description Tempo médio de serviço E[S] (exponencial, determinística, Erlang-k, lognormal, Weibull).
+             */
+            mean?: number | null;
+            /**
+             * Mu
+             * @description Alternativa à média: taxa de serviço μ = 1/E[S]. Informe mean ou mu, não os dois.
+             */
+            mu?: number | null;
+            /**
+             * K
+             * @description Etapas do Erlang-k (inteiro ≥ 1). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            k?: number | null;
+            /**
+             * Cv
+             * @description Coeficiente de variação (lognormal e Weibull). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            cv?: number | null;
+            /**
+             * Min
+             * @description Mínimo (uniforme e triangular). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            min?: number | null;
+            /**
+             * Mode
+             * @description Moda (triangular). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            mode?: number | null;
+            /**
+             * Max
+             * @description Máximo (uniforme e triangular). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            max?: number | null;
+            /**
+             * Loc
+             * @description Média da normal original (normal truncada em 0). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            loc?: number | null;
+            /**
+             * Scale
+             * @description Desvio padrão da normal original (normal truncada em 0). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            scale?: number | null;
+            /**
              * Lambda
              * @description Taxa média de chegada (λ).
              */
             lambda: number;
+            /**
+             * Simulation Time
+             * @description Tempo simulado por replicação.
+             */
+            simulation_time: number;
+            /**
+             * Replications
+             * @description Número de replicações.
+             * @default 10
+             */
+            replications: number;
+            /**
+             * Warmup Time
+             * @description Período inicial descartado (transitório).
+             * @default 0
+             */
+            warmup_time: number;
+            /**
+             * Seed
+             * @description Semente aleatória. Se omitida, uma é sorteada e devolvida.
+             */
+            seed?: number | null;
+            /**
+             * Confidence Level
+             * @description Nível do intervalo de confiança (0 a 1).
+             * @default 0.95
+             */
+            confidence_level: number;
+        };
+        /** MG1SimulationResponse */
+        MG1SimulationResponse: {
+            /** Model */
+            model: string;
+            /** Lambda */
+            lambda: number;
+            service: components["schemas"]["ServiceOut"];
+            /** Simulation Time */
+            simulation_time: number;
+            /** Warmup Time */
+            warmup_time: number;
+            /** Replications */
+            replications: number;
+            /** Seed */
+            seed: number;
+            /** Confidence Level */
+            confidence_level: number;
+            /** Runs */
+            runs: components["schemas"]["ReplicationOut"][];
+            /** Summary */
+            summary: {
+                [key: string]: components["schemas"]["MetricSummaryOut"];
+            };
+        };
+        /**
+         * MGCCalculateRequest
+         * @example {
+         *       "cv": 1.5,
+         *       "distribution": "lognormal",
+         *       "lambda": 80,
+         *       "mean": 0.1,
+         *       "servers": 10
+         *     }
+         * @example {
+         *       "distribution": "deterministic",
+         *       "lambda": 80,
+         *       "mean": 0.1,
+         *       "servers": 10
+         *     }
+         */
+        MGCCalculateRequest: {
             /**
              * Distribution
              * @description Distribuição do tempo de serviço (veja GET /api/distributions).
@@ -1411,6 +1869,160 @@ export interface components {
              */
             scale?: number | null;
             /**
+             * Lambda
+             * @description Taxa média de chegada (λ).
+             */
+            lambda: number;
+            /**
+             * Servers
+             * @description Número de servidores (c).
+             */
+            servers: number;
+        };
+        /** MGCCalculateResponse */
+        MGCCalculateResponse: {
+            /** Model */
+            model: string;
+            /** Servers */
+            servers: number;
+            service: components["schemas"]["ServiceOut"];
+            /**
+             * Exact
+             * @description Verdadeiro quando a aproximação coincide com o resultado exato (c = 1 ou CV = 1).
+             */
+            exact: boolean;
+            /**
+             * Warnings
+             * @description Avisos de faixa de validade da aproximação (vazio se está em faixa segura).
+             */
+            warnings: string[];
+            /** Rho */
+            rho: number;
+            /** L */
+            L: number;
+            /** Lq */
+            Lq: number;
+            /** W */
+            W: number;
+            /** Wq */
+            Wq: number;
+            /** Throughput */
+            throughput: number;
+            /**
+             * P Wait
+             * @description Probabilidade de esperar (Erlang C).
+             */
+            p_wait: number;
+        };
+        /** MGCComparisonResponse */
+        MGCComparisonResponse: {
+            /** Model */
+            model: string;
+            /** Lambda */
+            lambda: number;
+            /** Servers */
+            servers: number;
+            service: components["schemas"]["ServiceOut"];
+            /** Exact */
+            exact: boolean;
+            /** Warnings */
+            warnings: string[];
+            /** Simulation Time */
+            simulation_time: number;
+            /** Warmup Time */
+            warmup_time: number;
+            /** Replications */
+            replications: number;
+            /** Seed */
+            seed: number;
+            /** Confidence Level */
+            confidence_level: number;
+            /** Metrics */
+            metrics: {
+                [key: string]: components["schemas"]["app__api__schemas__MetricComparisonOut"];
+            };
+            /** All Within Ci */
+            all_within_ci: boolean | null;
+            /** Max Relative Error Pct */
+            max_relative_error_pct: number | null;
+        };
+        /**
+         * MGCSimulateRequest
+         * @example {
+         *       "cv": 1.5,
+         *       "distribution": "lognormal",
+         *       "lambda": 80,
+         *       "mean": 0.1,
+         *       "replications": 10,
+         *       "seed": 2026,
+         *       "servers": 10,
+         *       "simulation_time": 2000,
+         *       "warmup_time": 100
+         *     }
+         */
+        MGCSimulateRequest: {
+            /**
+             * Distribution
+             * @description Distribuição do tempo de serviço (veja GET /api/distributions).
+             * @enum {string}
+             */
+            distribution: "deterministic" | "exponential" | "erlang" | "lognormal" | "weibull" | "uniform" | "triangular" | "truncated_normal";
+            /**
+             * Mean
+             * @description Tempo médio de serviço E[S] (exponencial, determinística, Erlang-k, lognormal, Weibull).
+             */
+            mean?: number | null;
+            /**
+             * Mu
+             * @description Alternativa à média: taxa de serviço μ = 1/E[S]. Informe mean ou mu, não os dois.
+             */
+            mu?: number | null;
+            /**
+             * K
+             * @description Etapas do Erlang-k (inteiro ≥ 1). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            k?: number | null;
+            /**
+             * Cv
+             * @description Coeficiente de variação (lognormal e Weibull). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            cv?: number | null;
+            /**
+             * Min
+             * @description Mínimo (uniforme e triangular). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            min?: number | null;
+            /**
+             * Mode
+             * @description Moda (triangular). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            mode?: number | null;
+            /**
+             * Max
+             * @description Máximo (uniforme e triangular). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            max?: number | null;
+            /**
+             * Loc
+             * @description Média da normal original (normal truncada em 0). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            loc?: number | null;
+            /**
+             * Scale
+             * @description Desvio padrão da normal original (normal truncada em 0). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            scale?: number | null;
+            /**
+             * Lambda
+             * @description Taxa média de chegada (λ).
+             */
+            lambda: number;
+            /**
+             * Servers
+             * @description Número de servidores (c).
+             */
+            servers: number;
+            /**
              * Simulation Time
              * @description Tempo simulado por replicação.
              */
@@ -1439,12 +2051,14 @@ export interface components {
              */
             confidence_level: number;
         };
-        /** MG1SimulationResponse */
-        MG1SimulationResponse: {
+        /** MGCSimulationResponse */
+        MGCSimulationResponse: {
             /** Model */
             model: string;
             /** Lambda */
             lambda: number;
+            /** Servers */
+            servers: number;
             service: components["schemas"]["ServiceOut"];
             /** Simulation Time */
             simulation_time: number;
@@ -1457,7 +2071,7 @@ export interface components {
             /** Confidence Level */
             confidence_level: number;
             /** Runs */
-            runs: components["schemas"]["ReplicationOut"][];
+            runs: components["schemas"]["QueueReplicationOut"][];
             /** Summary */
             summary: {
                 [key: string]: components["schemas"]["MetricSummaryOut"];
@@ -1956,7 +2570,7 @@ export interface components {
              * Name
              * @enum {string}
              */
-            name: "lambda" | "mu" | "servers" | "capacity";
+            name: "lambda" | "mu" | "servers" | "capacity" | "cv" | "k";
             /** Base Value */
             base_value: number;
             /**
@@ -2318,14 +2932,24 @@ export interface components {
          *       "mu": 10,
          *       "servers": 3
          *     }
+         * @example {
+         *       "delta_pct": 10,
+         *       "lambda": 25,
+         *       "model": "mg1",
+         *       "service": {
+         *         "cv": 1.5,
+         *         "distribution": "lognormal",
+         *         "mean": 0.02
+         *       }
+         *     }
          */
         SensitivityRequest: {
             /**
              * Model
-             * @description Modelo: mm1, mmc, mm1k ou mmck (as mesmas chaves das rotas /api/models).
+             * @description Modelo: mm1, mmc, mm1k, mmck ou mg1 (as mesmas chaves das rotas /api/models).
              * @enum {string}
              */
-            model: "mm1" | "mmc" | "mm1k" | "mmck";
+            model: "mm1" | "mmc" | "mm1k" | "mmck" | "mg1";
             /**
              * Lambda
              * @description Taxa média de chegada (λ) do ponto base.
@@ -2333,9 +2957,11 @@ export interface components {
             lambda: number;
             /**
              * Mu
-             * @description Taxa média de serviço (μ) do ponto base.
+             * @description Taxa média de serviço (μ) do ponto base. Obrigatório nos modelos markovianos.
              */
-            mu: number;
+            mu?: number | null;
+            /** @description Serviço do ponto base. Obrigatório no M/G/1. */
+            service?: components["schemas"]["ServiceSpec"] | null;
             /**
              * Servers
              * @description Servidores (c). Obrigatório em mmc e mmck.
@@ -2369,6 +2995,8 @@ export interface components {
             };
             /** Parameters */
             parameters: components["schemas"]["ParameterSensitivityOut"][];
+            /** @description Só no M/G/1: o serviço do ponto base. */
+            service?: components["schemas"]["ServiceOut"] | null;
         };
         /** SensitivitySideOut */
         SensitivitySideOut: {
@@ -2488,6 +3116,121 @@ export interface components {
             parameters: {
                 [key: string]: number;
             };
+        };
+        /** ServiceSeriesOut */
+        ServiceSeriesOut: {
+            service: components["schemas"]["ServiceOut"];
+            /** Points */
+            points: components["schemas"]["SweepPointOut"][];
+        };
+        /**
+         * ServiceSpec
+         * @description Distribuição do tempo de serviço e seus parâmetros (usada pelo M/G/1 e pelos experimentos).
+         */
+        ServiceSpec: {
+            /**
+             * Distribution
+             * @description Distribuição do tempo de serviço (veja GET /api/distributions).
+             * @enum {string}
+             */
+            distribution: "deterministic" | "exponential" | "erlang" | "lognormal" | "weibull" | "uniform" | "triangular" | "truncated_normal";
+            /**
+             * Mean
+             * @description Tempo médio de serviço E[S] (exponencial, determinística, Erlang-k, lognormal, Weibull).
+             */
+            mean?: number | null;
+            /**
+             * Mu
+             * @description Alternativa à média: taxa de serviço μ = 1/E[S]. Informe mean ou mu, não os dois.
+             */
+            mu?: number | null;
+            /**
+             * K
+             * @description Etapas do Erlang-k (inteiro ≥ 1). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            k?: number | null;
+            /**
+             * Cv
+             * @description Coeficiente de variação (lognormal e Weibull). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            cv?: number | null;
+            /**
+             * Min
+             * @description Mínimo (uniforme e triangular). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            min?: number | null;
+            /**
+             * Mode
+             * @description Moda (triangular). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            mode?: number | null;
+            /**
+             * Max
+             * @description Máximo (uniforme e triangular). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            max?: number | null;
+            /**
+             * Loc
+             * @description Média da normal original (normal truncada em 0). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            loc?: number | null;
+            /**
+             * Scale
+             * @description Desvio padrão da normal original (normal truncada em 0). Ignorado pelas distribuições que não usam este parâmetro.
+             */
+            scale?: number | null;
+        };
+        /**
+         * ServicesComparisonRequest
+         * @example {
+         *       "end": 45,
+         *       "services": [
+         *         {
+         *           "distribution": "deterministic",
+         *           "mean": 0.02
+         *         },
+         *         {
+         *           "distribution": "exponential",
+         *           "mean": 0.02
+         *         },
+         *         {
+         *           "cv": 1.5,
+         *           "distribution": "lognormal",
+         *           "mean": 0.02
+         *         }
+         *       ],
+         *       "start": 5,
+         *       "step": 5
+         *     }
+         */
+        ServicesComparisonRequest: {
+            /**
+             * Services
+             * @description Distribuições de serviço a comparar no M/G/1 (de 2 a 8).
+             */
+            services: components["schemas"]["ServiceSpec"][];
+            /**
+             * Start
+             * @description Primeiro valor de λ.
+             */
+            start: number;
+            /**
+             * End
+             * @description Último valor de λ.
+             */
+            end: number;
+            /**
+             * Step
+             * @description Incremento de λ entre os pontos.
+             */
+            step: number;
+        };
+        /** ServicesComparisonResponse */
+        ServicesComparisonResponse: {
+            /** Model */
+            model: string;
+            /** Series */
+            series: components["schemas"]["ServiceSeriesOut"][];
         };
         /**
          * SimulatedCompareRequest
@@ -2724,20 +3467,33 @@ export interface components {
          *       "step": 5,
          *       "variable": "lambda"
          *     }
+         * @example {
+         *       "end": 3,
+         *       "lambda": 25,
+         *       "model": "mg1",
+         *       "service": {
+         *         "cv": 1,
+         *         "distribution": "lognormal",
+         *         "mean": 0.02
+         *       },
+         *       "start": 0.25,
+         *       "step": 0.25,
+         *       "variable": "cv"
+         *     }
          */
         SweepRequest: {
             /**
              * Model
-             * @description Modelo: mm1, mmc, mm1k ou mmck (as mesmas chaves das rotas /api/models).
+             * @description Modelo: mm1, mmc, mm1k, mmck ou mg1 (as mesmas chaves das rotas /api/models).
              * @enum {string}
              */
-            model: "mm1" | "mmc" | "mm1k" | "mmck";
+            model: "mm1" | "mmc" | "mm1k" | "mmck" | "mg1";
             /**
              * Variable
              * @description Parâmetro varrido (servers e capacity só nos modelos que os têm).
              * @enum {string}
              */
-            variable: "lambda" | "mu" | "servers" | "capacity";
+            variable: "lambda" | "mu" | "servers" | "capacity" | "cv" | "k";
             /**
              * Start
              * @description Primeiro valor da faixa.
@@ -2760,7 +3516,7 @@ export interface components {
             lambda?: number | null;
             /**
              * Mu
-             * @description Taxa de serviço (μ). Obrigatório para o modelo, a menos que seja o parâmetro varrido (então é ignorado).
+             * @description Taxa de serviço (μ). Obrigatório para o modelo, a menos que seja o parâmetro varrido (então é ignorado). Ignorado no M/G/1 (use `service`).
              */
             mu?: number | null;
             /**
@@ -2773,6 +3529,8 @@ export interface components {
              * @description Capacidade total (K). Obrigatório para o modelo, a menos que seja o parâmetro varrido (então é ignorado).
              */
             capacity?: number | null;
+            /** @description Serviço do ponto base. Obrigatório no M/G/1 (e ignorado nos demais). Com `variable` = mu, a escala do serviço varia e o CV é preservado; cv varia o CV (lognormal e Weibull) e k, as etapas do Erlang. */
+            service?: components["schemas"]["ServiceSpec"] | null;
             /**
              * Simulate
              * @description Se verdadeiro, simula também cada ponto estável (exige simulation_time).
@@ -2825,6 +3583,8 @@ export interface components {
             points: components["schemas"]["SweepPointOut"][];
             /** @description Configuração efetiva da simulação, com a semente usada. */
             simulation: components["schemas"]["SweepSimulationOut"] | null;
+            /** @description Só no M/G/1: o serviço do ponto base. */
+            service?: components["schemas"]["ServiceOut"] | null;
         };
         /** SweepSimulationOut */
         SweepSimulationOut: {
@@ -3400,6 +4160,237 @@ export interface operations {
             };
         };
     };
+    erlangb_calculate_api_models_erlangb_calculate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ErlangBCalculateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErlangBCalculateResponse"];
+                };
+            };
+            /** @description Parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    erlangb_simulate_api_models_erlangb_simulate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ErlangBSimulateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueSimulationResponse"];
+                };
+            };
+            /** @description Parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    erlangb_compare_api_models_erlangb_compare_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ErlangBSimulateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueComparisonResponse"];
+                };
+            };
+            /** @description Parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    erlangb_size_route_api_models_erlangb_size_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ErlangBSizeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErlangBSizeResponse"];
+                };
+            };
+            /** @description Parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    mgc_calculate_api_models_mgc_calculate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MGCCalculateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MGCCalculateResponse"];
+                };
+            };
+            /** @description Parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    mgc_simulate_api_models_mgc_simulate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MGCSimulateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MGCSimulationResponse"];
+                };
+            };
+            /** @description Parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    mgc_compare_api_models_mgc_compare_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MGCSimulateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MGCComparisonResponse"];
+                };
+            };
+            /** @description Parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     sweep_api_experiments_sweep_post: {
         parameters: {
             query?: never;
@@ -3486,6 +4477,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SensitivityResponse"];
+                };
+            };
+            /** @description Parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    compare_services_api_experiments_services_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServicesComparisonRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServicesComparisonResponse"];
                 };
             };
             /** @description Parâmetros inválidos */

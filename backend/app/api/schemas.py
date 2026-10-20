@@ -2,7 +2,9 @@
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictFloat, StrictInt
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictFloat, StrictInt, ValidationInfo, field_validator
+
+from app.api.schemas_service import ServiceOut, ServiceSpec
 
 # Números estritos: aceitam int/float do JSON, mas rejeitam texto ("40") e
 # booleanos, que o Pydantic converteria silenciosamente no modo padrão.
@@ -275,11 +277,11 @@ class QueueComparisonResponse(BaseModel):
 # Fase 6: Experimentos (varredura, comparação de servidores e sensibilidade)
 # ======================================================================
 
-ModelKey = Literal["mm1", "mmc", "mm1k", "mmck"]
-SweepVariable = Literal["lambda", "mu", "servers", "capacity"]
+ModelKey = Literal["mm1", "mmc", "mm1k", "mmck", "mg1"]
+SweepVariable = Literal["lambda", "mu", "servers", "capacity", "cv", "k"]
 PointStatus = Literal["ok", "unstable", "invalid"]
 
-_MODEL_DESCRIPTION = "Modelo: mm1, mmc, mm1k ou mmck (as mesmas chaves das rotas /api/models)."
+_MODEL_DESCRIPTION = "Modelo: mm1, mmc, mm1k, mmck ou mg1 (as mesmas chaves das rotas /api/models)."
 _FIXED_NOTE = "Obrigatório para o modelo, a menos que seja o parâmetro varrido (então é ignorado)."
 
 
@@ -293,6 +295,8 @@ class SweepRequest(BaseModel):
                 {"model": "mmck", "variable": "lambda", "start": 5, "end": 40, "step": 5,
                  "mu": 10, "servers": 3, "capacity": 6,
                  "simulate": True, "simulation_time": 500, "replications": 5, "seed": 2026},
+                {"model": "mg1", "variable": "cv", "start": 0.25, "end": 3, "step": 0.25, "lambda": 25,
+                 "service": {"distribution": "lognormal", "mean": 0.02, "cv": 1}},
             ]
         }
     )
@@ -303,9 +307,14 @@ class SweepRequest(BaseModel):
     end: StrictFloat = Field(description="Último valor da faixa (incluído quando start + n·step = end).")
     step: StrictFloat = Field(description="Incremento entre os pontos (maior que zero; inteiro para servers e capacity).")
     lam: StrictFloat | None = Field(default=None, alias="lambda", description="Taxa de chegada (λ). " + _FIXED_NOTE)
-    mu: StrictFloat | None = Field(default=None, description="Taxa de serviço (μ). " + _FIXED_NOTE)
+    mu: StrictFloat | None = Field(default=None, description="Taxa de serviço (μ). " + _FIXED_NOTE + " Ignorado no M/G/1 (use `service`).")
     servers: StrictInt | None = Field(default=None, description="Servidores (c). " + _FIXED_NOTE)
     capacity: StrictInt | None = Field(default=None, description="Capacidade total (K). " + _FIXED_NOTE)
+    service: ServiceSpec | None = Field(
+        default=None,
+        description="Serviço do ponto base. Obrigatório no M/G/1 (e ignorado nos demais). Com `variable` = mu, "
+                    "a escala do serviço varia e o CV é preservado; cv varia o CV (lognormal e Weibull) e k, as etapas do Erlang.",
+    )
     simulate: StrictBool = Field(
         default=False, description="Se verdadeiro, simula também cada ponto estável (exige simulation_time)."
     )
@@ -336,16 +345,43 @@ class ServerComparisonRequest(BaseModel):
     step: StrictFloat = Field(description="Incremento de λ entre os pontos.")
 
 
+class ServicesComparisonRequest(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{
+                "services": [
+                    {"distribution": "deterministic", "mean": 0.02},
+                    {"distribution": "exponential", "mean": 0.02},
+                    {"distribution": "lognormal", "mean": 0.02, "cv": 1.5},
+                ],
+                "start": 5, "end": 45, "step": 5,
+            }]
+        }
+    )
+
+    services: list[ServiceSpec] = Field(description="Distribuições de serviço a comparar no M/G/1 (de 2 a 8).")
+    start: StrictFloat = Field(description="Primeiro valor de λ.")
+    end: StrictFloat = Field(description="Último valor de λ.")
+    step: StrictFloat = Field(description="Incremento de λ entre os pontos.")
+
+
 class SensitivityRequest(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
-            "examples": [{"model": "mmck", "lambda": 25, "mu": 10, "servers": 3, "capacity": 6, "delta_pct": 10}]
+            "examples": [
+                {"model": "mmck", "lambda": 25, "mu": 10, "servers": 3, "capacity": 6, "delta_pct": 10},
+                {"model": "mg1", "lambda": 25, "delta_pct": 10, "service": {"distribution": "lognormal", "mean": 0.02, "cv": 1.5}},
+            ]
         }
     )
 
     model: ModelKey = Field(description=_MODEL_DESCRIPTION)
     lam: StrictFloat = Field(alias="lambda", description="Taxa média de chegada (λ) do ponto base.")
-    mu: StrictFloat = Field(description="Taxa média de serviço (μ) do ponto base.")
+    mu: StrictFloat | None = Field(
+        default=None, validate_default=True,
+        description="Taxa média de serviço (μ) do ponto base. Obrigatório nos modelos markovianos.",
+    )
+    service: ServiceSpec | None = Field(default=None, description="Serviço do ponto base. Obrigatório no M/G/1.")
     servers: StrictInt | None = Field(default=None, description="Servidores (c). Obrigatório em mmc e mmck.")
     capacity: StrictInt | None = Field(default=None, description="Capacidade total (K). Obrigatório em mm1k e mmck.")
     delta_pct: StrictFloat = Field(
@@ -355,6 +391,16 @@ class SensitivityRequest(BaseModel):
 
 
 # ---------- saída ----------
+
+    @field_validator("mu")
+    @classmethod
+    def _mu_required_outside_mg1(cls, value: float | None, info: ValidationInfo) -> float | None:
+        # Os modelos markovianos precisam de μ; o M/G/1 recebe o serviço em `service`.
+        if value is None and info.data.get("model") not in (None, "mg1"):
+            raise ValueError("Field required")
+        return value
+
+
 
 class SweepSimulationOut(BaseModel):
     simulation_time: float
@@ -379,11 +425,22 @@ class SweepResponse(BaseModel):
     fixed: dict[str, float] = Field(description="Parâmetros mantidos fixos, com os nomes da API.")
     points: list[SweepPointOut]
     simulation: SweepSimulationOut | None = Field(description="Configuração efetiva da simulação, com a semente usada.")
+    service: ServiceOut | None = Field(default=None, description="Só no M/G/1: o serviço do ponto base.")
 
 
 class ServerSeriesOut(BaseModel):
     servers: int
     points: list[SweepPointOut]
+
+
+class ServiceSeriesOut(BaseModel):
+    service: ServiceOut
+    points: list[SweepPointOut]
+
+
+class ServicesComparisonResponse(BaseModel):
+    model: str
+    series: list[ServiceSeriesOut]
 
 
 class ServerComparisonResponse(BaseModel):
@@ -421,3 +478,4 @@ class SensitivityResponse(BaseModel):
     base: dict[str, float]
     base_metrics: dict[str, float]
     parameters: list[ParameterSensitivityOut]
+    service: ServiceOut | None = Field(default=None, description="Só no M/G/1: o serviço do ponto base.")

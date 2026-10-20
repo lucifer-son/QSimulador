@@ -1,0 +1,88 @@
+{
+  "model": "M/M/15/15",
+  "lambda": 20.0,
+  "mu": 1.0,
+  "servers": 15,
+  "capacity": 15,
+  "simulation_time": 100.0,
+  "warmup_time": 10.0,
+  "replications": 3,
+  "seed": 7,
+  "confidence_level": 0.95,
+  "metrics": {
+    "rho": {
+      "analytical": 0.8933374301086228,
+      "simulated_mean": 0.8921366523354961,
+      "ci_low": 0.8892118891207388,
+      "ci_high": 0.8950614155502534,
+      "absolute_error": 0.00120077777312666,
+      "relative_error_pct": 0.134414805946355,
+      "within_ci": true
+    },
+    "L": {
+      "analytical": 13.400061451629341,
+      "simulated_mean": 13.382049785032441,
+      "ci_low": 13.338178336811081,
+      "ci_high": 13.425921233253801,
+      "absolute_error": 0.0180116665968999,
+      "relative_error_pct": 0.134414805946355,
+      "within_ci": true
+    },
+    "Lq": {
+      "analytical": 0.0,
+      "simulated_mean": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0,
+      "absolute_error": 0.0,
+      "relative_error_pct": 0.0,
+      "within_ci": true
+    },
+    "W": {
+      "analytical": 1.0,
+      "simulated_mean": 0.9955744858742538,
+      "ci_low": 0.9531501275398854,
+      "ci_high": 1.0379988442086223,
+      "absolute_error": 0.0044255141257462105,
+      "relative_error_pct": 0.44255141257462105,
+      "within_ci": true
+    },
+    "Wq": {
+      "analytical": 0.0,
+      "simulated_mean": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0,
+      "absolute_error": 0.0,
+      "relative_error_pct": 0.0,
+      "within_ci": true
+    },
+    "throughput": {
+      "analytical": 13.400061451629341,
+      "simulated_mean": 13.274074074074074,
+      "ci_low": 12.568028587845541,
+      "ci_high": 13.980119560302606,
+      "absolute_error": 0.12598737755526734,
+      "relative_error_pct": 0.9401999984108154,
+      "within_ci": true
+    },
+    "p_wait": {
+      "analytical": 0.0,
+      "simulated_mean": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0,
+      "absolute_error": 0.0,
+      "relative_error_pct": 0.0,
+      "within_ci": true
+    },
+    "p_block": {
+      "analytical": 0.3299969274185329,
+      "simulated_mean": 0.33439447935122363,
+      "ci_low": 0.32393397192392315,
+      "ci_high": 0.3448549867785241,
+      "absolute_error": 0.004397551932690702,
+      "relative_error_pct": 1.3326039024337084,
+      "within_ci": true
+    }
+  },
+  "all_within_ci": true,
+  "max_relative_error_pct": 1.3326039024337084
+}

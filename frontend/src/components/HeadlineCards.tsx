@@ -4,6 +4,9 @@ import type { MetricName, ViewResult } from "../domain/types";
 
 const QUEUE_CARDS: MetricName[] = ["rho", "throughput", "p_block", "p_wait"];
 const MM1_CARDS: MetricName[] = ["rho", "L", "W", "Wq"];
+const MGC_CARDS: MetricName[] = ["rho", "Wq", "W", "p_wait"];
+/** Erlang-B: não há fila, então os destaques são o bloqueio, a vazão e a utilização. */
+const LOSS_CARDS: MetricName[] = ["p_block", "throughput", "rho", "L"];
 
 const CARD_LABEL: Partial<Record<MetricName, string>> = {
   rho: "Utilização (ρ)",
@@ -16,7 +19,10 @@ const CARD_LABEL: Partial<Record<MetricName, string>> = {
 };
 
 export function HeadlineCards({ result }: { result: ViewResult }) {
-  const wanted = result.metrics.some((m) => m.name === "p_block") ? QUEUE_CARDS : MM1_CARDS;
+  const wanted =
+    result.modelKey === "erlangb" ? LOSS_CARDS
+      : result.modelKey === "mgc" ? MGC_CARDS
+        : result.metrics.some((m) => m.name === "p_block") ? QUEUE_CARDS : MM1_CARDS;
   const cards = wanted
     .map((name) => result.metrics.find((m) => m.name === name))
     .filter((m): m is NonNullable<typeof m> => m !== undefined);
@@ -28,7 +34,9 @@ export function HeadlineCards({ result }: { result: ViewResult }) {
         const secondary = m.analytical !== undefined && m.simulated !== undefined ? m.simulated : undefined;
         return (
           <div className="card" key={m.name}>
-            <div className="card-label">{CARD_LABEL[m.name] ?? METRIC_INFO[m.name].label}</div>
+            <div className="card-label">
+              {result.modelKey === "erlangb" && m.name === "p_block" ? "Bloqueio (chamadas perdidas)" : CARD_LABEL[m.name] ?? METRIC_INFO[m.name].label}
+            </div>
             <div className="card-value">{main === undefined ? "—" : formatMetric(m.name, main)}</div>
             {secondary !== undefined && (
               <div className="card-sub">simulado: {formatMetric(m.name, secondary)}</div>

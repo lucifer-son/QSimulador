@@ -658,6 +658,300 @@
         }
       }
     },
+    "/api/models/erlangb/calculate": {
+      "post": {
+        "tags": [
+          "Erlang-B (M/M/c/c)"
+        ],
+        "summary": "Erlangb Calculate",
+        "description": "Métricas do sistema de perda: bloqueio de Erlang B, tráfego carregado e utilização.",
+        "operationId": "erlangb_calculate_api_models_erlangb_calculate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErlangBCalculateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErlangBCalculateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/erlangb/simulate": {
+      "post": {
+        "tags": [
+          "Erlang-B (M/M/c/c)"
+        ],
+        "summary": "Erlangb Simulate",
+        "description": "Simulação do sistema de perda: o motor do M/M/c/K com capacidade K = c.",
+        "operationId": "erlangb_simulate_api_models_erlangb_simulate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErlangBSimulateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueSimulationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/erlangb/compare": {
+      "post": {
+        "tags": [
+          "Erlang-B (M/M/c/c)"
+        ],
+        "summary": "Erlangb Compare",
+        "description": "Compara o Erlang-B analítico com a simulação, métrica a métrica (erro e IC).",
+        "operationId": "erlangb_compare_api_models_erlangb_compare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErlangBSimulateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueComparisonResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/erlangb/size": {
+      "post": {
+        "tags": [
+          "Erlang-B (M/M/c/c)"
+        ],
+        "summary": "Erlangb Size Route",
+        "description": "Menor número de servidores (linhas, canais) que mantém o bloqueio abaixo do alvo.",
+        "operationId": "erlangb_size_route_api_models_erlangb_size_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErlangBSizeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErlangBSizeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/mgc/calculate": {
+      "post": {
+        "tags": [
+          "M/G/c"
+        ],
+        "summary": "Mgc Calculate",
+        "description": "Aproximação de Allen–Cunneen. Exige ρ = λ·E[S]/c < 1.",
+        "operationId": "mgc_calculate_api_models_mgc_calculate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MGCCalculateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MGCCalculateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/mgc/simulate": {
+      "post": {
+        "tags": [
+          "M/G/c"
+        ],
+        "summary": "Mgc Simulate",
+        "description": "Simulação de eventos discretos com o serviço amostrado da distribuição escolhida.",
+        "operationId": "mgc_simulate_api_models_mgc_simulate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MGCSimulateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MGCSimulationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/models/mgc/compare": {
+      "post": {
+        "tags": [
+          "M/G/c"
+        ],
+        "summary": "Mgc Compare",
+        "description": "Compara a aproximação com a simulação: o erro mostra a precisão da aproximação.",
+        "operationId": "mgc_compare_api_models_mgc_compare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MGCSimulateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MGCComparisonResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/experiments/sweep": {
       "post": {
         "tags": [
@@ -767,6 +1061,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SensitivityResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/experiments/services": {
+      "post": {
+        "tags": [
+          "Experimentos"
+        ],
+        "summary": "Compare Services",
+        "description": "Compara distribuições de serviço no M/G/1, variando λ na mesma faixa para todas.",
+        "operationId": "compare_services_api_experiments_services_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServicesComparisonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServicesComparisonResponse"
                 }
               }
             }
@@ -2494,6 +2830,296 @@
         "title": "EmpiricalMetricsModel",
         "description": "Métricas medidas em uma janela (segundos e req/s)."
       },
+      "ErlangBCalculateRequest": {
+        "properties": {
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa média de chegada (λ)."
+          },
+          "mu": {
+            "type": "number",
+            "title": "Mu",
+            "description": "Taxa média de serviço (μ)."
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers",
+            "description": "Número de servidores (c)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "lambda",
+          "mu",
+          "servers"
+        ],
+        "title": "ErlangBCalculateRequest",
+        "examples": [
+          {
+            "lambda": 20,
+            "mu": 1,
+            "servers": 15
+          }
+        ]
+      },
+      "ErlangBCalculateResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers"
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity"
+          },
+          "rho": {
+            "type": "number",
+            "title": "Rho"
+          },
+          "L": {
+            "type": "number",
+            "title": "L"
+          },
+          "Lq": {
+            "type": "number",
+            "title": "Lq"
+          },
+          "W": {
+            "type": "number",
+            "title": "W"
+          },
+          "Wq": {
+            "type": "number",
+            "title": "Wq"
+          },
+          "p0": {
+            "type": "number",
+            "title": "P0"
+          },
+          "throughput": {
+            "type": "number",
+            "title": "Throughput"
+          },
+          "p_wait": {
+            "type": "number",
+            "title": "P Wait"
+          },
+          "p_block": {
+            "type": "number",
+            "title": "P Block"
+          },
+          "offered_load": {
+            "type": "number",
+            "title": "Offered Load",
+            "description": "Tráfego oferecido a = λ/μ, em Erlangs."
+          },
+          "carried_load": {
+            "type": "number",
+            "title": "Carried Load",
+            "description": "Tráfego carregado a·(1 − B): servidores ocupados em média."
+          },
+          "lost_rate": {
+            "type": "number",
+            "title": "Lost Rate",
+            "description": "Chegadas perdidas por unidade de tempo, λ·B."
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "servers",
+          "capacity",
+          "rho",
+          "L",
+          "Lq",
+          "W",
+          "Wq",
+          "p0",
+          "throughput",
+          "p_wait",
+          "p_block",
+          "offered_load",
+          "carried_load",
+          "lost_rate"
+        ],
+        "title": "ErlangBCalculateResponse"
+      },
+      "ErlangBSimulateRequest": {
+        "properties": {
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa média de chegada (λ)."
+          },
+          "mu": {
+            "type": "number",
+            "title": "Mu",
+            "description": "Taxa média de serviço (μ)."
+          },
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time",
+            "description": "Tempo simulado por replicação."
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications",
+            "description": "Número de replicações.",
+            "default": 10
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time",
+            "description": "Período inicial descartado (transitório).",
+            "default": 0.0
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Semente aleatória. Se omitida, uma é sorteada e devolvida."
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level",
+            "description": "Nível do intervalo de confiança (0 a 1).",
+            "default": 0.95
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers",
+            "description": "Número de servidores (c)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "lambda",
+          "mu",
+          "simulation_time",
+          "servers"
+        ],
+        "title": "ErlangBSimulateRequest",
+        "examples": [
+          {
+            "lambda": 20,
+            "mu": 1,
+            "replications": 10,
+            "seed": 2026,
+            "servers": 15,
+            "simulation_time": 2000,
+            "warmup_time": 100
+          }
+        ]
+      },
+      "ErlangBSizeRequest": {
+        "properties": {
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa média de chegada (λ)."
+          },
+          "mu": {
+            "type": "number",
+            "title": "Mu",
+            "description": "Taxa média de serviço de cada servidor (μ)."
+          },
+          "target_blocking": {
+            "type": "number",
+            "title": "Target Blocking",
+            "description": "Bloqueio máximo aceitável, entre 0 e 1 (ex.: 0,01 = 1%)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "lambda",
+          "mu",
+          "target_blocking"
+        ],
+        "title": "ErlangBSizeRequest",
+        "examples": [
+          {
+            "lambda": 20,
+            "mu": 1,
+            "target_blocking": 0.01
+          }
+        ]
+      },
+      "ErlangBSizeResponse": {
+        "properties": {
+          "target_blocking": {
+            "type": "number",
+            "title": "Target Blocking"
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers",
+            "description": "Menor número de servidores com bloqueio ≤ alvo."
+          },
+          "blocking": {
+            "type": "number",
+            "title": "Blocking",
+            "description": "Bloqueio B(c, a) com esse número de servidores."
+          },
+          "blocking_previous": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocking Previous",
+            "description": "Bloqueio com um servidor a menos (nulo se c = 1)."
+          },
+          "offered_load": {
+            "type": "number",
+            "title": "Offered Load"
+          },
+          "carried_load": {
+            "type": "number",
+            "title": "Carried Load"
+          },
+          "rho": {
+            "type": "number",
+            "title": "Rho"
+          },
+          "lost_rate": {
+            "type": "number",
+            "title": "Lost Rate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target_blocking",
+          "servers",
+          "blocking",
+          "blocking_previous",
+          "offered_load",
+          "carried_load",
+          "rho",
+          "lost_rate"
+        ],
+        "title": "ErlangBSizeResponse"
+      },
       "ErrorResponse": {
         "properties": {
           "code": {
@@ -3084,11 +3710,6 @@
       },
       "MG1CalculateRequest": {
         "properties": {
-          "lambda": {
-            "type": "number",
-            "title": "Lambda",
-            "description": "Taxa média de chegada (λ)."
-          },
           "distribution": {
             "type": "string",
             "enum": [
@@ -3211,12 +3832,17 @@
             ],
             "title": "Scale",
             "description": "Desvio padrão da normal original (normal truncada em 0). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa média de chegada (λ)."
           }
         },
         "type": "object",
         "required": [
-          "lambda",
-          "distribution"
+          "distribution",
+          "lambda"
         ],
         "title": "MG1CalculateRequest",
         "examples": [
@@ -3361,11 +3987,6 @@
       },
       "MG1SimulateRequest": {
         "properties": {
-          "lambda": {
-            "type": "number",
-            "title": "Lambda",
-            "description": "Taxa média de chegada (λ)."
-          },
           "distribution": {
             "type": "string",
             "enum": [
@@ -3489,6 +4110,11 @@
             "title": "Scale",
             "description": "Desvio padrão da normal original (normal truncada em 0). Ignorado pelas distribuições que não usam este parâmetro."
           },
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa média de chegada (λ)."
+          },
           "simulation_time": {
             "type": "number",
             "title": "Simulation Time",
@@ -3527,8 +4153,8 @@
         },
         "type": "object",
         "required": [
-          "lambda",
           "distribution",
+          "lambda",
           "simulation_time"
         ],
         "title": "MG1SimulateRequest",
@@ -3607,6 +4233,596 @@
           "summary"
         ],
         "title": "MG1SimulationResponse"
+      },
+      "MGCCalculateRequest": {
+        "properties": {
+          "distribution": {
+            "type": "string",
+            "enum": [
+              "deterministic",
+              "exponential",
+              "erlang",
+              "lognormal",
+              "weibull",
+              "uniform",
+              "triangular",
+              "truncated_normal"
+            ],
+            "title": "Distribution",
+            "description": "Distribuição do tempo de serviço (veja GET /api/distributions)."
+          },
+          "mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean",
+            "description": "Tempo médio de serviço E[S] (exponencial, determinística, Erlang-k, lognormal, Weibull)."
+          },
+          "mu": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mu",
+            "description": "Alternativa à média: taxa de serviço μ = 1/E[S]. Informe mean ou mu, não os dois."
+          },
+          "k": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "K",
+            "description": "Etapas do Erlang-k (inteiro ≥ 1). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "cv": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cv",
+            "description": "Coeficiente de variação (lognormal e Weibull). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min",
+            "description": "Mínimo (uniforme e triangular). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mode",
+            "description": "Moda (triangular). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max",
+            "description": "Máximo (uniforme e triangular). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "loc": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loc",
+            "description": "Média da normal original (normal truncada em 0). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "scale": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scale",
+            "description": "Desvio padrão da normal original (normal truncada em 0). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa média de chegada (λ)."
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers",
+            "description": "Número de servidores (c)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "distribution",
+          "lambda",
+          "servers"
+        ],
+        "title": "MGCCalculateRequest",
+        "examples": [
+          {
+            "cv": 1.5,
+            "distribution": "lognormal",
+            "lambda": 80,
+            "mean": 0.1,
+            "servers": 10
+          },
+          {
+            "distribution": "deterministic",
+            "lambda": 80,
+            "mean": 0.1,
+            "servers": 10
+          }
+        ]
+      },
+      "MGCCalculateResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers"
+          },
+          "service": {
+            "$ref": "#/components/schemas/ServiceOut"
+          },
+          "exact": {
+            "type": "boolean",
+            "title": "Exact",
+            "description": "Verdadeiro quando a aproximação coincide com o resultado exato (c = 1 ou CV = 1)."
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings",
+            "description": "Avisos de faixa de validade da aproximação (vazio se está em faixa segura)."
+          },
+          "rho": {
+            "type": "number",
+            "title": "Rho"
+          },
+          "L": {
+            "type": "number",
+            "title": "L"
+          },
+          "Lq": {
+            "type": "number",
+            "title": "Lq"
+          },
+          "W": {
+            "type": "number",
+            "title": "W"
+          },
+          "Wq": {
+            "type": "number",
+            "title": "Wq"
+          },
+          "throughput": {
+            "type": "number",
+            "title": "Throughput"
+          },
+          "p_wait": {
+            "type": "number",
+            "title": "P Wait",
+            "description": "Probabilidade de esperar (Erlang C)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "servers",
+          "service",
+          "exact",
+          "warnings",
+          "rho",
+          "L",
+          "Lq",
+          "W",
+          "Wq",
+          "throughput",
+          "p_wait"
+        ],
+        "title": "MGCCalculateResponse"
+      },
+      "MGCComparisonResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "lambda": {
+            "type": "number",
+            "title": "Lambda"
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers"
+          },
+          "service": {
+            "$ref": "#/components/schemas/ServiceOut"
+          },
+          "exact": {
+            "type": "boolean",
+            "title": "Exact"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time"
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time"
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed"
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level"
+          },
+          "metrics": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/app__api__schemas__MetricComparisonOut"
+            },
+            "type": "object",
+            "title": "Metrics"
+          },
+          "all_within_ci": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "All Within Ci"
+          },
+          "max_relative_error_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Relative Error Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "lambda",
+          "servers",
+          "service",
+          "exact",
+          "warnings",
+          "simulation_time",
+          "warmup_time",
+          "replications",
+          "seed",
+          "confidence_level",
+          "metrics",
+          "all_within_ci",
+          "max_relative_error_pct"
+        ],
+        "title": "MGCComparisonResponse"
+      },
+      "MGCSimulateRequest": {
+        "properties": {
+          "distribution": {
+            "type": "string",
+            "enum": [
+              "deterministic",
+              "exponential",
+              "erlang",
+              "lognormal",
+              "weibull",
+              "uniform",
+              "triangular",
+              "truncated_normal"
+            ],
+            "title": "Distribution",
+            "description": "Distribuição do tempo de serviço (veja GET /api/distributions)."
+          },
+          "mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean",
+            "description": "Tempo médio de serviço E[S] (exponencial, determinística, Erlang-k, lognormal, Weibull)."
+          },
+          "mu": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mu",
+            "description": "Alternativa à média: taxa de serviço μ = 1/E[S]. Informe mean ou mu, não os dois."
+          },
+          "k": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "K",
+            "description": "Etapas do Erlang-k (inteiro ≥ 1). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "cv": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cv",
+            "description": "Coeficiente de variação (lognormal e Weibull). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min",
+            "description": "Mínimo (uniforme e triangular). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mode",
+            "description": "Moda (triangular). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max",
+            "description": "Máximo (uniforme e triangular). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "loc": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loc",
+            "description": "Média da normal original (normal truncada em 0). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "scale": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scale",
+            "description": "Desvio padrão da normal original (normal truncada em 0). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa média de chegada (λ)."
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers",
+            "description": "Número de servidores (c)."
+          },
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time",
+            "description": "Tempo simulado por replicação."
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications",
+            "description": "Número de replicações.",
+            "default": 10
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time",
+            "description": "Período inicial descartado (transitório).",
+            "default": 0.0
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Semente aleatória. Se omitida, uma é sorteada e devolvida."
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level",
+            "description": "Nível do intervalo de confiança (0 a 1).",
+            "default": 0.95
+          }
+        },
+        "type": "object",
+        "required": [
+          "distribution",
+          "lambda",
+          "servers",
+          "simulation_time"
+        ],
+        "title": "MGCSimulateRequest",
+        "examples": [
+          {
+            "cv": 1.5,
+            "distribution": "lognormal",
+            "lambda": 80,
+            "mean": 0.1,
+            "replications": 10,
+            "seed": 2026,
+            "servers": 10,
+            "simulation_time": 2000,
+            "warmup_time": 100
+          }
+        ]
+      },
+      "MGCSimulationResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "lambda": {
+            "type": "number",
+            "title": "Lambda"
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers"
+          },
+          "service": {
+            "$ref": "#/components/schemas/ServiceOut"
+          },
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time"
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time"
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed"
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level"
+          },
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/QueueReplicationOut"
+            },
+            "type": "array",
+            "title": "Runs"
+          },
+          "summary": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MetricSummaryOut"
+            },
+            "type": "object",
+            "title": "Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "lambda",
+          "servers",
+          "service",
+          "simulation_time",
+          "warmup_time",
+          "replications",
+          "seed",
+          "confidence_level",
+          "runs",
+          "summary"
+        ],
+        "title": "MGCSimulationResponse"
       },
       "MM1CalculateRequest": {
         "properties": {
@@ -4433,7 +5649,9 @@
               "lambda",
               "mu",
               "servers",
-              "capacity"
+              "capacity",
+              "cv",
+              "k"
             ],
             "title": "Name"
           },
@@ -5296,10 +6514,11 @@
               "mm1",
               "mmc",
               "mm1k",
-              "mmck"
+              "mmck",
+              "mg1"
             ],
             "title": "Model",
-            "description": "Modelo: mm1, mmc, mm1k ou mmck (as mesmas chaves das rotas /api/models)."
+            "description": "Modelo: mm1, mmc, mm1k, mmck ou mg1 (as mesmas chaves das rotas /api/models)."
           },
           "lambda": {
             "type": "number",
@@ -5307,9 +6526,27 @@
             "description": "Taxa média de chegada (λ) do ponto base."
           },
           "mu": {
-            "type": "number",
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Mu",
-            "description": "Taxa média de serviço (μ) do ponto base."
+            "description": "Taxa média de serviço (μ) do ponto base. Obrigatório nos modelos markovianos."
+          },
+          "service": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceSpec"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Serviço do ponto base. Obrigatório no M/G/1."
           },
           "servers": {
             "anyOf": [
@@ -5345,8 +6582,7 @@
         "type": "object",
         "required": [
           "model",
-          "lambda",
-          "mu"
+          "lambda"
         ],
         "title": "SensitivityRequest",
         "examples": [
@@ -5357,6 +6593,16 @@
             "model": "mmck",
             "mu": 10,
             "servers": 3
+          },
+          {
+            "delta_pct": 10,
+            "lambda": 25,
+            "model": "mg1",
+            "service": {
+              "cv": 1.5,
+              "distribution": "lognormal",
+              "mean": 0.02
+            }
           }
         ]
       },
@@ -5390,6 +6636,17 @@
             },
             "type": "array",
             "title": "Parameters"
+          },
+          "service": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Só no M/G/1: o serviço do ponto base."
           }
         },
         "type": "object",
@@ -5633,6 +6890,237 @@
           "parameters"
         ],
         "title": "ServiceOut"
+      },
+      "ServiceSeriesOut": {
+        "properties": {
+          "service": {
+            "$ref": "#/components/schemas/ServiceOut"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/SweepPointOut"
+            },
+            "type": "array",
+            "title": "Points"
+          }
+        },
+        "type": "object",
+        "required": [
+          "service",
+          "points"
+        ],
+        "title": "ServiceSeriesOut"
+      },
+      "ServiceSpec": {
+        "properties": {
+          "distribution": {
+            "type": "string",
+            "enum": [
+              "deterministic",
+              "exponential",
+              "erlang",
+              "lognormal",
+              "weibull",
+              "uniform",
+              "triangular",
+              "truncated_normal"
+            ],
+            "title": "Distribution",
+            "description": "Distribuição do tempo de serviço (veja GET /api/distributions)."
+          },
+          "mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean",
+            "description": "Tempo médio de serviço E[S] (exponencial, determinística, Erlang-k, lognormal, Weibull)."
+          },
+          "mu": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mu",
+            "description": "Alternativa à média: taxa de serviço μ = 1/E[S]. Informe mean ou mu, não os dois."
+          },
+          "k": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "K",
+            "description": "Etapas do Erlang-k (inteiro ≥ 1). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "cv": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cv",
+            "description": "Coeficiente de variação (lognormal e Weibull). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min",
+            "description": "Mínimo (uniforme e triangular). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mode",
+            "description": "Moda (triangular). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max",
+            "description": "Máximo (uniforme e triangular). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "loc": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loc",
+            "description": "Média da normal original (normal truncada em 0). Ignorado pelas distribuições que não usam este parâmetro."
+          },
+          "scale": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scale",
+            "description": "Desvio padrão da normal original (normal truncada em 0). Ignorado pelas distribuições que não usam este parâmetro."
+          }
+        },
+        "type": "object",
+        "required": [
+          "distribution"
+        ],
+        "title": "ServiceSpec",
+        "description": "Distribuição do tempo de serviço e seus parâmetros (usada pelo M/G/1 e pelos experimentos)."
+      },
+      "ServicesComparisonRequest": {
+        "properties": {
+          "services": {
+            "items": {
+              "$ref": "#/components/schemas/ServiceSpec"
+            },
+            "type": "array",
+            "title": "Services",
+            "description": "Distribuições de serviço a comparar no M/G/1 (de 2 a 8)."
+          },
+          "start": {
+            "type": "number",
+            "title": "Start",
+            "description": "Primeiro valor de λ."
+          },
+          "end": {
+            "type": "number",
+            "title": "End",
+            "description": "Último valor de λ."
+          },
+          "step": {
+            "type": "number",
+            "title": "Step",
+            "description": "Incremento de λ entre os pontos."
+          }
+        },
+        "type": "object",
+        "required": [
+          "services",
+          "start",
+          "end",
+          "step"
+        ],
+        "title": "ServicesComparisonRequest",
+        "examples": [
+          {
+            "end": 45,
+            "services": [
+              {
+                "distribution": "deterministic",
+                "mean": 0.02
+              },
+              {
+                "distribution": "exponential",
+                "mean": 0.02
+              },
+              {
+                "cv": 1.5,
+                "distribution": "lognormal",
+                "mean": 0.02
+              }
+            ],
+            "start": 5,
+            "step": 5
+          }
+        ]
+      },
+      "ServicesComparisonResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/ServiceSeriesOut"
+            },
+            "type": "array",
+            "title": "Series"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "series"
+        ],
+        "title": "ServicesComparisonResponse"
       },
       "SimulatedCompareRequest": {
         "properties": {
@@ -6180,10 +7668,11 @@
               "mm1",
               "mmc",
               "mm1k",
-              "mmck"
+              "mmck",
+              "mg1"
             ],
             "title": "Model",
-            "description": "Modelo: mm1, mmc, mm1k ou mmck (as mesmas chaves das rotas /api/models)."
+            "description": "Modelo: mm1, mmc, mm1k, mmck ou mg1 (as mesmas chaves das rotas /api/models)."
           },
           "variable": {
             "type": "string",
@@ -6191,7 +7680,9 @@
               "lambda",
               "mu",
               "servers",
-              "capacity"
+              "capacity",
+              "cv",
+              "k"
             ],
             "title": "Variable",
             "description": "Parâmetro varrido (servers e capacity só nos modelos que os têm)."
@@ -6233,7 +7724,7 @@
               }
             ],
             "title": "Mu",
-            "description": "Taxa de serviço (μ). Obrigatório para o modelo, a menos que seja o parâmetro varrido (então é ignorado)."
+            "description": "Taxa de serviço (μ). Obrigatório para o modelo, a menos que seja o parâmetro varrido (então é ignorado). Ignorado no M/G/1 (use `service`)."
           },
           "servers": {
             "anyOf": [
@@ -6258,6 +7749,17 @@
             ],
             "title": "Capacity",
             "description": "Capacidade total (K). Obrigatório para o modelo, a menos que seja o parâmetro varrido (então é ignorado)."
+          },
+          "service": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceSpec"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Serviço do ponto base. Obrigatório no M/G/1 (e ignorado nos demais). Com `variable` = mu, a escala do serviço varia e o CV é preservado; cv varia o CV (lognormal e Weibull) e k, as etapas do Erlang."
           },
           "simulate": {
             "type": "boolean",
@@ -6339,6 +7841,19 @@
             "start": 5,
             "step": 5,
             "variable": "lambda"
+          },
+          {
+            "end": 3,
+            "lambda": 25,
+            "model": "mg1",
+            "service": {
+              "cv": 1,
+              "distribution": "lognormal",
+              "mean": 0.02
+            },
+            "start": 0.25,
+            "step": 0.25,
+            "variable": "cv"
           }
         ]
       },
@@ -6377,6 +7892,17 @@
               }
             ],
             "description": "Configuração efetiva da simulação, com a semente usada."
+          },
+          "service": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Só no M/G/1: o serviço do ponto base."
           }
         },
         "type": "object",

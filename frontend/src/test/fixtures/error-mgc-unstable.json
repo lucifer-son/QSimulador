@@ -1,0 +1,10 @@
+{
+  "code": "unstable_system",
+  "message": "O modelo não está em condição estável. Para M/G/c, é necessário que ρ = λ·E[S]/c < 1 (aqui, ρ = 1).",
+  "fields": [
+    {
+      "field": "lambda",
+      "message": "O modelo não está em condição estável. Para M/G/c, é necessário que ρ = λ·E[S]/c < 1 (aqui, ρ = 1)."
+    }
+  ]
+}

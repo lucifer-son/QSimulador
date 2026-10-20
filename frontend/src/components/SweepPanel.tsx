@@ -7,7 +7,7 @@ import {
   type ExpErrors, type RangeText, type SimText, type SweepVariable, type SystemText,
 } from "../domain/experiments";
 import { formatInteger, formatNumber } from "../domain/format";
-import type { MetricName, MarkovModelKey } from "../domain/types";
+import type { ExperimentModelKey, MetricName } from "../domain/types";
 import { useExperiment } from "../hooks/useExperiment";
 import { useThemeColors } from "../hooks/useThemeColors";
 import { experimentRecord, experimentTitle } from "../domain/records";
@@ -20,15 +20,15 @@ import { TextField } from "./TextField";
 
 interface Props {
   active: boolean;
-  model: MarkovModelKey;
+  model: ExperimentModelKey;
   system: SystemText;
   sim: SimText;
 }
 
 export function SweepPanel({ active, model, system, sim }: Props) {
-  const variables = sweepVariables(model);
+  const variables = sweepVariables(model, system.distribution);
   const [chosen, setChosen] = useState<SweepVariable>("lambda");
-  const variable = variables.includes(chosen) ? chosen : "lambda";   // trocar de modelo pode tirar c ou K
+  const variable = variables.includes(chosen) ? chosen : "lambda";   // trocar de modelo ou de distribuição pode tirar c, K, cv ou k
   const [range, setRange] = useState<RangeText>(() => suggestRange("lambda", model, system));
   const [simulate, setSimulate] = useState(false);
   const [simText, setSimText] = useState<SimText>(sim);
@@ -41,7 +41,7 @@ export function SweepPanel({ active, model, system, sim }: Props) {
     setRange(suggestRange(variable, model, system));
     setErrors({});
     // O Laboratório pode mudar depois; a faixa só é refeita a pedido (botão "Sugerir faixa").
-  }, [variable, model]);
+  }, [variable, model, system.distribution]);
 
   useEffect(() => {
     if (state.status === "error") setErrors(experimentFieldErrors(state.error.fields, state.error.code));
@@ -128,12 +128,12 @@ export function SweepPanel({ active, model, system, sim }: Props) {
         loadingText={simulate ? "Calculando e simulando a faixa" : "Calculando a faixa"}
       >
         {(result) => {
-          const title = experimentTitle("sweep", result.model as MarkovModelKey, result);
+          const title = experimentTitle("sweep", result.model as ExperimentModelKey, result);
           return (
             <>
               <SaveButton
                 suggestedTitle={title}
-                build={(t) => experimentRecord("sweep", result.model as MarkovModelKey, lastRequest.current, result, t ?? title)}
+                build={(t) => experimentRecord("sweep", result.model as ExperimentModelKey, lastRequest.current, result, t ?? title)}
               />
               <SweepResult result={result} />
             </>
@@ -146,7 +146,7 @@ export function SweepPanel({ active, model, system, sim }: Props) {
 
 export function SweepResult({ result }: { result: SweepResponse }) {
   const colors = useThemeColors();
-  const model = result.model as MarkovModelKey;
+  const model = result.model as ExperimentModelKey;
   const variable = result.variable as SweepVariable;
   const [metric, setMetric] = useState<MetricName>("W");
   const [xAxis, setXAxis] = useState<XAxis>("value");
@@ -155,8 +155,8 @@ export function SweepResult({ result }: { result: SweepResponse }) {
   const shown = hasMetric(metric) ? metric : "rho";
   const series = useMemo(() => sweepSeries(result.points, shown, xAxis), [result, shown, xAxis]);
   const chart = useMemo(
-    () => sweepChart(series, shown, variable, xAxis, colors),
-    [series, shown, variable, xAxis, colors],
+    () => sweepChart(series, shown, variable, xAxis, colors, model),
+    [series, shown, variable, xAxis, colors, model],
   );
   const unstable = describeUnstable(result.points, variable);
   const sim = result.simulation;
@@ -187,7 +187,7 @@ export function SweepResult({ result }: { result: SweepResponse }) {
           <label htmlFor="sweep-xaxis">Eixo horizontal</label>
           <select id="sweep-xaxis" value={xAxis} onChange={(e) => setXAxis(e.target.value as XAxis)}>
             <option value="value">{VARIABLE_INFO[variable].label}</option>
-            <option value="utilization">Carga oferecida λ/(c·μ)</option>
+            <option value="utilization">{model === "mg1" ? "Carga oferecida λ·E[S]" : "Carga oferecida λ/(c·μ)"}</option>
           </select>
         </div>
       </div>

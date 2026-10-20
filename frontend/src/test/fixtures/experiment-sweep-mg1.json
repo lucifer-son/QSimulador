@@ -1,0 +1,90 @@
+{
+  "model": "mg1",
+  "variable": "cv",
+  "fixed": {
+    "lambda": 25.0,
+    "mu": 50.0
+  },
+  "points": [
+    {
+      "value": 0.5,
+      "status": "ok",
+      "message": null,
+      "offered_utilization": 0.5,
+      "metrics": {
+        "rho": 0.5,
+        "L": 0.8125,
+        "Lq": 0.3125,
+        "W": 0.0325,
+        "Wq": 0.0125,
+        "p0": 0.5,
+        "throughput": 25.0
+      },
+      "simulation": null
+    },
+    {
+      "value": 1.0,
+      "status": "ok",
+      "message": null,
+      "offered_utilization": 0.5,
+      "metrics": {
+        "rho": 0.5,
+        "L": 1.0,
+        "Lq": 0.5,
+        "W": 0.04,
+        "Wq": 0.02,
+        "p0": 0.5,
+        "throughput": 25.0
+      },
+      "simulation": null
+    },
+    {
+      "value": 1.5,
+      "status": "ok",
+      "message": null,
+      "offered_utilization": 0.5,
+      "metrics": {
+        "rho": 0.5,
+        "L": 1.3125000000000002,
+        "Lq": 0.8125,
+        "W": 0.052500000000000005,
+        "Wq": 0.0325,
+        "p0": 0.5,
+        "throughput": 25.0
+      },
+      "simulation": null
+    },
+    {
+      "value": 2.0,
+      "status": "ok",
+      "message": null,
+      "offered_utilization": 0.5,
+      "metrics": {
+        "rho": 0.5,
+        "L": 1.7500000000000002,
+        "Lq": 1.25,
+        "W": 0.07,
+        "Wq": 0.05,
+        "p0": 0.5,
+        "throughput": 25.0
+      },
+      "simulation": null
+    }
+  ],
+  "simulation": null,
+  "service": {
+    "distribution": "lognormal",
+    "label": "Lognormal",
+    "mean": 0.02,
+    "std": 0.01,
+    "variance": 0.0001,
+    "cv": 0.5,
+    "mu": 50.0,
+    "parameters": {
+      "mean": 0.02,
+      "cv": 0.5,
+      "sigma": 0.47238072707743883,
+      "mu_log": -4.023594781085251
+    }
+  }
+}

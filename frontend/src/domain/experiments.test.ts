@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildSensitivityBody, buildServersBody, buildSweepBody, experimentFieldErrors, parseServerList,
-  suggestRange, suggestServers, sweepVariables, type SystemText,
+  buildSensitivityBody, buildServersBody, buildServicesBody, buildSweepBody, experimentFieldErrors, parseServerList,
+  SERVICE_PRESETS, shapeVariable, suggestRange, suggestServers, sweepVariables, type SystemText,
 } from "./experiments";
 
 const system: SystemText = { lambda: "25", mu: "10", servers: "3", capacity: "6" };
@@ -138,5 +138,115 @@ describe("erros da API nos campos", () => {
   it("requisição inválida usa a mensagem genérica", () => {
     expect(experimentFieldErrors([{ field: "start", message: "x" }], "invalid_request"))
       .toEqual({ start: "Valor inválido para este campo." });
+  });
+});
+
+// ---------- M/G/1 ----------
+
+const mg1System: SystemText = {
+  lambda: "25", mu: "", servers: "", capacity: "", distribution: "lognormal", mean: "0.02", cv: "0.5",
+};
+
+describe("M/G/1: variáveis varridas", () => {
+  it("a variável de forma depende da distribuição", () => {
+    expect(sweepVariables("mg1", "lognormal")).toEqual(["lambda", "mu", "cv"]);
+    expect(sweepVariables("mg1", "weibull")).toEqual(["lambda", "mu", "cv"]);
+    expect(sweepVariables("mg1", "erlang")).toEqual(["lambda", "mu", "k"]);
+    for (const d of ["deterministic", "exponential", "uniform", "triangular", "truncated_normal"]) {
+      expect(sweepVariables("mg1", d)).toEqual(["lambda", "mu"]);
+    }
+    expect(shapeVariable("erlang")).toBe("k");
+    expect(shapeVariable(undefined)).toBeNull();
+  });
+});
+
+describe("M/G/1: faixas sugeridas", () => {
+  it("λ vai até além da saturação 1/E[S]", () => {
+    expect(suggestRange("lambda", "mg1", mg1System)).toEqual({ start: "5", end: "60", step: "5" });
+  });
+  it("μ parte da metade e vai ao dobro de λ", () => {
+    expect(suggestRange("mu", "mg1", mg1System)).toEqual({ start: "12.5", end: "50", step: "2.5" });
+  });
+  it("cv e k têm faixas fixas", () => {
+    expect(suggestRange("cv", "mg1", mg1System)).toEqual({ start: "0.25", end: "3", step: "0.25" });
+    expect(suggestRange("k", "mg1", { ...mg1System, distribution: "erlang", k: "4" })).toEqual({ start: "1", end: "8", step: "1" });
+  });
+});
+
+describe("M/G/1: corpo da varredura", () => {
+  it("envia o serviço como objeto e não envia μ", () => {
+    const built = buildSweepBody("mg1", "cv", mg1System, { start: "0.5", end: "2", step: "0.5" }, noSim);
+    expect(built).toEqual({
+      ok: true,
+      body: {
+        model: "mg1", variable: "cv", lambda: 25,
+        service: { distribution: "lognormal", mean: 0.02, cv: 0.5 },
+        start: 0.5, end: 2, step: 0.5,
+      },
+    });
+  });
+
+  it("varrendo λ, não envia λ mas envia o serviço", () => {
+    const built = buildSweepBody("mg1", "lambda", mg1System, { start: "5", end: "40", step: "5" }, noSim);
+    expect(built.ok && built.body).toMatchObject({ model: "mg1", variable: "lambda", service: { distribution: "lognormal" } });
+    expect(built.ok && "lambda" in built.body).toBe(false);
+  });
+
+  it("k é inteiro e cv aceita decimal", () => {
+    const erlang = { ...mg1System, distribution: "erlang", k: "4" };
+    const bad = buildSweepBody("mg1", "k", erlang, { start: "1", end: "4,5", step: "1" }, noSim);
+    expect(bad.ok).toBe(false);
+    expect(!bad.ok && bad.errors.end).toBe("Informe um número inteiro.");
+    expect(buildSweepBody("mg1", "k", erlang, { start: "1", end: "4", step: "1" }, noSim).ok).toBe(true);
+  });
+
+  it("serviço incompleto no Laboratório vira erro, não requisição", () => {
+    const built = buildSweepBody("mg1", "lambda", { ...mg1System, mean: "" }, range, noSim);
+    expect(built.ok).toBe(false);
+    expect(!built.ok && built.errors.service).toMatch(/serviço no Laboratório/);
+  });
+});
+
+describe("M/G/1: sensibilidade", () => {
+  it("envia λ, o serviço e a variação", () => {
+    expect(buildSensitivityBody("mg1", mg1System, "10")).toEqual({
+      ok: true,
+      body: { model: "mg1", lambda: 25, service: { distribution: "lognormal", mean: 0.02, cv: 0.5 }, delta_pct: 10 },
+    });
+  });
+});
+
+describe("M/G/1: comparação de distribuições", () => {
+  it("usa o serviço do Laboratório e as opções marcadas, todas com a mesma média", () => {
+    const built = buildServicesBody(mg1System, ["lab", "deterministic", "lognormal15"], range);
+    expect(built).toEqual({
+      ok: true,
+      body: {
+        services: [
+          { distribution: "lognormal", mean: 0.02, cv: 0.5 },
+          { distribution: "deterministic", mean: 0.02 },
+          { distribution: "lognormal", mean: 0.02, cv: 1.5 },
+        ],
+        start: 5, end: 40, step: 5,
+      },
+    });
+  });
+
+  it("exige de 2 a 8 distribuições", () => {
+    const one = buildServicesBody(mg1System, ["exponential"], range);
+    expect(!one.ok && one.errors.services).toMatch(/de 2 a 8/);
+    const all = buildServicesBody(mg1System, ["lab", ...SERVICE_PRESETS.map((p) => p.key), "x", "y", "z"], range);
+    expect(!all.ok && all.errors.services).toMatch(/de 2 a 8/);
+  });
+
+  it("opções fixas dependem da média do Laboratório", () => {
+    const built = buildServicesBody({ ...mg1System, mean: "" }, ["deterministic", "exponential"], range);
+    expect(!built.ok && built.errors.service).toMatch(/serviço no Laboratório/);
+  });
+
+  it("os presets variam só o CV", () => {
+    const cvs = SERVICE_PRESETS.map((p) => p.make(0.02));
+    expect(cvs.every((s) => s.distribution !== undefined)).toBe(true);
+    expect(SERVICE_PRESETS.map((p) => p.key)).toEqual(["deterministic", "erlang4", "exponential", "lognormal15", "lognormal2"]);
   });
 });

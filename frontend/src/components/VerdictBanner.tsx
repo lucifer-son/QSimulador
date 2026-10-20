@@ -38,6 +38,30 @@ function verdict(result: ViewResult): { tone: Tone; text: string; detail?: strin
 
 const ICONS = { success: IconCircleCheck, warning: IconAlertTriangle, info: IconInfoCircle };
 
+/** M/G/c: diz se a aproximação de Allen–Cunneen é exata neste caso e repete os avisos de faixa. */
+export function ApproximationNote({ result }: { result: ViewResult }) {
+  const approx = result.approximation;
+  if (!approx) return null;
+  const tone: Tone = approx.warnings.length > 0 ? "warning" : "info";
+  const Icon = ICONS[tone];
+  return (
+    <div className={`banner banner-${tone}`} role="note">
+      <Icon size={20} aria-hidden="true" />
+      <div>
+        <div>
+          {approx.exact
+            ? "Aproximação exata neste caso (um servidor ou serviço exponencial)."
+            : "Aproximação de Allen–Cunneen: os valores são aproximados, não exatos."}
+        </div>
+        {approx.warnings.map((w) => <div key={w} className="banner-detail">{w}</div>)}
+        {!approx.exact && result.action === "calculate" && (
+          <div className="banner-detail">Use Comparar para ver o erro da aproximação contra a simulação.</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function VerdictBanner({ result }: { result: ViewResult }) {
   const { tone, text, detail } = verdict(result);
   const Icon = ICONS[tone];

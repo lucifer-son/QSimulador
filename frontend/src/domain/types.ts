@@ -1,7 +1,12 @@
-/** Modelos markovianos (serviço exponencial): os únicos com experimentos e dados reais. */
+/** Modelos markovianos (serviço exponencial): os únicos com dados reais. */
 export type MarkovModelKey = "mm1" | "mmc" | "mm1k" | "mmck";
-/** `mg1` é o serviço geral (M/G/1; M/D/1 quando a distribuição é determinística). */
-export type ModelKey = MarkovModelKey | "mg1";
+/** Modelos com experimentos: os markovianos e o serviço geral M/G/1 (M/D/1 se determinístico). */
+export type ExperimentModelKey = MarkovModelKey | "mg1";
+/**
+ * Modelos do Laboratório. `erlangb` é o sistema de perda M/M/c/c (Fase 10) e `mgc` é o M/G/c por
+ * Allen–Cunneen (Fase 10, aproximado); os dois só existem no Laboratório.
+ */
+export type ModelKey = ExperimentModelKey | "erlangb" | "mgc";
 
 export type DistributionKey =
   | "deterministic" | "exponential" | "erlang" | "lognormal" | "weibull"
@@ -34,7 +39,7 @@ export interface Params {
   replications?: number;
   warmupTime?: number;
   seed?: number;
-  /** Só no M/G/1: distribuição de serviço e os números informados (para reabrir do histórico). */
+  /** Só no M/G/1 e no M/G/c: distribuição de serviço e os números informados (para reabrir do histórico). */
   service?: ServiceParams;
 }
 
@@ -53,6 +58,11 @@ export interface ServiceInfo {
   cv: number;
   mu: number;
   parameters: Record<string, number>;
+}
+
+export interface Approximation {
+  exact: boolean;
+  warnings: string[];
 }
 
 export interface MetricRow {
@@ -85,8 +95,12 @@ export interface ViewResult {
   simulationTime?: number;
   warmupTime?: number;
   confidenceLevel?: number;
-  /** Só no M/G/1. */
+  /** Só nos modelos com serviço geral (M/G/1 e M/G/c). */
   service?: ServiceInfo;
+  /** Só no M/G/c: se a aproximação de Allen–Cunneen é exata neste caso e os avisos de faixa. */
+  approximation?: Approximation;
+  /** Só no cálculo do Erlang-B: tráfego oferecido, tráfego carregado e chegadas perdidas por segundo. */
+  extras?: Record<string, number>;
   metrics: MetricRow[];
   allWithinCi?: boolean | null;
   maxErrorPct?: number | null;

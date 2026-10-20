@@ -6,7 +6,7 @@ import {
   buildSensitivityBody, experimentFieldErrors, VARIABLE_INFO, type ExpErrors, type SweepVariable, type SystemText,
 } from "../domain/experiments";
 import { formatMetric, formatNumber, formatSignedPercent } from "../domain/format";
-import type { MetricName, MarkovModelKey } from "../domain/types";
+import type { ExperimentModelKey, MetricName } from "../domain/types";
 import { useExperiment } from "../hooks/useExperiment";
 import { useThemeColors } from "../hooks/useThemeColors";
 import { experimentRecord, experimentTitle } from "../domain/records";
@@ -18,7 +18,7 @@ import { TextField } from "./TextField";
 
 interface Props {
   active: boolean;
-  model: MarkovModelKey;
+  model: ExperimentModelKey;
   system: SystemText;
 }
 
@@ -53,8 +53,8 @@ export function SensitivityPanel({ active, model, system }: Props) {
         <FixedParameters model={model} system={system} title="Ponto base" />
         <h2 className="group-title">Perturbação</h2>
         <TextField
-          id="sens-delta" label="Variação de λ e μ (%)" value={delta} error={errors.delta}
-          hint="De 0 a 50. c e K variam ±1."
+          id="sens-delta" label={model === "mg1" ? "Variação de λ, μ e CV (%)" : "Variação de λ e μ (%)"} value={delta} error={errors.delta}
+          hint={model === "mg1" ? "De 0 a 50. O k do Erlang varia ±1." : "De 0 a 50. c e K variam ±1."}
           onChange={(v) => { setDelta(v); setErrors(({ delta: _gone, ...rest }) => rest); }}
         />
         <div className="actions spaced">
@@ -85,13 +85,13 @@ export function SensitivityPanel({ active, model, system }: Props) {
   );
 }
 
-export function SensitivityResult({ result, model }: { result: SensitivityResponse; model: MarkovModelKey }) {
+export function SensitivityResult({ result, model }: { result: SensitivityResponse; model: ExperimentModelKey }) {
   const colors = useThemeColors();
   const [metric, setMetric] = useState<MetricName>("W");
   const shown = metric in result.base_metrics ? metric : "rho";
   const rows = useMemo(() => tornadoRows(result.parameters, shown), [result, shown]);
   const chart = useMemo(() => tornadoChart(rows, shown, colors), [rows, shown, colors]);
-  const unitFor = (name: SweepVariable) => (name === "lambda" || name === "mu" ? "req/s" : "");
+  const unitFor = (name: SweepVariable) => (name === "lambda" || name === "mu" ? "req/s" : "");   // cv e k não têm unidade
 
   const sideCell = (side: SensitivityResponse["parameters"][number]["low"], change: number | null, name: SweepVariable) =>
     side.status === "ok" ? (
@@ -111,7 +111,9 @@ export function SensitivityResult({ result, model }: { result: SensitivityRespon
         <IconInfoCircle size={18} aria-hidden="true" />
         <div>
           Ponto base: {metricTitle(shown)} = {formatMetric(shown, result.base_metrics[shown], { precise: true })}.
-          λ e μ variam ±{formatNumber(result.delta_pct)}%; c e K variam ±1 unidade.
+          {model === "mg1"
+            ? `λ, μ e o CV variam ±${formatNumber(result.delta_pct)}%; o k do Erlang varia ±1 unidade.`
+            : `λ e μ variam ±${formatNumber(result.delta_pct)}%; c e K variam ±1 unidade.`}
           <div className="banner-detail">
             Elasticidade: quantos % a métrica muda para cada 1% de mudança no parâmetro. Quanto maior em módulo, mais sensível.
           </div>

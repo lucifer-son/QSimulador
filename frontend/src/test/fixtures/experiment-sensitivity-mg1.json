@@ -1,0 +1,245 @@
+{
+  "model": "mg1",
+  "delta_pct": 10.0,
+  "base": {
+    "lambda": 25.0,
+    "mu": 50.0,
+    "cv": 0.5
+  },
+  "base_metrics": {
+    "rho": 0.5,
+    "L": 0.8125,
+    "Lq": 0.3125,
+    "W": 0.0325,
+    "Wq": 0.0125,
+    "p0": 0.5,
+    "throughput": 25.0
+  },
+  "parameters": [
+    {
+      "name": "lambda",
+      "base_value": 25.0,
+      "perturbation": "percent",
+      "low": {
+        "value": 22.5,
+        "status": "ok",
+        "message": null,
+        "metrics": {
+          "rho": 0.45,
+          "L": 0.6801136363636364,
+          "Lq": 0.23011363636363638,
+          "W": 0.030227272727272728,
+          "Wq": 0.010227272727272727,
+          "p0": 0.55,
+          "throughput": 22.5
+        }
+      },
+      "high": {
+        "value": 27.5,
+        "status": "ok",
+        "message": null,
+        "metrics": {
+          "rho": 0.55,
+          "L": 0.970138888888889,
+          "Lq": 0.420138888888889,
+          "W": 0.03527777777777778,
+          "Wq": 0.015277777777777782,
+          "p0": 0.44999999999999996,
+          "throughput": 27.5
+        }
+      },
+      "effects": {
+        "rho": {
+          "low_change_pct": -9.999999999999998,
+          "high_change_pct": 10.000000000000009,
+          "elasticity": 1.0000000000000002
+        },
+        "L": {
+          "low_change_pct": -16.293706293706286,
+          "high_change_pct": 19.401709401709414,
+          "elasticity": 1.784770784770785
+        },
+        "Lq": {
+          "low_change_pct": -26.363636363636356,
+          "high_change_pct": 34.444444444444485,
+          "elasticity": 3.040404040404042
+        },
+        "W": {
+          "low_change_pct": -6.993006993006995,
+          "high_change_pct": 8.54700854700856,
+          "elasticity": 0.7770007770007776
+        },
+        "Wq": {
+          "low_change_pct": -18.181818181818187,
+          "high_change_pct": 22.222222222222253,
+          "elasticity": 2.020202020202022
+        },
+        "p0": {
+          "low_change_pct": 10.000000000000009,
+          "high_change_pct": -10.000000000000009,
+          "elasticity": -1.0000000000000009
+        },
+        "throughput": {
+          "low_change_pct": -10.0,
+          "high_change_pct": 10.0,
+          "elasticity": 1.0
+        }
+      }
+    },
+    {
+      "name": "mu",
+      "base_value": 50.0,
+      "perturbation": "percent",
+      "low": {
+        "value": 45.0,
+        "status": "ok",
+        "message": null,
+        "metrics": {
+          "rho": 0.5555555555555556,
+          "L": 0.9895833333333335,
+          "Lq": 0.43402777777777785,
+          "W": 0.03958333333333334,
+          "Wq": 0.017361111111111115,
+          "p0": 0.4444444444444444,
+          "throughput": 25.0
+        }
+      },
+      "high": {
+        "value": 55.0,
+        "status": "ok",
+        "message": null,
+        "metrics": {
+          "rho": 0.45454545454545453,
+          "L": 0.6912878787878787,
+          "Lq": 0.23674242424242423,
+          "W": 0.02765151515151515,
+          "Wq": 0.009469696969696968,
+          "p0": 0.5454545454545454,
+          "throughput": 25.0
+        }
+      },
+      "effects": {
+        "rho": {
+          "low_change_pct": 11.111111111111116,
+          "high_change_pct": -9.090909090909093,
+          "elasticity": -1.0101010101010104
+        },
+        "L": {
+          "low_change_pct": 21.794871794871813,
+          "high_change_pct": -14.918414918414932,
+          "elasticity": -1.8356643356643372
+        },
+        "Lq": {
+          "low_change_pct": 38.888888888888914,
+          "high_change_pct": -24.24242424242425,
+          "elasticity": -3.156565656565658
+        },
+        "W": {
+          "low_change_pct": 21.794871794871806,
+          "high_change_pct": -14.91841491841493,
+          "elasticity": -1.8356643356643367
+        },
+        "Wq": {
+          "low_change_pct": 38.888888888888914,
+          "high_change_pct": -24.24242424242426,
+          "elasticity": -3.1565656565656584
+        },
+        "p0": {
+          "low_change_pct": -11.111111111111116,
+          "high_change_pct": 9.090909090909083,
+          "elasticity": 1.01010101010101
+        },
+        "throughput": {
+          "low_change_pct": 0.0,
+          "high_change_pct": 0.0,
+          "elasticity": 0.0
+        }
+      }
+    },
+    {
+      "name": "cv",
+      "base_value": 0.5,
+      "perturbation": "percent",
+      "low": {
+        "value": 0.45,
+        "status": "ok",
+        "message": null,
+        "metrics": {
+          "rho": 0.5,
+          "L": 0.8006249999999999,
+          "Lq": 0.30062500000000003,
+          "W": 0.032025,
+          "Wq": 0.012025000000000001,
+          "p0": 0.5,
+          "throughput": 25.0
+        }
+      },
+      "high": {
+        "value": 0.55,
+        "status": "ok",
+        "message": null,
+        "metrics": {
+          "rho": 0.5,
+          "L": 0.8256249999999999,
+          "Lq": 0.325625,
+          "W": 0.033025,
+          "Wq": 0.013025,
+          "p0": 0.5,
+          "throughput": 25.0
+        }
+      },
+      "effects": {
+        "rho": {
+          "low_change_pct": 0.0,
+          "high_change_pct": 0.0,
+          "elasticity": 0.0
+        },
+        "L": {
+          "low_change_pct": -1.4615384615384714,
+          "high_change_pct": 1.615384615384608,
+          "elasticity": 0.15384615384615394
+        },
+        "Lq": {
+          "low_change_pct": -3.79999999999999,
+          "high_change_pct": 4.199999999999999,
+          "elasticity": 0.3999999999999993
+        },
+        "W": {
+          "low_change_pct": -1.4615384615384714,
+          "high_change_pct": 1.615384615384608,
+          "elasticity": 0.15384615384615394
+        },
+        "Wq": {
+          "low_change_pct": -3.799999999999998,
+          "high_change_pct": 4.199999999999996,
+          "elasticity": 0.3999999999999995
+        },
+        "p0": {
+          "low_change_pct": 0.0,
+          "high_change_pct": 0.0,
+          "elasticity": 0.0
+        },
+        "throughput": {
+          "low_change_pct": 0.0,
+          "high_change_pct": 0.0,
+          "elasticity": 0.0
+        }
+      }
+    }
+  ],
+  "service": {
+    "distribution": "lognormal",
+    "label": "Lognormal",
+    "mean": 0.02,
+    "std": 0.01,
+    "variance": 0.0001,
+    "cv": 0.5,
+    "mu": 50.0,
+    "parameters": {
+      "mean": 0.02,
+      "cv": 0.5,
+      "sigma": 0.47238072707743883,
+      "mu_log": -4.023594781085251
+    }
+  }
+}

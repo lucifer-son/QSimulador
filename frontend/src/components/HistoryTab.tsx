@@ -13,6 +13,7 @@ import {
 import { useRecords } from "../hooks/RecordsContext";
 import { SensitivityResult } from "./SensitivityPanel";
 import { ServersResult } from "./ServersPanel";
+import { ServicesResult } from "./ServicesPanel";
 import { SweepResult } from "./SweepPanel";
 import { RealDataResults } from "./RealDataTab";
 
@@ -51,6 +52,7 @@ function toViewer(record: RecordDetail): Viewer {
 function ExperimentView({ snapshot }: { snapshot: ExperimentSnapshot }) {
   if (snapshot.type === "sweep") return <SweepResult result={snapshot.result} />;
   if (snapshot.type === "servers") return <ServersResult result={snapshot.result} model={snapshot.model} />;
+  if (snapshot.type === "services") return <ServicesResult result={snapshot.result} model={snapshot.model} />;
   return <SensitivityResult result={snapshot.result} model={snapshot.model} />;
 }
 

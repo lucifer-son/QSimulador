@@ -1,5 +1,5 @@
-import { MM1_METRICS, QUEUE_METRICS } from "./metrics";
-import type { FormValues, MarkovModelKey, MetricName, ModelKey, SystemFieldKey } from "./types";
+import { MGC_METRICS, MM1_METRICS, QUEUE_METRICS } from "./metrics";
+import type { ExperimentModelKey, FormValues, MarkovModelKey, MetricName, ModelKey, SystemFieldKey } from "./types";
 
 export interface ModelInfo {
   key: ModelKey;
@@ -20,12 +20,18 @@ export const DEFAULT_SERVICE = {
   min: "0.01", mode: "0.015", max: "0.03", loc: "0.02", scale: "0.008",
 } as const;
 
-/** Modelos markovianos, na ordem de exibição. Experimentos e dados reais usam só estes. */
+/** Modelos markovianos, na ordem de exibição. Os dados reais usam só estes. */
 export const MODEL_ORDER: MarkovModelKey[] = ["mm1", "mmc", "mm1k", "mmck"];
-/** Modelos do Laboratório: os markovianos e o serviço geral. */
-export const LAB_MODEL_ORDER: ModelKey[] = [...MODEL_ORDER, "mg1"];
+/** Modelos com experimentos: os markovianos e o M/G/1. */
+export const EXPERIMENT_MODEL_ORDER: ExperimentModelKey[] = [...MODEL_ORDER, "mg1"];
+/** Modelos do Laboratório: os anteriores, o Erlang-B (perda) e o M/G/c. */
+export const LAB_MODEL_ORDER: ModelKey[] = [...EXPERIMENT_MODEL_ORDER, "erlangb", "mgc"];
 
-export const isMarkovModel = (key: ModelKey): key is MarkovModelKey => key !== "mg1";
+export const isMarkovModel = (key: ModelKey): key is MarkovModelKey => (MODEL_ORDER as string[]).includes(key);
+export const isExperimentModel = (key: ModelKey): key is ExperimentModelKey =>
+  (EXPERIMENT_MODEL_ORDER as string[]).includes(key);
+/** Modelos cujo serviço é uma distribuição (média, CV...), e não só μ. */
+export const usesService = (key: ModelKey): key is "mg1" | "mgc" => key === "mg1" || key === "mgc";
 
 export const MODELS: Record<ModelKey, ModelInfo> = {
   mm1: {
@@ -52,5 +58,15 @@ export const MODELS: Record<ModelKey, ModelInfo> = {
     key: "mg1", label: "M/G/1", path: "/api/models/mg1",
     usesServers: false, usesCapacity: false, metrics: MM1_METRICS,
     example: { ...DEFAULT_SERVICE, lambda: "25", mu: "", servers: "1", capacity: "" },
+  },
+  erlangb: {
+    key: "erlangb", label: "Erlang-B (perda)", path: "/api/models/erlangb",
+    usesServers: true, usesCapacity: false, metrics: QUEUE_METRICS,
+    example: { ...DEFAULT_SERVICE, lambda: "20", mu: "1", servers: "15", capacity: "" },
+  },
+  mgc: {
+    key: "mgc", label: "M/G/c", path: "/api/models/mgc",
+    usesServers: true, usesCapacity: false, metrics: MGC_METRICS,
+    example: { ...DEFAULT_SERVICE, mean: "0.1", cv: "1.5", lambda: "80", mu: "", servers: "10", capacity: "" },
   },
 };

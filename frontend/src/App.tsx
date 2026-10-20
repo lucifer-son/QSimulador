@@ -7,12 +7,12 @@ import { ExperimentTab } from "./components/ExperimentTab";
 import { HistoryTab } from "./components/HistoryTab";
 import { RealDataTab } from "./components/RealDataTab";
 import { estimateText } from "./domain/estimate";
-import { isMarkovModel, LAB_MODEL_ORDER, MODELS } from "./domain/models";
+import { isExperimentModel, LAB_MODEL_ORDER, MODELS } from "./domain/models";
 import { serviceToText } from "./domain/service";
 import type { LabSnapshot } from "./domain/records";
 import { parseForm } from "./domain/request";
 import {
-  SYSTEM_FIELDS, type Action, type FieldErrors, type FieldKey, type FormValues, type MarkovModelKey,
+  SYSTEM_FIELDS, type Action, type FieldErrors, type FieldKey, type ExperimentModelKey, type FormValues,
   type ModelKey, type SystemFieldKey,
 } from "./domain/types";
 import { RecordsProvider } from "./hooks/RecordsContext";
@@ -35,8 +35,8 @@ function initialSystems(): Record<ModelKey, SystemValues> {
 
 export default function App() {
   const [model, setModel] = useState<ModelKey>("mmck");
-  // Experimentos só existem para modelos markovianos: ficam no último escolhido (e mantêm os resultados).
-  const [experimentModel, setExperimentModel] = useState<MarkovModelKey>("mmck");
+  // Experimentos existem para os modelos markovianos e o M/G/1: ficam no último escolhido (e mantêm os resultados).
+  const [experimentModel, setExperimentModel] = useState<ExperimentModelKey>("mmck");
   const [systems, setSystems] = useState(initialSystems);
   const [sim, setSim] = useState<SimValues>(INITIAL_SIM);
   const [localErrors, setLocalErrors] = useState<FieldErrors>({});
@@ -80,7 +80,7 @@ export default function App() {
 
   const handleModelChange = (next: ModelKey) => {
     setModel(next);
-    if (isMarkovModel(next)) setExperimentModel(next);
+    if (isExperimentModel(next)) setExperimentModel(next);
     setLocalErrors({});
     setApiErrors({});
   };
@@ -99,7 +99,7 @@ export default function App() {
   const handleReopenLab = ({ model: savedModel, parameters: p, result }: LabSnapshot) => {
     const text = (v: number | undefined, fallback: string) => (v === undefined ? fallback : String(v));
     setModel(savedModel);
-    if (isMarkovModel(savedModel)) setExperimentModel(savedModel);
+    if (isExperimentModel(savedModel)) setExperimentModel(savedModel);
     setSystems((prev) => {
       const current = prev[savedModel];
       return {
@@ -194,10 +194,10 @@ export default function App() {
 
       {experimentsOpened && (
         <main className="layout layout-wide" hidden={activeTab !== "experimentos"}>
-          {model === "mg1" && (
+          {!isExperimentModel(model) && (
             <div className="panel banner banner-info" role="note">
-              Os experimentos ainda não cobrem o serviço geral (M/G/1). Esta aba usa o último modelo
-              markoviano escolhido: {MODELS[experimentModel].label}.
+              Os experimentos cobrem os modelos markovianos e o M/G/1; o Erlang-B e o M/G/c ainda não têm
+              experimentos. Esta aba usa o último modelo compatível escolhido: {MODELS[experimentModel].label}.
             </div>
           )}
           <ExperimentTab model={experimentModel} system={systems[experimentModel]} sim={sim} />

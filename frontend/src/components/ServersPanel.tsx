@@ -8,7 +8,7 @@ import {
 } from "../domain/experiments";
 import { formatMetric, formatNumber } from "../domain/format";
 import { MODELS } from "../domain/models";
-import type { MetricName, MarkovModelKey } from "../domain/types";
+import type { MarkovModelKey, MetricName } from "../domain/types";
 import { useExperiment } from "../hooks/useExperiment";
 import { useThemeColors } from "../hooks/useThemeColors";
 import { experimentRecord, experimentTitle } from "../domain/records";

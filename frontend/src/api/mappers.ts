@@ -6,14 +6,31 @@ import type { components } from "./schema";
 
 type S = components["schemas"];
 
-export type CalculateResponse = S["MM1CalculateResponse"] | S["QueueCalculateResponse"] | S["MG1CalculateResponse"];
-export type SimulateResponse = S["SimulationResponse"] | S["QueueSimulationResponse"] | S["MG1SimulationResponse"];
-export type CompareResponse = S["ComparisonResponse"] | S["QueueComparisonResponse"] | S["MG1ComparisonResponse"];
+export type CalculateResponse =
+  | S["MM1CalculateResponse"] | S["QueueCalculateResponse"] | S["MG1CalculateResponse"]
+  | S["ErlangBCalculateResponse"] | S["MGCCalculateResponse"];
+export type SimulateResponse =
+  | S["SimulationResponse"] | S["QueueSimulationResponse"] | S["MG1SimulationResponse"] | S["MGCSimulationResponse"];
+export type CompareResponse =
+  | S["ComparisonResponse"] | S["QueueComparisonResponse"] | S["MG1ComparisonResponse"] | S["MGCComparisonResponse"];
 
 /** Só o M/G/1 devolve `service`: a descrição efetiva do tempo de serviço. */
 function serviceOf(res: unknown): Pick<ViewResult, "service"> {
   const service = (res as { service?: ServiceInfo }).service;
   return service ? { service } : {};
+}
+
+/** Só o M/G/c devolve `exact` e `warnings`: se a aproximação é exata aqui e os avisos de faixa. */
+function approximationOf(res: unknown): Pick<ViewResult, "approximation"> {
+  const { exact, warnings } = res as { exact?: boolean; warnings?: string[] };
+  return typeof exact === "boolean" ? { approximation: { exact, warnings: warnings ?? [] } } : {};
+}
+
+/** Só o cálculo do Erlang-B traz o tráfego oferecido, o carregado e as chegadas perdidas. */
+function extrasOf(res: unknown): Pick<ViewResult, "extras"> {
+  const r = res as Record<string, number | undefined>;
+  if (r.offered_load === undefined) return {};
+  return { extras: { offered_load: r.offered_load, carried_load: r.carried_load!, lost_rate: r.lost_rate! } };
 }
 
 /** No M/G/1, μ vem da API (1/E[S] efetivo); o que o formulário calculou é só uma prévia. */
@@ -41,6 +58,8 @@ export function fromCalculate(model: ModelKey, params: Params, res: CalculateRes
     ...shape(res as { servers?: number; capacity?: number | null }),
     params: withApiMu(params, res),
     ...serviceOf(res),
+    ...approximationOf(res),
+    ...extrasOf(res),
     metrics: namesIn(model, values).map((name) => ({ name, analytical: values[name] })),
     raw: res,
   };
@@ -98,6 +117,7 @@ export function fromCompare(model: ModelKey, params: Params, res: CompareRespons
     ...shape(res as { servers?: number; capacity?: number | null }),
     params: withApiMu(params, res),
     ...serviceOf(res),
+    ...approximationOf(res),
     seed: res.seed,
     replications: res.replications,
     simulationTime: res.simulation_time,

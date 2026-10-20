@@ -7,6 +7,7 @@ type S = components["schemas"];
 export type SweepResponse = S["SweepResponse"];
 export type SweepPoint = S["SweepPointOut"];
 export type ServerComparisonResponse = S["ServerComparisonResponse"];
+export type ServicesComparisonResponse = S["ServicesComparisonResponse"];
 export type SensitivityResponse = S["SensitivityResponse"];
 export type ParameterSensitivity = S["ParameterSensitivityOut"];
 
@@ -18,3 +19,6 @@ export const runServerComparison = (body: Body, signal?: AbortSignal) =>
 
 export const runSensitivity = (body: Body, signal?: AbortSignal) =>
   postJson<SensitivityResponse>("/api/experiments/sensitivity", body, signal);
+
+export const runServicesComparison = (body: Body, signal?: AbortSignal) =>
+  postJson<ServicesComparisonResponse>("/api/experiments/services", body, signal);

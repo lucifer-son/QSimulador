@@ -22,8 +22,8 @@ const BASE_LAYOUT = (colors: ThemeColors) => ({
   legend: { orientation: "h", y: -0.35 },
 });
 
-export function xTitle(variable: SweepVariable, xAxis: XAxis): string {
-  if (xAxis === "utilization") return "Carga oferecida λ/(c·μ)";
+export function xTitle(variable: SweepVariable, xAxis: XAxis, model?: string): string {
+  if (xAxis === "utilization") return model === "mg1" ? "Carga oferecida λ·E[S]" : "Carga oferecida λ/(c·μ)";
   const { label, unit } = VARIABLE_INFO[variable];
   return unit ? `${label} (${unit})` : label;
 }
@@ -95,6 +95,7 @@ export const BAND_LABEL: Record<Band["status"], string> = { unstable: "instável
 
 export function sweepChart(
   series: SweepSeries, metric: MetricName, variable: SweepVariable, xAxis: XAxis, colors: ThemeColors,
+  model?: string,
 ) {
   const suffix = metricScale(metric) === 100 ? "%" : "";
   const data: object[] = [
@@ -136,7 +137,7 @@ export function sweepChart(
     ...BASE_LAYOUT(colors),
     shapes, annotations,
     xaxis: {
-      title: { text: xTitle(variable, xAxis) }, gridcolor: colors.border, fixedrange: true,
+      title: { text: xTitle(variable, xAxis, model) }, gridcolor: colors.border, fixedrange: true,
       ...(xAxis === "utilization" ? { tickformat: ".0%" } : {}),
     },
     yaxis: {
@@ -182,13 +183,16 @@ export function serverLines(
   });
 }
 
-export function serversChart(lines: ServerLine[], metric: MetricName, colors: ThemeColors) {
+export interface NamedLine { name: string; x: number[]; y: (number | null)[] }
+
+/** Uma curva por servidor (c = ...) ou por distribuição de serviço, no mesmo gráfico. */
+export function comparisonChart(lines: NamedLine[], metric: MetricName, colors: ThemeColors) {
   const palette = [colors.accent, colors.danger, "#2f9e6b", "#c47f17", "#8e5bd6", "#17a2b8", colors.textSecondary, "#d6479b"];
   const data = lines.map((l, i) => ({
-    type: "scatter", mode: "lines+markers", name: `c = ${l.servers}`, x: l.x, y: l.y, connectgaps: false,
+    type: "scatter", mode: "lines+markers", name: l.name, x: l.x, y: l.y, connectgaps: false,
     line: { color: palette[i % palette.length], width: 2, dash: DASHES[i % DASHES.length] },
     marker: { color: palette[i % palette.length], size: 7, symbol: SYMBOLS[i % SYMBOLS.length] },
-    hovertemplate: `λ = %{x:.4g}: %{y:.4g}<extra>c = ${l.servers}</extra>`,
+    hovertemplate: `λ = %{x:.4g}: %{y:.4g}<extra>${l.name}</extra>`,
   }));
   return {
     data,
@@ -201,6 +205,41 @@ export function serversChart(lines: ServerLine[], metric: MetricName, colors: Th
       },
     },
   };
+}
+
+export function serversChart(lines: ServerLine[], metric: MetricName, colors: ThemeColors) {
+  return comparisonChart(lines.map((l) => ({ name: `c = ${l.servers}`, x: l.x, y: l.y })), metric, colors);
+}
+
+/** M/G/1: uma curva por distribuição de serviço (rótulo com o CV, já que a média pode diferir). */
+export function serviceLabel(service: { label: string; cv: number }): string {
+  return `${service.label} (CV ${formatNumber(Number(service.cv.toPrecision(3)))})`;
+}
+
+export function serviceLines(
+  series: { service: { label: string; cv: number }; points: SweepPoint[] }[], metric: MetricName,
+): NamedLine[] {
+  const scale = metricScale(metric);
+  return series.map((s) => {
+    const sorted = [...s.points].sort((a, b) => a.value - b.value);
+    return {
+      name: serviceLabel(s.service),
+      x: sorted.map((p) => p.value),
+      y: sorted.map((p) => (p.status === "ok" && p.metrics && metric in p.metrics ? p.metrics[metric] * scale : null)),
+    };
+  });
+}
+
+/** Onde cada distribuição satura (λ·E[S] ≥ 1); vazio se todas foram calculadas. */
+export function describeServiceLimits(
+  series: { service: { label: string; cv: number }; points: SweepPoint[] }[],
+): string[] {
+  const out: string[] = [];
+  for (const s of series) {
+    const first = [...s.points].sort((a, b) => a.value - b.value).find((p) => p.status === "unstable");
+    if (first) out.push(`${serviceLabel(s.service)}: instável a partir de λ = ${formatNumber(first.value)} req/s.`);
+  }
+  return out;
 }
 
 /** Texto por série sobre onde ela deixa de ser estável; vazio se todas foram calculadas. */

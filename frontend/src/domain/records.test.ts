@@ -126,9 +126,16 @@ describe("Laboratório: M/G/1", () => {
     expect(parseLabRecord(stored(record))).toBeNull();
   });
 
-  it("experimentos continuam restritos aos modelos markovianos", () => {
-    const bad = stored({ kind: "experiment", title: "x", params: { origin: "experiment", experiment: "sweep", model: "mg1", request: null }, result: { points: [] } });
-    expect(parseExperimentRecord(bad)).toBeNull();
+  it("experimentos aceitam os markovianos e o M/G/1, mas não o Erlang-B nem o M/G/c", () => {
+    const make = (model: string, experiment = "sweep", result: Record<string, unknown> = { points: [] }) =>
+      stored({ kind: "experiment", title: "x", params: { origin: "experiment", experiment, model, request: null }, result });
+    expect(parseExperimentRecord(make("mg1"))?.model).toBe("mg1");
+    expect(parseExperimentRecord(make("erlangb"))).toBeNull();
+    expect(parseExperimentRecord(make("mgc"))).toBeNull();
+    // comparar servidores só existe nos markovianos; comparar distribuições, só no M/G/1
+    expect(parseExperimentRecord(make("mg1", "servers", { series: [] }))).toBeNull();
+    expect(parseExperimentRecord(make("mmc", "services", { series: [] }))).toBeNull();
+    expect(parseExperimentRecord(make("mg1", "services", { series: [] }))?.type).toBe("services");
   });
 });
 

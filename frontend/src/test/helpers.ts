@@ -28,6 +28,17 @@ import mmcSimulate from "./fixtures/mmc-simulate.json";
 import mmckCalculate from "./fixtures/mmck-calculate.json";
 import mmckCompare from "./fixtures/mmck-compare.json";
 import mmckSimulate from "./fixtures/mmck-simulate.json";
+import erlangbCalculate from "./fixtures/erlangb-calculate.json";
+import erlangbCompare from "./fixtures/erlangb-compare.json";
+import erlangbSimulate from "./fixtures/erlangb-simulate.json";
+import erlangbSize from "./fixtures/erlangb-size.json";
+import errorMgcUnstable from "./fixtures/error-mgc-unstable.json";
+import experimentSensitivityMg1 from "./fixtures/experiment-sensitivity-mg1.json";
+import experimentServicesMg1 from "./fixtures/experiment-services-mg1.json";
+import experimentSweepMg1 from "./fixtures/experiment-sweep-mg1.json";
+import mgcCalculate from "./fixtures/mgc-calculate.json";
+import mgcCompare from "./fixtures/mgc-compare.json";
+import mgcSimulate from "./fixtures/mgc-simulate.json";
 import type { ThemeColors } from "../hooks/useThemeColors";
 
 /** Respostas reais da API, gravadas em arquivos (ver src/test/fixtures). */
@@ -40,6 +51,9 @@ export const fixtures = {
   mg1Calculate, mg1Compare, mg1Md1Calculate, mg1Simulate, errorMg1InvalidParameter, errorMg1Unstable,
   mmcCalculate, mmcCompare, mmcSimulate,
   mmckCalculate, mmckCompare, mmckSimulate,
+  erlangbCalculate, erlangbCompare, erlangbSimulate, erlangbSize,
+  mgcCalculate, mgcCompare, mgcSimulate, errorMgcUnstable,
+  experimentSensitivityMg1, experimentServicesMg1, experimentSweepMg1,
 };
 
 export const colors: ThemeColors = {

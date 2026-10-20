@@ -15,3 +15,13 @@ def finite_population_model_name(servers: int, population: int) -> str:
 def service_model_name(distribution: str) -> str:
     """Um servidor com serviço geral: \"M/D/1\" se determinístico; senão \"M/G/1\"."""
     return "M/D/1" if distribution == "deterministic" else "M/G/1"
+
+
+def erlang_b_model_name(servers: int) -> str:
+    """Sistema de perda: \"M/M/15/15\" (c servidores e capacidade c, sem espera)."""
+    return f"M/M/{servers}/{servers}"
+
+
+def multi_server_service_model_name(distribution: str, servers: int) -> str:
+    """c servidores com serviço geral: \"M/D/3\" se determinístico; senão \"M/G/3\"."""
+    return f"M/{'D' if distribution == 'deterministic' else 'G'}/{servers}"

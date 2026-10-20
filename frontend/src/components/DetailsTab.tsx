@@ -29,6 +29,7 @@ export function DetailsTab({ result }: { result: ViewResult }) {
   ];
   if (result.service) {
     const s = result.service;
+    if (result.modelKey === "mgc") rows.push(["Servidores c", formatInteger(result.servers)]);
     rows.push(
       ["Distribuição do serviço", s.label],
       ["Tempo médio E[S]", `${formatNumber(Number(s.mean.toPrecision(6)))} s`],
@@ -42,6 +43,16 @@ export function DetailsTab({ result }: { result: ViewResult }) {
       ["Servidores c", formatInteger(result.servers)],
       ["Capacidade K", result.capacity === null ? "ilimitada" : formatInteger(result.capacity)],
     );
+  }
+  if (result.extras) {
+    rows.push(
+      ["Tráfego oferecido a = λ/μ", `${formatNumber(Number(result.extras.offered_load.toPrecision(6)))} Erlangs`],
+      ["Tráfego carregado", `${formatNumber(Number(result.extras.carried_load.toPrecision(6)))} Erlangs`],
+      ["Chegadas perdidas", `${formatNumber(Number(result.extras.lost_rate.toPrecision(6)))} req/s`],
+    );
+  }
+  if (result.approximation) {
+    rows.push(["Aproximação", result.approximation.exact ? "exata neste caso" : "Allen–Cunneen (aproximada)"]);
   }
   if (result.action !== "calculate") {
     rows.push(

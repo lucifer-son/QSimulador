@@ -1,0 +1,10 @@
+{
+  "target_blocking": 0.01,
+  "servers": 30,
+  "blocking": 0.008457498340194703,
+  "blocking_previous": 0.012794456605799295,
+  "offered_load": 20.0,
+  "carried_load": 19.830850033196107,
+  "rho": 0.6610283344398702,
+  "lost_rate": 0.16914996680389405
+}

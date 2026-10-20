@@ -50,6 +50,7 @@ class SensitivityResult:
     base: dict[str, float]              # parâmetros do ponto base (nomes da API)
     base_metrics: dict[str, float]
     parameters: list[ParameterSensitivity]
+    service: dict | None = None         # só no M/G/1: descrição do serviço do ponto base
 
     def as_dict(self) -> dict:
         return asdict(self)

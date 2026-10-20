@@ -17,17 +17,19 @@ from app.domain.validation.simulation import (
 )
 
 # Modelos aceitos nos experimentos (as mesmas chaves das rotas /api/models/{modelo}).
-MODELS = ("mm1", "mmc", "mm1k", "mmck")
-USES_SERVERS = {"mm1": False, "mmc": True, "mm1k": False, "mmck": True}
-USES_CAPACITY = {"mm1": False, "mmc": False, "mm1k": True, "mmck": True}
+MODELS = ("mm1", "mmc", "mm1k", "mmck", "mg1")
+USES_SERVERS = {"mm1": False, "mmc": True, "mm1k": False, "mmck": True, "mg1": False}
+USES_CAPACITY = {"mm1": False, "mmc": False, "mm1k": True, "mmck": True, "mg1": False}
 
 # Variáveis que podem ser varridas (nomes dos campos da API).
-VARIABLES = ("lambda", "mu", "servers", "capacity")
-INTEGER_VARIABLES = ("servers", "capacity")
+# `cv` e `k` (variabilidade do serviço) só existem no M/G/1.
+VARIABLES = ("lambda", "mu", "servers", "capacity", "cv", "k")
+INTEGER_VARIABLES = ("servers", "capacity", "k")
 
 # Limites de segurança (RNF-12): evitam respostas e cálculos desproporcionais.
 MAX_SWEEP_POINTS = 200
 MAX_COMPARED_SERVERS = 8
+MAX_COMPARED_SERVICES = 8
 MAX_DELTA_PCT = 50.0
 
 # O mesmo teto de chegadas da simulação individual, agora somado entre os pontos da faixa.

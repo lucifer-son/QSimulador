@@ -49,7 +49,7 @@ describe("formulário", () => {
   it("oferece todos os modelos em um único seletor", () => {
     setup();
     expect(within(modelSelect()).getAllByRole("option").map((option) => option.textContent)).toEqual([
-      "M/M/1", "M/M/c", "M/M/1/K", "M/M/c/K", "M/G/1",
+      "M/M/1", "M/M/c", "M/M/1/K", "M/M/c/K", "M/G/1", "Erlang-B (perda)", "M/G/c",
     ]);
   });
 
@@ -462,10 +462,19 @@ describe("serviço geral (M/G/1)", () => {
     expect(distribution()).toHaveValue("weibull");
   });
 
-  it("a aba Experimentos avisa que não cobre o M/G/1 e mantém o último modelo markoviano", async () => {
+  it("a aba Experimentos cobre o M/G/1: oferece comparar distribuições em vez de servidores", async () => {
     const { user } = await openMg1();
     await user.click(screen.getByRole("button", { name: "Experimentos" }));
-    expect(await screen.findByText(/não cobrem o serviço geral/)).toBeInTheDocument();
-    expect(screen.getByText(/último modelo markoviano escolhido: M\/M\/c\/K/)).toBeInTheDocument();
+    expect(await screen.findByRole("tab", { name: "Comparar distribuições" })).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Comparar servidores" })).toBeNull();
+    expect(screen.queryByText(/não cobrem o serviço geral/)).toBeNull();
+  });
+
+  it("Erlang-B e M/G/c ainda não têm experimentos: a aba avisa e mantém o último modelo compatível", async () => {
+    const { user } = setup();
+    await user.selectOptions(modelSelect(), "erlangb");
+    await user.click(screen.getByRole("button", { name: "Experimentos" }));
+    expect(await screen.findByText(/o Erlang-B e o M\/G\/c ainda não têm experimentos/)).toBeInTheDocument();
+    expect(screen.getByText(/último modelo compatível escolhido: M\/M\/c\/K/)).toBeInTheDocument();
   });
 });

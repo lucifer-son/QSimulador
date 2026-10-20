@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { ParameterSensitivity, SweepPoint } from "../api/experiments";
 import { colors } from "../test/helpers";
 import {
-  describeServerLimits, describeUnstable, serverLines, serversChart, sweepChart, sweepSeries, tornadoChart,
-  tornadoRows,
+  comparisonChart, describeServerLimits, describeServiceLimits, describeUnstable, serverLines, serversChart,
+  serviceLabel, serviceLines, sweepChart, sweepSeries, tornadoChart, tornadoRows, xTitle,
 } from "./experiments";
 
 const ok = (value: number, util: number, W: number, extra: Partial<SweepPoint> = {}): SweepPoint => ({
@@ -182,5 +182,50 @@ describe("sensibilidade", () => {
     expect(low.y).toEqual(["Chegadas λ", "Serviço μ"]);        // servers não tem o lado "diminui"
     expect(high.y).toHaveLength(3);
     expect(chart.layout.xaxis.title.text).toBe("Variação de W (%)");
+  });
+});
+
+describe("M/G/1: comparação de distribuições", () => {
+  const det = { label: "Determinística (M/D/1)", cv: 0 };
+  const logn = { label: "Lognormal", cv: 1.5 };
+  const series = [
+    { service: det, points: [ok(10, 0.2, 0.03), ok(20, 0.4, 0.04), bad(50, 1)] },
+    { service: logn, points: [ok(10, 0.2, 0.05), ok(20, 0.4, 0.09), bad(50, 1)] },
+  ];
+
+  it("rotula cada curva com o CV", () => {
+    expect(serviceLabel(logn)).toBe("Lognormal (CV 1,5)");
+    expect(serviceLabel(det)).toBe("Determinística (M/D/1) (CV 0)");
+  });
+
+  it("uma linha por distribuição, com lacunas nos pontos instáveis", () => {
+    const lines = serviceLines(series, "W");
+    expect(lines.map((l) => l.name)).toEqual(["Determinística (M/D/1) (CV 0)", "Lognormal (CV 1,5)"]);
+    expect(lines[1].x).toEqual([10, 20, 50]);
+    expect(lines[1].y).toEqual([0.05, 0.09, null]);
+    expect(serviceLines(series, "rho")[0].y).toEqual([20, 40, null]);     // frações em %
+  });
+
+  it("informa onde cada distribuição deixa de ser estável", () => {
+    expect(describeServiceLimits(series)).toEqual([
+      "Determinística (M/D/1) (CV 0): instável a partir de λ = 50 req/s.",
+      "Lognormal (CV 1,5): instável a partir de λ = 50 req/s.",
+    ]);
+    expect(describeServiceLimits([{ service: det, points: [ok(10, 0.2, 0.03)] }])).toEqual([]);
+  });
+
+  it("o gráfico tem uma curva por série e o mesmo formato do de servidores", () => {
+    const chart = comparisonChart(serviceLines(series, "W"), "W", colors);
+    expect(chart.data).toHaveLength(2);
+    expect((chart.data[1] as { name: string }).name).toBe("Lognormal (CV 1,5)");
+    const servers = serversChart(serverLines([{ servers: 2, points }], "W"), "W", colors);
+    expect((servers.data[0] as { name: string }).name).toBe("c = 2");
+  });
+
+  it("o eixo de carga do M/G/1 é λ·E[S]", () => {
+    expect(xTitle("lambda", "utilization", "mg1")).toBe("Carga oferecida λ·E[S]");
+    expect(xTitle("lambda", "utilization")).toBe("Carga oferecida λ/(c·μ)");
+    expect(xTitle("cv", "value", "mg1")).toBe("CV do serviço");
+    expect(xTitle("k", "value", "mg1")).toBe("Etapas k (Erlang)");
   });
 });

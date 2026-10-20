@@ -1,0 +1,94 @@
+{
+  "model": "M/G/10",
+  "lambda": 80.0,
+  "servers": 10,
+  "service": {
+    "distribution": "lognormal",
+    "label": "Lognormal",
+    "mean": 0.1,
+    "std": 0.15000000000000002,
+    "variance": 0.022500000000000006,
+    "cv": 1.5000000000000002,
+    "mu": 10.0,
+    "parameters": {
+      "mean": 0.1,
+      "cv": 1.5,
+      "sigma": 1.085658784490618,
+      "mu_log": -2.8919125911648687
+    }
+  },
+  "exact": false,
+  "warnings": [],
+  "simulation_time": 100.0,
+  "warmup_time": 10.0,
+  "replications": 3,
+  "seed": 7,
+  "confidence_level": 0.95,
+  "metrics": {
+    "rho": {
+      "analytical": 0.8,
+      "simulated_mean": 0.7846011625850765,
+      "ci_low": 0.764151608319199,
+      "ci_high": 0.805050716850954,
+      "absolute_error": 0.015398837414923539,
+      "relative_error_pct": 1.9248546768654422,
+      "within_ci": true
+    },
+    "L": {
+      "analytical": 10.659670980176886,
+      "simulated_mean": 9.48481369480774,
+      "ci_low": 9.328145469411572,
+      "ci_high": 9.641481920203907,
+      "absolute_error": 1.1748572853691464,
+      "relative_error_pct": 11.021515462850157,
+      "within_ci": false
+    },
+    "Lq": {
+      "analytical": 2.6596709801768843,
+      "simulated_mean": 1.6388020689569724,
+      "ci_low": 1.2932133559785872,
+      "ci_high": 1.9843907819353577,
+      "absolute_error": 1.0208689112199119,
+      "relative_error_pct": 38.383278188492994,
+      "within_ci": false
+    },
+    "W": {
+      "analytical": 0.13324588725221106,
+      "simulated_mean": 0.11957482320583956,
+      "ci_low": 0.11795818983586003,
+      "ci_high": 0.1211914565758191,
+      "absolute_error": 0.0136710640463715,
+      "relative_error_pct": 10.260027028447473,
+      "within_ci": false
+    },
+    "Wq": {
+      "analytical": 0.03324588725221105,
+      "simulated_mean": 0.02068450590180729,
+      "ci_low": 0.016568046299459717,
+      "ci_high": 0.024800965504154865,
+      "absolute_error": 0.012561381350403761,
+      "relative_error_pct": 37.78326400228153,
+      "within_ci": false
+    },
+    "throughput": {
+      "analytical": 80.0,
+      "simulated_mean": 79.0111111111111,
+      "ci_low": 78.09900686466851,
+      "ci_high": 79.9232153575537,
+      "absolute_error": 0.9888888888888943,
+      "relative_error_pct": 1.2361111111111178,
+      "within_ci": false
+    },
+    "p_wait": {
+      "analytical": 0.40918015079644354,
+      "simulated_mean": 0.3774240602051066,
+      "ci_low": 0.3467904590955112,
+      "ci_high": 0.408057661314702,
+      "absolute_error": 0.03175609059133694,
+      "relative_error_pct": 7.760906908491455,
+      "within_ci": false
+    }
+  },
+  "all_within_ci": false,
+  "max_relative_error_pct": 38.383278188492994
+}

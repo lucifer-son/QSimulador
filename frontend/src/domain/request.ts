@@ -1,5 +1,5 @@
 import { parseNumber } from "./number";
-import { MODELS } from "./models";
+import { MODELS, usesService } from "./models";
 import { parseService, serviceMoments } from "./service";
 import type { Action, FieldErrors, FieldKey, FormValues, ModelKey, Params } from "./types";
 
@@ -31,10 +31,10 @@ export function parseForm(values: FormValues, model: ModelKey, action: Action): 
   };
 
   const lambda = read("lambda");
-  // M/G/1: o serviço é dado pela distribuição (média, forma...), não por μ.
-  const service = model === "mg1" ? parseService(values) : null;
+  // M/G/1 e M/G/c: o serviço é dado pela distribuição (média, forma...), não por μ.
+  const service = usesService(model) ? parseService(values) : null;
   if (service && !service.ok) Object.assign(errors, service.errors);
-  const mu = model === "mg1" ? undefined : read("mu");
+  const mu = usesService(model) ? undefined : read("mu");
   const servers = info.usesServers ? read("servers", true) : undefined;
   const capacity = info.usesCapacity ? read("capacity", true) : undefined;
 
@@ -71,7 +71,7 @@ export function parseForm(values: FormValues, model: ModelKey, action: Action): 
 export function buildBody(model: ModelKey, params: Params, action: Action): Record<string, number | string> {
   const info = MODELS[model];
   const body: Record<string, number | string> =
-    model === "mg1" ? { lambda: params.lambda, distribution: params.service!.distribution, ...params.service!.values }
+    usesService(model) ? { lambda: params.lambda, distribution: params.service!.distribution, ...params.service!.values }
       : { lambda: params.lambda, mu: params.mu };
   if (info.usesServers) body.servers = params.servers!;
   if (info.usesCapacity) body.capacity = params.capacity!;

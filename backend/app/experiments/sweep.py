@@ -55,6 +55,7 @@ class SweepResult:
     fixed: dict[str, float]             # parâmetros mantidos fixos (nomes da API)
     points: list[SweepPoint]
     simulation: SimulationSettings | None   # com a semente efetivamente usada
+    service: dict | None = None             # só no M/G/1: descrição do serviço do ponto base
 
     def as_dict(self) -> dict:
         return asdict(self)

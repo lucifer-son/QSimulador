@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 import { fetchRuns, runAction } from "../api/actions";
 import { ApiError } from "../api/client";
 import { createRecord, deleteRecord, getRecord, getRecordsStatus, listRecords, renameRecord } from "../api/records";
-import { runSensitivity, runServerComparison, runSweep } from "../api/experiments";
+import { runSensitivity, runServerComparison, runServicesComparison, runSweep } from "../api/experiments";
 import { fieldErrorsFromApi } from "../api/fieldErrors";
 import { buildReport, compareSimulated, type LevelsImport } from "../api/realdataExtra";
 import { MODEL_ORDER, MODELS } from "../domain/models";
@@ -178,6 +178,71 @@ describe.skipIf(!live)("contrato com a API real", () => {
         expect(keys(raw), action).toEqual(keys(fixture));
         expect(keys(raw.service), action).toEqual(keys((fixture as Record<string, unknown>).service));
       }
+    });
+  });
+
+  describe("Fase 10: Erlang-B e M/G/c", () => {
+    const EB: Params = { lambda: 20, mu: 1, servers: 15, ...SIM };
+    const MGC: Params = {
+      lambda: 80, mu: 10, servers: 10, ...SIM, service: { distribution: "lognormal", values: { mean: 0.1, cv: 1.5 } },
+    };
+
+    it.each(ACTIONS)("erlangb/%s devolve o formato que o cliente espera", async (action) => {
+      const r = await runAction("erlangb", action, EB);
+      expect(r.modelLabel).toBe("M/M/15/15");
+      expect(r.capacity).toBe(15);
+      expect(r.metrics.map((m) => m.name)).toEqual(
+        action === "compare"
+          ? ["rho", "L", "Lq", "W", "Wq", "throughput", "p_wait", "p_block"]   // P0 ≈ 1e-8 não é observável
+          : ["rho", "L", "Lq", "W", "Wq", "p0", "throughput", "p_wait", "p_block"],
+      );
+      if (action === "calculate") expect(r.extras?.offered_load).toBe(20);
+      if (action === "simulate") expect(r.runs).toHaveLength(3);
+    });
+
+    it.each(ACTIONS)("mgc/%s devolve o formato que o cliente espera", async (action) => {
+      const r = await runAction("mgc", action, MGC);
+      expect(r.modelLabel).toBe("M/G/10");
+      if (action !== "simulate") expect(r.approximation).toEqual({ exact: false, warnings: [] });   // a simulação não traz
+      expect(r.service?.distribution).toBe("lognormal");
+      expect(r.service?.cv).toBeCloseTo(1.5, 10);
+      if (action !== "simulate") {
+        expect(r.metrics.map((m) => m.name)).toEqual(["rho", "L", "Lq", "W", "Wq", "throughput", "p_wait"]);
+      }
+      if (action === "simulate") expect(r.runs).toHaveLength(3);
+    });
+
+    it("mgc instável chega como unstable_system", async () => {
+      const error = await runAction("mgc", "calculate", { ...MGC, lambda: 100 }).catch((e: unknown) => e as ApiError);
+      expect((error as ApiError).code).toBe("unstable_system");
+    });
+
+    it("as fixtures da Fase 10 ainda têm o formato real da API", async () => {
+      const cases = [
+        ["erlangb", "calculate", EB, fixtures.erlangbCalculate], ["erlangb", "simulate", EB, fixtures.erlangbSimulate],
+        ["erlangb", "compare", EB, fixtures.erlangbCompare], ["mgc", "calculate", MGC, fixtures.mgcCalculate],
+        ["mgc", "simulate", MGC, fixtures.mgcSimulate], ["mgc", "compare", MGC, fixtures.mgcCompare],
+      ] as const;
+      for (const [model, action, params, fixture] of cases) {
+        const raw = (await runAction(model, action, params as Params)).raw as Record<string, unknown>;
+        expect(keys(raw), `${model}/${action}`).toEqual(keys(fixture));
+      }
+    });
+
+    it("experimentos do M/G/1: varredura do CV, comparação de distribuições e sensibilidade", async () => {
+      const service = { distribution: "lognormal", mean: 0.02, cv: 0.5 };
+      const sweep = await runSweep({ model: "mg1", variable: "cv", start: 0.5, end: 2, step: 0.5, lambda: 25, service });
+      expect(keys(sweep)).toEqual(keys(fixtures.experimentSweepMg1));
+      expect(sweep.points.map((p) => p.status)).toEqual(["ok", "ok", "ok", "ok"]);
+      const services = await runServicesComparison({
+        services: [{ distribution: "deterministic", mean: 0.02 }, { distribution: "exponential", mean: 0.02 }, { ...service, cv: 1.5 }],
+        start: 10, end: 50, step: 10,
+      });
+      expect(keys(services)).toEqual(keys(fixtures.experimentServicesMg1));
+      expect(services.series).toHaveLength(3);
+      const sens = await runSensitivity({ model: "mg1", lambda: 25, delta_pct: 10, service });
+      expect(keys(sens)).toEqual(keys(fixtures.experimentSensitivityMg1));
+      expect(sens.parameters.map((p) => p.name)).toEqual(["lambda", "mu", "cv"]);
     });
   });
 

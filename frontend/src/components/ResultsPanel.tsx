@@ -10,7 +10,7 @@ import { labRecord, labTitle } from "../domain/records";
 import { MetricsTable } from "./MetricsTable";
 import { ReplicationsTab } from "./ReplicationsTab";
 import { SaveButton } from "./SaveButton";
-import { VerdictBanner } from "./VerdictBanner";
+import { ApproximationNote, VerdictBanner } from "./VerdictBanner";
 
 type TabKey = "results" | "charts" | "replications" | "details";
 const TABS: { key: TabKey; label: string }[] = [
@@ -127,6 +127,7 @@ export function ResultsPanel({ state, estimate, onLoadRuns }: Props) {
         {tab === "results" && (
           <>
             <VerdictBanner result={result} />
+            <ApproximationNote result={result} />
             <HeadlineCards result={result} />
             {result.action === "compare" && <DeviationChart result={result} />}
             <MetricsTable result={result} />

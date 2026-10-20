@@ -7,10 +7,12 @@
  */
 import type { NewRecord, RecordDetail, RecordKind } from "../api/records";
 import type { AnalysisResponse } from "../api/realdata";
-import type { ServerComparisonResponse, SensitivityResponse, SweepResponse } from "../api/experiments";
+import type {
+  ServerComparisonResponse, SensitivityResponse, ServicesComparisonResponse, SweepResponse,
+} from "../api/experiments";
 import { VARIABLE_INFO, type SweepVariable } from "./experiments";
-import { LAB_MODEL_ORDER, MODEL_ORDER, MODELS } from "./models";
-import type { Action, MarkovModelKey, ModelKey, Params, ViewResult } from "./types";
+import { EXPERIMENT_MODEL_ORDER, LAB_MODEL_ORDER, MODELS, usesService } from "./models";
+import type { Action, ExperimentModelKey, MarkovModelKey, ModelKey, Params, ViewResult } from "./types";
 
 export const KIND_LABELS: Record<RecordKind, string> = {
   model: "Cálculo analítico",
@@ -26,7 +28,7 @@ const ACTION_LABEL: Record<Action, string> = { calculate: "Cálculo", simulate: 
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const isLabModel = (v: unknown): v is ModelKey => typeof v === "string" && (LAB_MODEL_ORDER as string[]).includes(v);
-const isModel = (v: unknown): v is MarkovModelKey => typeof v === "string" && (MODEL_ORDER as string[]).includes(v);
+const isModel = (v: unknown): v is ExperimentModelKey => typeof v === "string" && (EXPERIMENT_MODEL_ORDER as string[]).includes(v);
 
 // ---------- Laboratório ----------
 
@@ -59,30 +61,32 @@ export function parseLabRecord(record: RecordDetail): LabSnapshot | null {
   const parameters = params.parameters;
   if (!isObject(parameters) || typeof parameters.lambda !== "number" || typeof parameters.mu !== "number") return null;
   if (result.modelKey !== params.model || result.action !== action || !Array.isArray(result.metrics)) return null;
-  if (params.model === "mg1" && !isObject(parameters.service)) return null;   // sem a distribuição não há como reabrir
+  if (usesService(params.model) && !isObject(parameters.service)) return null;   // sem a distribuição não há como reabrir
   return { model: params.model, action, parameters: parameters as unknown as Params, result: result as unknown as ViewResult };
 }
 
 // ---------- Experimentos ----------
 
-export type ExperimentType = "sweep" | "servers" | "sensitivity";
+export type ExperimentType = "sweep" | "servers" | "services" | "sensitivity";
 
 export type ExperimentSnapshot =
-  | { type: "sweep"; model: MarkovModelKey; result: SweepResponse }
+  | { type: "sweep"; model: ExperimentModelKey; result: SweepResponse }
   | { type: "servers"; model: MarkovModelKey; result: ServerComparisonResponse }
-  | { type: "sensitivity"; model: MarkovModelKey; result: SensitivityResponse };
+  | { type: "services"; model: "mg1"; result: ServicesComparisonResponse }
+  | { type: "sensitivity"; model: ExperimentModelKey; result: SensitivityResponse };
 
-export function experimentTitle(type: ExperimentType, model: MarkovModelKey, result: { variable?: string }): string {
+export function experimentTitle(type: ExperimentType, model: ExperimentModelKey, result: { variable?: string }): string {
   const label = MODELS[model].label;
   if (type === "sweep") {
     const variable = VARIABLE_INFO[result.variable as SweepVariable]?.label ?? result.variable ?? "parâmetro";
     return `Varredura de ${variable} · ${label}`;
   }
+  if (type === "services") return `Comparação de distribuições · ${label}`;
   return type === "servers" ? `Comparação de servidores · ${label}` : `Sensibilidade · ${label}`;
 }
 
 export function experimentRecord(
-  type: ExperimentType, model: MarkovModelKey, request: unknown, result: object, title: string,
+  type: ExperimentType, model: ExperimentModelKey, request: unknown, result: object, title: string,
 ): NewRecord {
   return {
     kind: "experiment",
@@ -100,7 +104,11 @@ export function parseExperimentRecord(record: RecordDetail): ExperimentSnapshot 
     case "sweep":
       return Array.isArray(result.points) ? { type: "sweep", model, result: result as unknown as SweepResponse } : null;
     case "servers":
-      return Array.isArray(result.series) ? { type: "servers", model, result: result as unknown as ServerComparisonResponse } : null;
+      return Array.isArray(result.series) && model !== "mg1"
+        ? { type: "servers", model, result: result as unknown as ServerComparisonResponse } : null;
+    case "services":
+      return Array.isArray(result.series) && model === "mg1"
+        ? { type: "services", model, result: result as unknown as ServicesComparisonResponse } : null;
     case "sensitivity":
       return Array.isArray(result.parameters) ? { type: "sensitivity", model, result: result as unknown as SensitivityResponse } : null;
     default:
