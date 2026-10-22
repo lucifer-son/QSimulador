@@ -1000,7 +1000,7 @@
           "Experimentos"
         ],
         "summary": "Compare Servers",
-        "description": "Compara o desempenho com números diferentes de servidores, variando λ na mesma faixa.",
+        "description": "Compara o desempenho com números diferentes de servidores, variando λ na mesma faixa.\n\nCobre M/M/c, M/M/c/K, Erlang-B (curva clássica do bloqueio) e M/G/c (com o serviço dado).",
         "operationId": "compare_servers_api_experiments_servers_post",
         "requestBody": {
           "content": {
@@ -1084,7 +1084,7 @@
           "Experimentos"
         ],
         "summary": "Compare Services",
-        "description": "Compara distribuições de serviço no M/G/1, variando λ na mesma faixa para todas.",
+        "description": "Compara distribuições de serviço no M/G/1 ou no M/G/c (c fixo), variando λ na mesma faixa.",
         "operationId": "compare_services_api_experiments_services_post",
         "requestBody": {
           "content": {
@@ -1103,6 +1103,132 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ServicesComparisonResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sizing/table": {
+      "post": {
+        "tags": [
+          "Dimensionamento"
+        ],
+        "summary": "Sizing Table",
+        "description": "Tabela por número de servidores: ρ, P(esperar), Lq, Wq, bloqueio, nível de serviço e custo.\n\nLinhas instáveis (ou com c > K) aparecem sinalizadas e nunca são escolhidas.",
+        "operationId": "sizing_table_api_sizing_table_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SizingTableRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SizingTableResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sizing/sla": {
+      "post": {
+        "tags": [
+          "Dimensionamento"
+        ],
+        "summary": "Sizing Sla",
+        "description": "Menor c que atinge a meta: P(Wq ≤ t) ≥ target (ou, no Erlang-B, B(c, a) ≤ target_blocking).",
+        "operationId": "sizing_sla_api_sizing_sla_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SizingSlaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SizingSlaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sizing/cost": {
+      "post": {
+        "tags": [
+          "Dimensionamento"
+        ],
+        "summary": "Sizing Cost",
+        "description": "c que minimiza C(c) = c·hₛ + λ·(1 − B)·Wq·hₑ + λ·B·h_perda, com o gráfico custo × c.",
+        "operationId": "sizing_cost_api_sizing_cost_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SizingCostRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SizingCostResponse"
                 }
               }
             }
@@ -6515,10 +6641,12 @@
               "mmc",
               "mm1k",
               "mmck",
-              "mg1"
+              "mg1",
+              "erlangb",
+              "mgc"
             ],
             "title": "Model",
-            "description": "Modelo: mm1, mmc, mm1k, mmck ou mg1 (as mesmas chaves das rotas /api/models)."
+            "description": "Modelo: mm1, mmc, mm1k, mmck, mg1, erlangb ou mgc (as mesmas chaves das rotas /api/models). No erlangb a capacidade é sempre K = c; mg1 e mgc recebem o serviço em `service`."
           },
           "lambda": {
             "type": "number",
@@ -6535,7 +6663,7 @@
               }
             ],
             "title": "Mu",
-            "description": "Taxa média de serviço (μ) do ponto base. Obrigatório nos modelos markovianos."
+            "description": "Taxa média de serviço (μ) do ponto base. Obrigatório nos modelos markovianos e no erlangb."
           },
           "service": {
             "anyOf": [
@@ -6546,7 +6674,7 @@
                 "type": "null"
               }
             ],
-            "description": "Serviço do ponto base. Obrigatório no M/G/1."
+            "description": "Serviço do ponto base. Obrigatório em mg1 e mgc."
           },
           "servers": {
             "anyOf": [
@@ -6558,7 +6686,7 @@
               }
             ],
             "title": "Servers",
-            "description": "Servidores (c). Obrigatório em mmc e mmck."
+            "description": "Servidores (c). Obrigatório em mmc, mmck, erlangb e mgc."
           },
           "capacity": {
             "anyOf": [
@@ -6603,6 +6731,24 @@
               "distribution": "lognormal",
               "mean": 0.02
             }
+          },
+          {
+            "delta_pct": 10,
+            "lambda": 20,
+            "model": "erlangb",
+            "mu": 1,
+            "servers": 15
+          },
+          {
+            "delta_pct": 10,
+            "lambda": 80,
+            "model": "mgc",
+            "servers": 10,
+            "service": {
+              "cv": 1.5,
+              "distribution": "lognormal",
+              "mean": 0.1
+            }
           }
         ]
       },
@@ -6646,7 +6792,7 @@
                 "type": "null"
               }
             ],
-            "description": "Só no M/G/1: o serviço do ponto base."
+            "description": "Só em mg1 e mgc: o serviço do ponto base."
           }
         },
         "type": "object",
@@ -6719,10 +6865,35 @@
             "title": "Servers List",
             "description": "Números de servidores a comparar (de 2 a 8 valores distintos)."
           },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "mmc",
+                  "mmck",
+                  "erlangb",
+                  "mgc"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "mmc, mmck, erlangb ou mgc. Se omitido: mmck quando há `capacity`, senão mmc."
+          },
           "mu": {
-            "type": "number",
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Mu",
-            "description": "Taxa de serviço de cada servidor (μ)."
+            "description": "Taxa de serviço de cada servidor (μ). Obrigatório, exceto no mgc (use `service`)."
           },
           "capacity": {
             "anyOf": [
@@ -6734,7 +6905,18 @@
               }
             ],
             "title": "Capacity",
-            "description": "Capacidade total (K). Se omitida, a fila é ilimitada (M/M/c)."
+            "description": "Capacidade total (K). Se omitida, a fila é ilimitada (M/M/c). Não vale no erlangb."
+          },
+          "service": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceSpec"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Serviço de cada servidor. Obrigatório no mgc."
           },
           "start": {
             "type": "number",
@@ -6755,7 +6937,6 @@
         "type": "object",
         "required": [
           "servers_list",
-          "mu",
           "start",
           "end",
           "step"
@@ -6772,6 +6953,34 @@
             ],
             "start": 5,
             "step": 5
+          },
+          {
+            "end": 20,
+            "model": "erlangb",
+            "mu": 1,
+            "servers_list": [
+              5,
+              10,
+              15
+            ],
+            "start": 2,
+            "step": 2
+          },
+          {
+            "end": 100,
+            "model": "mgc",
+            "servers_list": [
+              9,
+              10,
+              11
+            ],
+            "service": {
+              "cv": 1.5,
+              "distribution": "lognormal",
+              "mean": 0.1
+            },
+            "start": 10,
+            "step": 10
           }
         ]
       },
@@ -6780,11 +6989,12 @@
           "model": {
             "type": "string",
             "title": "Model",
-            "description": "mmc (fila ilimitada) ou mmck (capacidade finita)."
+            "description": "mmc (fila ilimitada), mmck (capacidade finita), erlangb (perda) ou mgc."
           },
           "mu": {
             "type": "number",
-            "title": "Mu"
+            "title": "Mu",
+            "description": "Taxa de serviço de cada servidor (no mgc, 1/E[S])."
           },
           "capacity": {
             "anyOf": [
@@ -6803,6 +7013,17 @@
             },
             "type": "array",
             "title": "Series"
+          },
+          "service": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Só no mgc: o serviço de cada servidor."
           }
         },
         "type": "object",
@@ -7046,13 +7267,35 @@
       },
       "ServicesComparisonRequest": {
         "properties": {
+          "model": {
+            "type": "string",
+            "enum": [
+              "mg1",
+              "mgc"
+            ],
+            "title": "Model",
+            "description": "mg1 (um servidor) ou mgc (c servidores fixos).",
+            "default": "mg1"
+          },
+          "servers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Servers",
+            "description": "Servidores (c). Obrigatório no mgc."
+          },
           "services": {
             "items": {
               "$ref": "#/components/schemas/ServiceSpec"
             },
             "type": "array",
             "title": "Services",
-            "description": "Distribuições de serviço a comparar no M/G/1 (de 2 a 8)."
+            "description": "Distribuições de serviço a comparar no M/G/1 ou M/G/c (de 2 a 8)."
           },
           "start": {
             "type": "number",
@@ -7113,6 +7356,18 @@
             },
             "type": "array",
             "title": "Series"
+          },
+          "servers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Servers",
+            "description": "Só no mgc: o c fixo da comparação."
           }
         },
         "type": "object",
@@ -7526,6 +7781,1048 @@
         ],
         "title": "SimulationUsedOut"
       },
+      "SizingCostRequest": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "enum": [
+              "mm1",
+              "mmc",
+              "mm1k",
+              "mmck",
+              "mg1",
+              "erlangb",
+              "mgc"
+            ],
+            "title": "Model",
+            "description": "Modelo do Laboratório. mm1, mm1k e mg1 dimensionam pela família com c."
+          },
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa média de chegada (λ)."
+          },
+          "mu": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mu",
+            "description": "Taxa de serviço de cada servidor (μ). Obrigatório, exceto em mg1 e mgc (use `service`)."
+          },
+          "service": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceSpec"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Serviço do mg1 e do mgc."
+          },
+          "servers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Servers",
+            "description": "c do Laboratório: centra a janela padrão da tabela (c − 1 a c + 2). Padrão 1."
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity",
+            "description": "Capacidade total K. Obrigatória em mm1k e mmck."
+          },
+          "t": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "T",
+            "description": "Tempo-limite de espera do nível de serviço P(Wq ≤ t). Use a mesma unidade de tempo de λ e μ (ex.: λ e μ por hora, t em horas, custos por hora)."
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target",
+            "description": "Meta do nível de serviço (0 a 1, exclusivo), ex.: 0,8."
+          },
+          "target_blocking": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Blocking",
+            "description": "Meta de bloqueio (0 a 1, exclusivo). No Erlang-B."
+          },
+          "server_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Cost",
+            "description": "hₛ: custo de um servidor por unidade de tempo."
+          },
+          "wait_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wait Cost",
+            "description": "hₑ: custo de um cliente esperando, por unidade de tempo."
+          },
+          "loss_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loss Cost",
+            "description": "h_perda: custo de um cliente perdido. Obrigatório (> 0) no Erlang-B."
+          },
+          "c_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "C Min",
+            "description": "Restringe a busca a partir deste c. Sem faixa, busca o ótimo global."
+          },
+          "c_max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "C Max",
+            "description": "Restringe a busca até este c."
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "lambda"
+        ],
+        "title": "SizingCostRequest",
+        "examples": [
+          {
+            "lambda": 50,
+            "model": "mmc",
+            "mu": 6,
+            "server_cost": 35,
+            "wait_cost": 80
+          },
+          {
+            "lambda": 20,
+            "loss_cost": 200,
+            "model": "erlangb",
+            "mu": 1,
+            "server_cost": 10,
+            "wait_cost": 0
+          }
+        ]
+      },
+      "SizingCostResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "family": {
+            "type": "string",
+            "enum": [
+              "mmc",
+              "mmck",
+              "erlangb",
+              "mgc"
+            ],
+            "title": "Family",
+            "description": "Família usada para dimensionar (mm1 → mmc, mm1k → mmck, mg1 → mgc)."
+          },
+          "exact": {
+            "type": "boolean",
+            "title": "Exact",
+            "description": "Falso no mgc: o nível de serviço é uma aproximação."
+          },
+          "offered_load": {
+            "type": "number",
+            "title": "Offered Load",
+            "description": "Tráfego oferecido a = λ/μ (λ·E[S] no mgc), em Erlangs."
+          },
+          "servers_base": {
+            "type": "integer",
+            "title": "Servers Base",
+            "description": "c do Laboratório que centra a janela padrão."
+          },
+          "service": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings",
+            "description": "Avisos (aproximação do M/G/c e sua faixa de validade)."
+          },
+          "optimal_servers": {
+            "type": "integer",
+            "title": "Optimal Servers"
+          },
+          "optimal_cost": {
+            "type": "number",
+            "title": "Optimal Cost"
+          },
+          "row": {
+            "$ref": "#/components/schemas/SizingRowOut"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/SizingRowOut"
+            },
+            "type": "array",
+            "title": "Rows",
+            "description": "Custo por c: o gráfico custo × c."
+          },
+          "c_min": {
+            "type": "integer",
+            "title": "C Min"
+          },
+          "c_max": {
+            "type": "integer",
+            "title": "C Max"
+          },
+          "at_boundary": {
+            "type": "boolean",
+            "title": "At Boundary",
+            "description": "Com faixa pedida: o ótimo caiu numa ponta, e o verdadeiro pode estar fora."
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "family",
+          "exact",
+          "offered_load",
+          "servers_base",
+          "warnings",
+          "optimal_servers",
+          "optimal_cost",
+          "row",
+          "rows",
+          "c_min",
+          "c_max",
+          "at_boundary"
+        ],
+        "title": "SizingCostResponse"
+      },
+      "SizingRowOut": {
+        "properties": {
+          "servers": {
+            "type": "integer",
+            "title": "Servers"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "unstable",
+              "invalid"
+            ],
+            "title": "Status",
+            "description": "ok, unstable (λ ≥ c·μ na fila ilimitada) ou invalid (ex.: c > K)."
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "rho": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rho"
+          },
+          "p_wait": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P Wait",
+            "description": "P(esperar) dos clientes aceitos."
+          },
+          "Lq": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lq"
+          },
+          "Wq": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wq"
+          },
+          "p_block": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P Block",
+            "description": "Bloqueio (0 nos modelos sem perda)."
+          },
+          "throughput": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Throughput",
+            "description": "Vazão λ·(1 − B)."
+          },
+          "service_level": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Level",
+            "description": "P(Wq ≤ t); nulo sem t e no Erlang-B."
+          },
+          "meets_target": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meets Target",
+            "description": "Atende à meta de nível de serviço (ou de bloqueio); nulo sem meta."
+          },
+          "cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost",
+            "description": "c·hₛ + λ·(1 − B)·Wq·hₑ + λ·B·h_perda; nulo sem custos."
+          },
+          "server_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Cost"
+          },
+          "wait_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wait Cost"
+          },
+          "loss_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loss Cost"
+          }
+        },
+        "type": "object",
+        "required": [
+          "servers",
+          "status",
+          "message",
+          "rho",
+          "p_wait",
+          "Lq",
+          "Wq",
+          "p_block",
+          "throughput",
+          "service_level",
+          "meets_target",
+          "cost",
+          "server_cost",
+          "wait_cost",
+          "loss_cost"
+        ],
+        "title": "SizingRowOut"
+      },
+      "SizingSlaRequest": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "enum": [
+              "mm1",
+              "mmc",
+              "mm1k",
+              "mmck",
+              "mg1",
+              "erlangb",
+              "mgc"
+            ],
+            "title": "Model",
+            "description": "Modelo do Laboratório. mm1, mm1k e mg1 dimensionam pela família com c."
+          },
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa média de chegada (λ)."
+          },
+          "mu": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mu",
+            "description": "Taxa de serviço de cada servidor (μ). Obrigatório, exceto em mg1 e mgc (use `service`)."
+          },
+          "service": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceSpec"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Serviço do mg1 e do mgc."
+          },
+          "servers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Servers",
+            "description": "c do Laboratório: centra a janela padrão da tabela (c − 1 a c + 2). Padrão 1."
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity",
+            "description": "Capacidade total K. Obrigatória em mm1k e mmck."
+          },
+          "t": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "T",
+            "description": "Tempo-limite de espera do nível de serviço P(Wq ≤ t). Use a mesma unidade de tempo de λ e μ (ex.: λ e μ por hora, t em horas, custos por hora)."
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target",
+            "description": "Meta do nível de serviço (0 a 1, exclusivo), ex.: 0,8."
+          },
+          "target_blocking": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Blocking",
+            "description": "Meta de bloqueio (0 a 1, exclusivo). No Erlang-B."
+          },
+          "server_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Cost",
+            "description": "hₛ: custo de um servidor por unidade de tempo."
+          },
+          "wait_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wait Cost",
+            "description": "hₑ: custo de um cliente esperando, por unidade de tempo."
+          },
+          "loss_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loss Cost",
+            "description": "h_perda: custo de um cliente perdido. Obrigatório (> 0) no Erlang-B."
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "lambda"
+        ],
+        "title": "SizingSlaRequest",
+        "examples": [
+          {
+            "lambda": 90,
+            "model": "mmc",
+            "mu": 15,
+            "t": 0.005556,
+            "target": 0.8
+          },
+          {
+            "lambda": 20,
+            "model": "erlangb",
+            "mu": 1,
+            "target_blocking": 0.01
+          }
+        ]
+      },
+      "SizingSlaResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "family": {
+            "type": "string",
+            "enum": [
+              "mmc",
+              "mmck",
+              "erlangb",
+              "mgc"
+            ],
+            "title": "Family",
+            "description": "Família usada para dimensionar (mm1 → mmc, mm1k → mmck, mg1 → mgc)."
+          },
+          "exact": {
+            "type": "boolean",
+            "title": "Exact",
+            "description": "Falso no mgc: o nível de serviço é uma aproximação."
+          },
+          "offered_load": {
+            "type": "number",
+            "title": "Offered Load",
+            "description": "Tráfego oferecido a = λ/μ (λ·E[S] no mgc), em Erlangs."
+          },
+          "servers_base": {
+            "type": "integer",
+            "title": "Servers Base",
+            "description": "c do Laboratório que centra a janela padrão."
+          },
+          "service": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings",
+            "description": "Avisos (aproximação do M/G/c e sua faixa de validade)."
+          },
+          "t": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "T"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          },
+          "target_blocking": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Blocking"
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers",
+            "description": "Menor c que atinge a meta."
+          },
+          "row": {
+            "$ref": "#/components/schemas/SizingRowOut"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/SizingRowOut"
+            },
+            "type": "array",
+            "title": "Rows",
+            "description": "Janela em torno do c encontrado (dois abaixo, um acima)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "family",
+          "exact",
+          "offered_load",
+          "servers_base",
+          "warnings",
+          "t",
+          "target",
+          "target_blocking",
+          "servers",
+          "row",
+          "rows"
+        ],
+        "title": "SizingSlaResponse"
+      },
+      "SizingTableRequest": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "enum": [
+              "mm1",
+              "mmc",
+              "mm1k",
+              "mmck",
+              "mg1",
+              "erlangb",
+              "mgc"
+            ],
+            "title": "Model",
+            "description": "Modelo do Laboratório. mm1, mm1k e mg1 dimensionam pela família com c."
+          },
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa média de chegada (λ)."
+          },
+          "mu": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mu",
+            "description": "Taxa de serviço de cada servidor (μ). Obrigatório, exceto em mg1 e mgc (use `service`)."
+          },
+          "service": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceSpec"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Serviço do mg1 e do mgc."
+          },
+          "servers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Servers",
+            "description": "c do Laboratório: centra a janela padrão da tabela (c − 1 a c + 2). Padrão 1."
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity",
+            "description": "Capacidade total K. Obrigatória em mm1k e mmck."
+          },
+          "t": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "T",
+            "description": "Tempo-limite de espera do nível de serviço P(Wq ≤ t). Use a mesma unidade de tempo de λ e μ (ex.: λ e μ por hora, t em horas, custos por hora)."
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target",
+            "description": "Meta do nível de serviço (0 a 1, exclusivo), ex.: 0,8."
+          },
+          "target_blocking": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Blocking",
+            "description": "Meta de bloqueio (0 a 1, exclusivo). No Erlang-B."
+          },
+          "server_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Cost",
+            "description": "hₛ: custo de um servidor por unidade de tempo."
+          },
+          "wait_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wait Cost",
+            "description": "hₑ: custo de um cliente esperando, por unidade de tempo."
+          },
+          "loss_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loss Cost",
+            "description": "h_perda: custo de um cliente perdido. Obrigatório (> 0) no Erlang-B."
+          },
+          "c_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "C Min",
+            "description": "Primeiro c da tabela (padrão c − 1 do Laboratório)."
+          },
+          "c_max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "C Max",
+            "description": "Último c da tabela (padrão c + 2 do Laboratório)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "lambda"
+        ],
+        "title": "SizingTableRequest",
+        "examples": [
+          {
+            "lambda": 90,
+            "model": "mmc",
+            "mu": 15,
+            "servers": 8,
+            "t": 0.005556,
+            "target": 0.8
+          },
+          {
+            "lambda": 50,
+            "model": "mmc",
+            "mu": 6,
+            "server_cost": 35,
+            "servers": 11,
+            "wait_cost": 80
+          }
+        ]
+      },
+      "SizingTableResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "family": {
+            "type": "string",
+            "enum": [
+              "mmc",
+              "mmck",
+              "erlangb",
+              "mgc"
+            ],
+            "title": "Family",
+            "description": "Família usada para dimensionar (mm1 → mmc, mm1k → mmck, mg1 → mgc)."
+          },
+          "exact": {
+            "type": "boolean",
+            "title": "Exact",
+            "description": "Falso no mgc: o nível de serviço é uma aproximação."
+          },
+          "offered_load": {
+            "type": "number",
+            "title": "Offered Load",
+            "description": "Tráfego oferecido a = λ/μ (λ·E[S] no mgc), em Erlangs."
+          },
+          "servers_base": {
+            "type": "integer",
+            "title": "Servers Base",
+            "description": "c do Laboratório que centra a janela padrão."
+          },
+          "service": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings",
+            "description": "Avisos (aproximação do M/G/c e sua faixa de validade)."
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/SizingRowOut"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "first_meeting_target": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Meeting Target",
+            "description": "Menor c da tabela que atende à meta; nulo se nenhum."
+          },
+          "min_cost_servers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Cost Servers",
+            "description": "c de menor custo da tabela (ignora linhas não ok); nulo sem custos."
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "family",
+          "exact",
+          "offered_load",
+          "servers_base",
+          "warnings",
+          "rows",
+          "first_meeting_target",
+          "min_cost_servers"
+        ],
+        "title": "SizingTableResponse"
+      },
       "SummaryOut": {
         "properties": {
           "mean": {
@@ -7669,10 +8966,12 @@
               "mmc",
               "mm1k",
               "mmck",
-              "mg1"
+              "mg1",
+              "erlangb",
+              "mgc"
             ],
             "title": "Model",
-            "description": "Modelo: mm1, mmc, mm1k, mmck ou mg1 (as mesmas chaves das rotas /api/models)."
+            "description": "Modelo: mm1, mmc, mm1k, mmck, mg1, erlangb ou mgc (as mesmas chaves das rotas /api/models). No erlangb a capacidade é sempre K = c; mg1 e mgc recebem o serviço em `service`."
           },
           "variable": {
             "type": "string",
@@ -7724,7 +9023,7 @@
               }
             ],
             "title": "Mu",
-            "description": "Taxa de serviço (μ). Obrigatório para o modelo, a menos que seja o parâmetro varrido (então é ignorado). Ignorado no M/G/1 (use `service`)."
+            "description": "Taxa de serviço (μ). Obrigatório para o modelo, a menos que seja o parâmetro varrido (então é ignorado). Ignorado em mg1 e mgc (use `service`)."
           },
           "servers": {
             "anyOf": [
@@ -7759,7 +9058,7 @@
                 "type": "null"
               }
             ],
-            "description": "Serviço do ponto base. Obrigatório no M/G/1 (e ignorado nos demais). Com `variable` = mu, a escala do serviço varia e o CV é preservado; cv varia o CV (lognormal e Weibull) e k, as etapas do Erlang."
+            "description": "Serviço do ponto base. Obrigatório em mg1 e mgc (e ignorado nos demais). Com `variable` = mu, a escala do serviço varia e o CV é preservado; cv varia o CV (lognormal e Weibull) e k, as etapas do Erlang."
           },
           "simulate": {
             "type": "boolean",
@@ -7902,7 +9201,7 @@
                 "type": "null"
               }
             ],
-            "description": "Só no M/G/1: o serviço do ponto base."
+            "description": "Só em mg1 e mgc: o serviço do ponto base."
           }
         },
         "type": "object",

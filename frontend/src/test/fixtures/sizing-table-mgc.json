@@ -1,0 +1,97 @@
+{
+  "model": "mgc",
+  "family": "mgc",
+  "exact": false,
+  "offered_load": 8.0,
+  "servers_base": 10,
+  "service": {
+    "distribution": "lognormal",
+    "label": "Lognormal",
+    "mean": 0.1,
+    "std": 0.15000000000000002,
+    "variance": 0.022500000000000006,
+    "cv": 1.5000000000000002,
+    "mu": 10.0,
+    "parameters": {
+      "mean": 0.1,
+      "cv": 1.5,
+      "sigma": 1.085658784490618,
+      "mu_log": -2.8919125911648687
+    }
+  },
+  "warnings": [
+    "M/G/c: o nível de serviço usa a cauda exponencial P(Wq>t) ≈ P(esperar)·exp(−t·P(esperar)/Wq), exata só com CV = 1 (e Wq pela aproximação de Allen–Cunneen). Confira com a simulação."
+  ],
+  "rows": [
+    {
+      "servers": 9,
+      "status": "ok",
+      "message": null,
+      "rho": 0.8888888888888888,
+      "p_wait": 0.6533269282651049,
+      "Lq": 8.493250067446361,
+      "Wq": 0.10616562584307951,
+      "p_block": 0.0,
+      "throughput": 80.0,
+      "service_level": 0.5197122746447735,
+      "meets_target": false,
+      "cost": null,
+      "server_cost": null,
+      "wait_cost": null,
+      "loss_cost": null
+    },
+    {
+      "servers": 10,
+      "status": "ok",
+      "message": null,
+      "rho": 0.8,
+      "p_wait": 0.40918015079644354,
+      "Lq": 2.6596709801768843,
+      "Wq": 0.03324588725221105,
+      "p_block": 0.0,
+      "throughput": 80.0,
+      "service_level": 0.7788655450022661,
+      "meets_target": false,
+      "cost": null,
+      "server_cost": null,
+      "wait_cost": null,
+      "loss_cost": null
+    },
+    {
+      "servers": 11,
+      "status": "ok",
+      "message": null,
+      "rho": 0.7272727272727273,
+      "p_wait": 0.24495792605757605,
+      "Lq": 1.0614843462494965,
+      "Wq": 0.013268554328118706,
+      "p_block": 0.0,
+      "throughput": 80.0,
+      "service_level": 0.9026795110214492,
+      "meets_target": true,
+      "cost": null,
+      "server_cost": null,
+      "wait_cost": null,
+      "loss_cost": null
+    },
+    {
+      "servers": 12,
+      "status": "ok",
+      "message": null,
+      "rho": 0.6666666666666666,
+      "p_wait": 0.13984165451627165,
+      "Lq": 0.4544853771778829,
+      "Wq": 0.005681067214723536,
+      "p_block": 0.0,
+      "throughput": 80.0,
+      "service_level": 0.9591567523040259,
+      "meets_target": true,
+      "cost": null,
+      "server_cost": null,
+      "wait_cost": null,
+      "loss_cost": null
+    }
+  ],
+  "first_meeting_target": 11,
+  "min_cost_servers": null
+}

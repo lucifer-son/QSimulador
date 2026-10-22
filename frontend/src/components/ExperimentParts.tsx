@@ -1,7 +1,7 @@
 import { IconAlertCircle, IconChartLine, IconPlayerPlay, IconPlayerStop } from "@tabler/icons-react";
 import { useEffect, useState, type ReactNode } from "react";
 import type { ApiError } from "../api/client";
-import { MODELS } from "../domain/models";
+import { MODELS, usesService } from "../domain/models";
 import { toText, VARIABLE_INFO, type SweepVariable, type SystemText } from "../domain/experiments";
 import { distributionInfo } from "../domain/service";
 import type { ExperimentModelKey, MetricName } from "../domain/types";
@@ -16,11 +16,11 @@ export function FixedParameters({
 }: { model: ExperimentModelKey; system: SystemText; skip?: SweepVariable; title?: string }) {
   const info = MODELS[model];
   const items: [string, string][] = [["λ", system.lambda]];
-  if (model !== "mg1") items.push(["μ", system.mu]);
+  if (!usesService(model)) items.push(["μ", system.mu]);
   if (info.usesServers) items.push(["c", system.servers]);
   if (info.usesCapacity) items.push(["K", system.capacity]);
   const symbol: Record<string, SweepVariable> = { "λ": "lambda", "μ": "mu", c: "servers", K: "capacity" };
-  const moments = model === "mg1" ? serviceMomentsOf(system) : null;
+  const moments = usesService(model) ? serviceMomentsOf(system) : null;
   const serviceLabel = distributionInfo(system.distribution ?? "lognormal").label;
   return (
     <div className="fixed-params">
@@ -30,10 +30,10 @@ export function FixedParameters({
         {items.filter(([s]) => symbol[s] !== skip).map(([s, v]) => (
           <li key={s}><span>{s}</span><strong>{v || "—"}</strong></li>
         ))}
-        {model === "mg1" && skip !== "mu" && skip !== "cv" && skip !== "k" && (
+        {usesService(model) && skip !== "mu" && skip !== "cv" && skip !== "k" && (
           <li><span>Serviço</span><strong>{serviceLabel}{moments ? `, E[S] = ${toText(moments.mean)} s, CV = ${toText(moments.cv)}` : ""}</strong></li>
         )}
-        {model === "mg1" && (skip === "mu" || skip === "cv" || skip === "k") && (
+        {usesService(model) && (skip === "mu" || skip === "cv" || skip === "k") && (
           <li><span>Serviço</span><strong>{serviceLabel}{moments ? `, a partir de E[S] = ${toText(moments.mean)} s` : ""}</strong></li>
         )}
       </ul>

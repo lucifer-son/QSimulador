@@ -39,6 +39,14 @@ import experimentSweepMg1 from "./fixtures/experiment-sweep-mg1.json";
 import mgcCalculate from "./fixtures/mgc-calculate.json";
 import mgcCompare from "./fixtures/mgc-compare.json";
 import mgcSimulate from "./fixtures/mgc-simulate.json";
+import sizingCostMmc from "./fixtures/sizing-cost-mmc.json";
+import sizingSlaErlangb from "./fixtures/sizing-sla-erlangb.json";
+import sizingSlaMmc from "./fixtures/sizing-sla-mmc.json";
+import sizingTableMgc from "./fixtures/sizing-table-mgc.json";
+import sizingTableMmc from "./fixtures/sizing-table-mmc.json";
+import experimentServersErlangb from "./fixtures/experiment-servers-erlangb.json";
+import experimentSweepErlangb from "./fixtures/experiment-sweep-erlangb.json";
+import experimentSweepMgc from "./fixtures/experiment-sweep-mgc.json";
 import type { ThemeColors } from "../hooks/useThemeColors";
 
 /** Respostas reais da API, gravadas em arquivos (ver src/test/fixtures). */
@@ -54,6 +62,8 @@ export const fixtures = {
   erlangbCalculate, erlangbCompare, erlangbSimulate, erlangbSize,
   mgcCalculate, mgcCompare, mgcSimulate, errorMgcUnstable,
   experimentSensitivityMg1, experimentServicesMg1, experimentSweepMg1,
+  experimentServersErlangb, experimentSweepErlangb, experimentSweepMgc,
+  sizingCostMmc, sizingSlaErlangb, sizingSlaMmc, sizingTableMgc, sizingTableMmc,
 };
 
 export const colors: ThemeColors = {

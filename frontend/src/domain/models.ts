@@ -22,10 +22,10 @@ export const DEFAULT_SERVICE = {
 
 /** Modelos markovianos, na ordem de exibição. Os dados reais usam só estes. */
 export const MODEL_ORDER: MarkovModelKey[] = ["mm1", "mmc", "mm1k", "mmck"];
-/** Modelos com experimentos: os markovianos e o M/G/1. */
-export const EXPERIMENT_MODEL_ORDER: ExperimentModelKey[] = [...MODEL_ORDER, "mg1"];
-/** Modelos do Laboratório: os anteriores, o Erlang-B (perda) e o M/G/c. */
-export const LAB_MODEL_ORDER: ModelKey[] = [...EXPERIMENT_MODEL_ORDER, "erlangb", "mgc"];
+/** Modelos do Laboratório: os markovianos, o M/G/1, o Erlang-B (perda) e o M/G/c. */
+export const LAB_MODEL_ORDER: ModelKey[] = [...MODEL_ORDER, "mg1", "erlangb", "mgc"];
+/** Modelos com experimentos: todos os do Laboratório (Fase 11). */
+export const EXPERIMENT_MODEL_ORDER: ExperimentModelKey[] = LAB_MODEL_ORDER;
 
 export const isMarkovModel = (key: ModelKey): key is MarkovModelKey => (MODEL_ORDER as string[]).includes(key);
 export const isExperimentModel = (key: ModelKey): key is ExperimentModelKey =>

@@ -126,16 +126,34 @@ describe("Laboratório: M/G/1", () => {
     expect(parseLabRecord(stored(record))).toBeNull();
   });
 
-  it("experimentos aceitam os markovianos e o M/G/1, mas não o Erlang-B nem o M/G/c", () => {
+  it("experimentos aceitam todos os modelos do Laboratório", () => {
     const make = (model: string, experiment = "sweep", result: Record<string, unknown> = { points: [] }) =>
       stored({ kind: "experiment", title: "x", params: { origin: "experiment", experiment, model, request: null }, result });
     expect(parseExperimentRecord(make("mg1"))?.model).toBe("mg1");
-    expect(parseExperimentRecord(make("erlangb"))).toBeNull();
-    expect(parseExperimentRecord(make("mgc"))).toBeNull();
-    // comparar servidores só existe nos markovianos; comparar distribuições, só no M/G/1
+    expect(parseExperimentRecord(make("erlangb"))?.model).toBe("erlangb");
+    expect(parseExperimentRecord(make("mgc"))?.model).toBe("mgc");
+    // comparar servidores não existe no M/G/1 (um servidor só); comparar distribuições, só nos de serviço geral
     expect(parseExperimentRecord(make("mg1", "servers", { series: [] }))).toBeNull();
+    expect(parseExperimentRecord(make("erlangb", "servers", { series: [] }))?.type).toBe("servers");
+    expect(parseExperimentRecord(make("mgc", "servers", { series: [] }))?.type).toBe("servers");
     expect(parseExperimentRecord(make("mmc", "services", { series: [] }))).toBeNull();
+    expect(parseExperimentRecord(make("erlangb", "services", { series: [] }))).toBeNull();
     expect(parseExperimentRecord(make("mg1", "services", { series: [] }))?.type).toBe("services");
+    expect(parseExperimentRecord(make("mgc", "services", { series: [] }))?.type).toBe("services");
+  });
+
+  it("dimensionamento é um experimento do tipo sizing (kind experiment, sem mudar o esquema)", () => {
+    const rows = [{ servers: 9, status: "ok" }];
+    const make = (extra: Record<string, unknown>, result: Record<string, unknown> = { rows }) =>
+      stored(experimentRecord("sizing", "mmc", { lambda: 8 }, result, "Dimensionamento", extra));
+    const record = experimentRecord("sizing", "mmc", { lambda: 8 }, { rows }, "t", { sizing_action: "cost", cost_unit: "min" });
+    expect(record.kind).toBe("experiment");
+    expect(record.params).toMatchObject({ origin: "experiment", experiment: "sizing", sizing_action: "cost", cost_unit: "min" });
+    const parsed = parseExperimentRecord(make({ sizing_action: "cost", cost_unit: "min" }));
+    expect(parsed).toMatchObject({ type: "sizing", model: "mmc", action: "cost", costUnit: "min" });
+    expect(parseExperimentRecord(make({ sizing_action: "sla" }))).toMatchObject({ action: "sla", costUnit: "h" });
+    expect(parseExperimentRecord(make({ sizing_action: "outra" }))).toBeNull();
+    expect(parseExperimentRecord(make({ sizing_action: "table" }, { points: [] }))).toBeNull();
   });
 });
 

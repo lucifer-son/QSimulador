@@ -502,6 +502,8 @@ export interface paths {
         /**
          * Compare Servers
          * @description Compara o desempenho com números diferentes de servidores, variando λ na mesma faixa.
+         *
+         *     Cobre M/M/c, M/M/c/K, Erlang-B (curva clássica do bloqueio) e M/G/c (com o serviço dado).
          */
         post: operations["compare_servers_api_experiments_servers_post"];
         delete?: never;
@@ -541,9 +543,71 @@ export interface paths {
         put?: never;
         /**
          * Compare Services
-         * @description Compara distribuições de serviço no M/G/1, variando λ na mesma faixa para todas.
+         * @description Compara distribuições de serviço no M/G/1 ou no M/G/c (c fixo), variando λ na mesma faixa.
          */
         post: operations["compare_services_api_experiments_services_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sizing/table": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sizing Table
+         * @description Tabela por número de servidores: ρ, P(esperar), Lq, Wq, bloqueio, nível de serviço e custo.
+         *
+         *     Linhas instáveis (ou com c > K) aparecem sinalizadas e nunca são escolhidas.
+         */
+        post: operations["sizing_table_api_sizing_table_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sizing/sla": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sizing Sla
+         * @description Menor c que atinge a meta: P(Wq ≤ t) ≥ target (ou, no Erlang-B, B(c, a) ≤ target_blocking).
+         */
+        post: operations["sizing_sla_api_sizing_sla_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sizing/cost": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sizing Cost
+         * @description c que minimiza C(c) = c·hₛ + λ·(1 − B)·Wq·hₑ + λ·B·h_perda, com o gráfico custo × c.
+         */
+        post: operations["sizing_cost_api_sizing_cost_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2942,14 +3006,32 @@ export interface components {
          *         "mean": 0.02
          *       }
          *     }
+         * @example {
+         *       "delta_pct": 10,
+         *       "lambda": 20,
+         *       "model": "erlangb",
+         *       "mu": 1,
+         *       "servers": 15
+         *     }
+         * @example {
+         *       "delta_pct": 10,
+         *       "lambda": 80,
+         *       "model": "mgc",
+         *       "servers": 10,
+         *       "service": {
+         *         "cv": 1.5,
+         *         "distribution": "lognormal",
+         *         "mean": 0.1
+         *       }
+         *     }
          */
         SensitivityRequest: {
             /**
              * Model
-             * @description Modelo: mm1, mmc, mm1k, mmck ou mg1 (as mesmas chaves das rotas /api/models).
+             * @description Modelo: mm1, mmc, mm1k, mmck, mg1, erlangb ou mgc (as mesmas chaves das rotas /api/models). No erlangb a capacidade é sempre K = c; mg1 e mgc recebem o serviço em `service`.
              * @enum {string}
              */
-            model: "mm1" | "mmc" | "mm1k" | "mmck" | "mg1";
+            model: "mm1" | "mmc" | "mm1k" | "mmck" | "mg1" | "erlangb" | "mgc";
             /**
              * Lambda
              * @description Taxa média de chegada (λ) do ponto base.
@@ -2957,14 +3039,14 @@ export interface components {
             lambda: number;
             /**
              * Mu
-             * @description Taxa média de serviço (μ) do ponto base. Obrigatório nos modelos markovianos.
+             * @description Taxa média de serviço (μ) do ponto base. Obrigatório nos modelos markovianos e no erlangb.
              */
             mu?: number | null;
-            /** @description Serviço do ponto base. Obrigatório no M/G/1. */
+            /** @description Serviço do ponto base. Obrigatório em mg1 e mgc. */
             service?: components["schemas"]["ServiceSpec"] | null;
             /**
              * Servers
-             * @description Servidores (c). Obrigatório em mmc e mmck.
+             * @description Servidores (c). Obrigatório em mmc, mmck, erlangb e mgc.
              */
             servers?: number | null;
             /**
@@ -2995,7 +3077,7 @@ export interface components {
             };
             /** Parameters */
             parameters: components["schemas"]["ParameterSensitivityOut"][];
-            /** @description Só no M/G/1: o serviço do ponto base. */
+            /** @description Só em mg1 e mgc: o serviço do ponto base. */
             service?: components["schemas"]["ServiceOut"] | null;
         };
         /** SensitivitySideOut */
@@ -3027,6 +3109,34 @@ export interface components {
          *       "start": 5,
          *       "step": 5
          *     }
+         * @example {
+         *       "end": 20,
+         *       "model": "erlangb",
+         *       "mu": 1,
+         *       "servers_list": [
+         *         5,
+         *         10,
+         *         15
+         *       ],
+         *       "start": 2,
+         *       "step": 2
+         *     }
+         * @example {
+         *       "end": 100,
+         *       "model": "mgc",
+         *       "servers_list": [
+         *         9,
+         *         10,
+         *         11
+         *       ],
+         *       "service": {
+         *         "cv": 1.5,
+         *         "distribution": "lognormal",
+         *         "mean": 0.1
+         *       },
+         *       "start": 10,
+         *       "step": 10
+         *     }
          */
         ServerComparisonRequest: {
             /**
@@ -3035,15 +3145,22 @@ export interface components {
              */
             servers_list: number[];
             /**
-             * Mu
-             * @description Taxa de serviço de cada servidor (μ).
+             * Model
+             * @description mmc, mmck, erlangb ou mgc. Se omitido: mmck quando há `capacity`, senão mmc.
              */
-            mu: number;
+            model?: ("mmc" | "mmck" | "erlangb" | "mgc") | null;
+            /**
+             * Mu
+             * @description Taxa de serviço de cada servidor (μ). Obrigatório, exceto no mgc (use `service`).
+             */
+            mu?: number | null;
             /**
              * Capacity
-             * @description Capacidade total (K). Se omitida, a fila é ilimitada (M/M/c).
+             * @description Capacidade total (K). Se omitida, a fila é ilimitada (M/M/c). Não vale no erlangb.
              */
             capacity?: number | null;
+            /** @description Serviço de cada servidor. Obrigatório no mgc. */
+            service?: components["schemas"]["ServiceSpec"] | null;
             /**
              * Start
              * @description Primeiro valor de λ.
@@ -3064,15 +3181,20 @@ export interface components {
         ServerComparisonResponse: {
             /**
              * Model
-             * @description mmc (fila ilimitada) ou mmck (capacidade finita).
+             * @description mmc (fila ilimitada), mmck (capacidade finita), erlangb (perda) ou mgc.
              */
             model: string;
-            /** Mu */
+            /**
+             * Mu
+             * @description Taxa de serviço de cada servidor (no mgc, 1/E[S]).
+             */
             mu: number;
             /** Capacity */
             capacity: number | null;
             /** Series */
             series: components["schemas"]["ServerSeriesOut"][];
+            /** @description Só no mgc: o serviço de cada servidor. */
+            service?: components["schemas"]["ServiceOut"] | null;
         };
         /** ServerSeriesOut */
         ServerSeriesOut: {
@@ -3205,8 +3327,20 @@ export interface components {
          */
         ServicesComparisonRequest: {
             /**
+             * Model
+             * @description mg1 (um servidor) ou mgc (c servidores fixos).
+             * @default mg1
+             * @enum {string}
+             */
+            model: "mg1" | "mgc";
+            /**
+             * Servers
+             * @description Servidores (c). Obrigatório no mgc.
+             */
+            servers?: number | null;
+            /**
              * Services
-             * @description Distribuições de serviço a comparar no M/G/1 (de 2 a 8).
+             * @description Distribuições de serviço a comparar no M/G/1 ou M/G/c (de 2 a 8).
              */
             services: components["schemas"]["ServiceSpec"][];
             /**
@@ -3231,6 +3365,11 @@ export interface components {
             model: string;
             /** Series */
             series: components["schemas"]["ServiceSeriesOut"][];
+            /**
+             * Servers
+             * @description Só no mgc: o c fixo da comparação.
+             */
+            servers?: number | null;
         };
         /**
          * SimulatedCompareRequest
@@ -3392,6 +3531,458 @@ export interface components {
             /** Confidence Level */
             confidence_level: number;
         };
+        /**
+         * SizingCostRequest
+         * @example {
+         *       "lambda": 50,
+         *       "model": "mmc",
+         *       "mu": 6,
+         *       "server_cost": 35,
+         *       "wait_cost": 80
+         *     }
+         * @example {
+         *       "lambda": 20,
+         *       "loss_cost": 200,
+         *       "model": "erlangb",
+         *       "mu": 1,
+         *       "server_cost": 10,
+         *       "wait_cost": 0
+         *     }
+         */
+        SizingCostRequest: {
+            /**
+             * Model
+             * @description Modelo do Laboratório. mm1, mm1k e mg1 dimensionam pela família com c.
+             * @enum {string}
+             */
+            model: "mm1" | "mmc" | "mm1k" | "mmck" | "mg1" | "erlangb" | "mgc";
+            /**
+             * Lambda
+             * @description Taxa média de chegada (λ).
+             */
+            lambda: number;
+            /**
+             * Mu
+             * @description Taxa de serviço de cada servidor (μ). Obrigatório, exceto em mg1 e mgc (use `service`).
+             */
+            mu?: number | null;
+            /** @description Serviço do mg1 e do mgc. */
+            service?: components["schemas"]["ServiceSpec"] | null;
+            /**
+             * Servers
+             * @description c do Laboratório: centra a janela padrão da tabela (c − 1 a c + 2). Padrão 1.
+             */
+            servers?: number | null;
+            /**
+             * Capacity
+             * @description Capacidade total K. Obrigatória em mm1k e mmck.
+             */
+            capacity?: number | null;
+            /**
+             * T
+             * @description Tempo-limite de espera do nível de serviço P(Wq ≤ t). Use a mesma unidade de tempo de λ e μ (ex.: λ e μ por hora, t em horas, custos por hora).
+             */
+            t?: number | null;
+            /**
+             * Target
+             * @description Meta do nível de serviço (0 a 1, exclusivo), ex.: 0,8.
+             */
+            target?: number | null;
+            /**
+             * Target Blocking
+             * @description Meta de bloqueio (0 a 1, exclusivo). No Erlang-B.
+             */
+            target_blocking?: number | null;
+            /**
+             * Server Cost
+             * @description hₛ: custo de um servidor por unidade de tempo.
+             */
+            server_cost?: number | null;
+            /**
+             * Wait Cost
+             * @description hₑ: custo de um cliente esperando, por unidade de tempo.
+             */
+            wait_cost?: number | null;
+            /**
+             * Loss Cost
+             * @description h_perda: custo de um cliente perdido. Obrigatório (> 0) no Erlang-B.
+             */
+            loss_cost?: number | null;
+            /**
+             * C Min
+             * @description Restringe a busca a partir deste c. Sem faixa, busca o ótimo global.
+             */
+            c_min?: number | null;
+            /**
+             * C Max
+             * @description Restringe a busca até este c.
+             */
+            c_max?: number | null;
+        };
+        /** SizingCostResponse */
+        SizingCostResponse: {
+            /** Model */
+            model: string;
+            /**
+             * Family
+             * @description Família usada para dimensionar (mm1 → mmc, mm1k → mmck, mg1 → mgc).
+             * @enum {string}
+             */
+            family: "mmc" | "mmck" | "erlangb" | "mgc";
+            /**
+             * Exact
+             * @description Falso no mgc: o nível de serviço é uma aproximação.
+             */
+            exact: boolean;
+            /**
+             * Offered Load
+             * @description Tráfego oferecido a = λ/μ (λ·E[S] no mgc), em Erlangs.
+             */
+            offered_load: number;
+            /**
+             * Servers Base
+             * @description c do Laboratório que centra a janela padrão.
+             */
+            servers_base: number;
+            service?: components["schemas"]["ServiceOut"] | null;
+            /**
+             * Warnings
+             * @description Avisos (aproximação do M/G/c e sua faixa de validade).
+             */
+            warnings: string[];
+            /** Optimal Servers */
+            optimal_servers: number;
+            /** Optimal Cost */
+            optimal_cost: number;
+            row: components["schemas"]["SizingRowOut"];
+            /**
+             * Rows
+             * @description Custo por c: o gráfico custo × c.
+             */
+            rows: components["schemas"]["SizingRowOut"][];
+            /** C Min */
+            c_min: number;
+            /** C Max */
+            c_max: number;
+            /**
+             * At Boundary
+             * @description Com faixa pedida: o ótimo caiu numa ponta, e o verdadeiro pode estar fora.
+             */
+            at_boundary: boolean;
+        };
+        /** SizingRowOut */
+        SizingRowOut: {
+            /** Servers */
+            servers: number;
+            /**
+             * Status
+             * @description ok, unstable (λ ≥ c·μ na fila ilimitada) ou invalid (ex.: c > K).
+             * @enum {string}
+             */
+            status: "ok" | "unstable" | "invalid";
+            /** Message */
+            message: string | null;
+            /** Rho */
+            rho: number | null;
+            /**
+             * P Wait
+             * @description P(esperar) dos clientes aceitos.
+             */
+            p_wait: number | null;
+            /** Lq */
+            Lq: number | null;
+            /** Wq */
+            Wq: number | null;
+            /**
+             * P Block
+             * @description Bloqueio (0 nos modelos sem perda).
+             */
+            p_block: number | null;
+            /**
+             * Throughput
+             * @description Vazão λ·(1 − B).
+             */
+            throughput: number | null;
+            /**
+             * Service Level
+             * @description P(Wq ≤ t); nulo sem t e no Erlang-B.
+             */
+            service_level: number | null;
+            /**
+             * Meets Target
+             * @description Atende à meta de nível de serviço (ou de bloqueio); nulo sem meta.
+             */
+            meets_target: boolean | null;
+            /**
+             * Cost
+             * @description c·hₛ + λ·(1 − B)·Wq·hₑ + λ·B·h_perda; nulo sem custos.
+             */
+            cost: number | null;
+            /** Server Cost */
+            server_cost: number | null;
+            /** Wait Cost */
+            wait_cost: number | null;
+            /** Loss Cost */
+            loss_cost: number | null;
+        };
+        /**
+         * SizingSlaRequest
+         * @example {
+         *       "lambda": 90,
+         *       "model": "mmc",
+         *       "mu": 15,
+         *       "t": 0.005556,
+         *       "target": 0.8
+         *     }
+         * @example {
+         *       "lambda": 20,
+         *       "model": "erlangb",
+         *       "mu": 1,
+         *       "target_blocking": 0.01
+         *     }
+         */
+        SizingSlaRequest: {
+            /**
+             * Model
+             * @description Modelo do Laboratório. mm1, mm1k e mg1 dimensionam pela família com c.
+             * @enum {string}
+             */
+            model: "mm1" | "mmc" | "mm1k" | "mmck" | "mg1" | "erlangb" | "mgc";
+            /**
+             * Lambda
+             * @description Taxa média de chegada (λ).
+             */
+            lambda: number;
+            /**
+             * Mu
+             * @description Taxa de serviço de cada servidor (μ). Obrigatório, exceto em mg1 e mgc (use `service`).
+             */
+            mu?: number | null;
+            /** @description Serviço do mg1 e do mgc. */
+            service?: components["schemas"]["ServiceSpec"] | null;
+            /**
+             * Servers
+             * @description c do Laboratório: centra a janela padrão da tabela (c − 1 a c + 2). Padrão 1.
+             */
+            servers?: number | null;
+            /**
+             * Capacity
+             * @description Capacidade total K. Obrigatória em mm1k e mmck.
+             */
+            capacity?: number | null;
+            /**
+             * T
+             * @description Tempo-limite de espera do nível de serviço P(Wq ≤ t). Use a mesma unidade de tempo de λ e μ (ex.: λ e μ por hora, t em horas, custos por hora).
+             */
+            t?: number | null;
+            /**
+             * Target
+             * @description Meta do nível de serviço (0 a 1, exclusivo), ex.: 0,8.
+             */
+            target?: number | null;
+            /**
+             * Target Blocking
+             * @description Meta de bloqueio (0 a 1, exclusivo). No Erlang-B.
+             */
+            target_blocking?: number | null;
+            /**
+             * Server Cost
+             * @description hₛ: custo de um servidor por unidade de tempo.
+             */
+            server_cost?: number | null;
+            /**
+             * Wait Cost
+             * @description hₑ: custo de um cliente esperando, por unidade de tempo.
+             */
+            wait_cost?: number | null;
+            /**
+             * Loss Cost
+             * @description h_perda: custo de um cliente perdido. Obrigatório (> 0) no Erlang-B.
+             */
+            loss_cost?: number | null;
+        };
+        /** SizingSlaResponse */
+        SizingSlaResponse: {
+            /** Model */
+            model: string;
+            /**
+             * Family
+             * @description Família usada para dimensionar (mm1 → mmc, mm1k → mmck, mg1 → mgc).
+             * @enum {string}
+             */
+            family: "mmc" | "mmck" | "erlangb" | "mgc";
+            /**
+             * Exact
+             * @description Falso no mgc: o nível de serviço é uma aproximação.
+             */
+            exact: boolean;
+            /**
+             * Offered Load
+             * @description Tráfego oferecido a = λ/μ (λ·E[S] no mgc), em Erlangs.
+             */
+            offered_load: number;
+            /**
+             * Servers Base
+             * @description c do Laboratório que centra a janela padrão.
+             */
+            servers_base: number;
+            service?: components["schemas"]["ServiceOut"] | null;
+            /**
+             * Warnings
+             * @description Avisos (aproximação do M/G/c e sua faixa de validade).
+             */
+            warnings: string[];
+            /** T */
+            t: number | null;
+            /** Target */
+            target: number | null;
+            /** Target Blocking */
+            target_blocking: number | null;
+            /**
+             * Servers
+             * @description Menor c que atinge a meta.
+             */
+            servers: number;
+            row: components["schemas"]["SizingRowOut"];
+            /**
+             * Rows
+             * @description Janela em torno do c encontrado (dois abaixo, um acima).
+             */
+            rows: components["schemas"]["SizingRowOut"][];
+        };
+        /**
+         * SizingTableRequest
+         * @example {
+         *       "lambda": 90,
+         *       "model": "mmc",
+         *       "mu": 15,
+         *       "servers": 8,
+         *       "t": 0.005556,
+         *       "target": 0.8
+         *     }
+         * @example {
+         *       "lambda": 50,
+         *       "model": "mmc",
+         *       "mu": 6,
+         *       "server_cost": 35,
+         *       "servers": 11,
+         *       "wait_cost": 80
+         *     }
+         */
+        SizingTableRequest: {
+            /**
+             * Model
+             * @description Modelo do Laboratório. mm1, mm1k e mg1 dimensionam pela família com c.
+             * @enum {string}
+             */
+            model: "mm1" | "mmc" | "mm1k" | "mmck" | "mg1" | "erlangb" | "mgc";
+            /**
+             * Lambda
+             * @description Taxa média de chegada (λ).
+             */
+            lambda: number;
+            /**
+             * Mu
+             * @description Taxa de serviço de cada servidor (μ). Obrigatório, exceto em mg1 e mgc (use `service`).
+             */
+            mu?: number | null;
+            /** @description Serviço do mg1 e do mgc. */
+            service?: components["schemas"]["ServiceSpec"] | null;
+            /**
+             * Servers
+             * @description c do Laboratório: centra a janela padrão da tabela (c − 1 a c + 2). Padrão 1.
+             */
+            servers?: number | null;
+            /**
+             * Capacity
+             * @description Capacidade total K. Obrigatória em mm1k e mmck.
+             */
+            capacity?: number | null;
+            /**
+             * T
+             * @description Tempo-limite de espera do nível de serviço P(Wq ≤ t). Use a mesma unidade de tempo de λ e μ (ex.: λ e μ por hora, t em horas, custos por hora).
+             */
+            t?: number | null;
+            /**
+             * Target
+             * @description Meta do nível de serviço (0 a 1, exclusivo), ex.: 0,8.
+             */
+            target?: number | null;
+            /**
+             * Target Blocking
+             * @description Meta de bloqueio (0 a 1, exclusivo). No Erlang-B.
+             */
+            target_blocking?: number | null;
+            /**
+             * Server Cost
+             * @description hₛ: custo de um servidor por unidade de tempo.
+             */
+            server_cost?: number | null;
+            /**
+             * Wait Cost
+             * @description hₑ: custo de um cliente esperando, por unidade de tempo.
+             */
+            wait_cost?: number | null;
+            /**
+             * Loss Cost
+             * @description h_perda: custo de um cliente perdido. Obrigatório (> 0) no Erlang-B.
+             */
+            loss_cost?: number | null;
+            /**
+             * C Min
+             * @description Primeiro c da tabela (padrão c − 1 do Laboratório).
+             */
+            c_min?: number | null;
+            /**
+             * C Max
+             * @description Último c da tabela (padrão c + 2 do Laboratório).
+             */
+            c_max?: number | null;
+        };
+        /** SizingTableResponse */
+        SizingTableResponse: {
+            /** Model */
+            model: string;
+            /**
+             * Family
+             * @description Família usada para dimensionar (mm1 → mmc, mm1k → mmck, mg1 → mgc).
+             * @enum {string}
+             */
+            family: "mmc" | "mmck" | "erlangb" | "mgc";
+            /**
+             * Exact
+             * @description Falso no mgc: o nível de serviço é uma aproximação.
+             */
+            exact: boolean;
+            /**
+             * Offered Load
+             * @description Tráfego oferecido a = λ/μ (λ·E[S] no mgc), em Erlangs.
+             */
+            offered_load: number;
+            /**
+             * Servers Base
+             * @description c do Laboratório que centra a janela padrão.
+             */
+            servers_base: number;
+            service?: components["schemas"]["ServiceOut"] | null;
+            /**
+             * Warnings
+             * @description Avisos (aproximação do M/G/c e sua faixa de validade).
+             */
+            warnings: string[];
+            /** Rows */
+            rows: components["schemas"]["SizingRowOut"][];
+            /**
+             * First Meeting Target
+             * @description Menor c da tabela que atende à meta; nulo se nenhum.
+             */
+            first_meeting_target: number | null;
+            /**
+             * Min Cost Servers
+             * @description c de menor custo da tabela (ignora linhas não ok); nulo sem custos.
+             */
+            min_cost_servers: number | null;
+        };
         /** SummaryOut */
         SummaryOut: {
             /** Mean */
@@ -3484,10 +4075,10 @@ export interface components {
         SweepRequest: {
             /**
              * Model
-             * @description Modelo: mm1, mmc, mm1k, mmck ou mg1 (as mesmas chaves das rotas /api/models).
+             * @description Modelo: mm1, mmc, mm1k, mmck, mg1, erlangb ou mgc (as mesmas chaves das rotas /api/models). No erlangb a capacidade é sempre K = c; mg1 e mgc recebem o serviço em `service`.
              * @enum {string}
              */
-            model: "mm1" | "mmc" | "mm1k" | "mmck" | "mg1";
+            model: "mm1" | "mmc" | "mm1k" | "mmck" | "mg1" | "erlangb" | "mgc";
             /**
              * Variable
              * @description Parâmetro varrido (servers e capacity só nos modelos que os têm).
@@ -3516,7 +4107,7 @@ export interface components {
             lambda?: number | null;
             /**
              * Mu
-             * @description Taxa de serviço (μ). Obrigatório para o modelo, a menos que seja o parâmetro varrido (então é ignorado). Ignorado no M/G/1 (use `service`).
+             * @description Taxa de serviço (μ). Obrigatório para o modelo, a menos que seja o parâmetro varrido (então é ignorado). Ignorado em mg1 e mgc (use `service`).
              */
             mu?: number | null;
             /**
@@ -3529,7 +4120,7 @@ export interface components {
              * @description Capacidade total (K). Obrigatório para o modelo, a menos que seja o parâmetro varrido (então é ignorado).
              */
             capacity?: number | null;
-            /** @description Serviço do ponto base. Obrigatório no M/G/1 (e ignorado nos demais). Com `variable` = mu, a escala do serviço varia e o CV é preservado; cv varia o CV (lognormal e Weibull) e k, as etapas do Erlang. */
+            /** @description Serviço do ponto base. Obrigatório em mg1 e mgc (e ignorado nos demais). Com `variable` = mu, a escala do serviço varia e o CV é preservado; cv varia o CV (lognormal e Weibull) e k, as etapas do Erlang. */
             service?: components["schemas"]["ServiceSpec"] | null;
             /**
              * Simulate
@@ -3583,7 +4174,7 @@ export interface components {
             points: components["schemas"]["SweepPointOut"][];
             /** @description Configuração efetiva da simulação, com a semente usada. */
             simulation: components["schemas"]["SweepSimulationOut"] | null;
-            /** @description Só no M/G/1: o serviço do ponto base. */
+            /** @description Só em mg1 e mgc: o serviço do ponto base. */
             service?: components["schemas"]["ServiceOut"] | null;
         };
         /** SweepSimulationOut */
@@ -4510,6 +5101,105 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ServicesComparisonResponse"];
+                };
+            };
+            /** @description Parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    sizing_table_api_sizing_table_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SizingTableRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SizingTableResponse"];
+                };
+            };
+            /** @description Parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    sizing_sla_api_sizing_sla_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SizingSlaRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SizingSlaResponse"];
+                };
+            };
+            /** @description Parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    sizing_cost_api_sizing_cost_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SizingCostRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SizingCostResponse"];
                 };
             };
             /** @description Parâmetros inválidos */

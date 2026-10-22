@@ -1,7 +1,7 @@
-import { MODELS } from "./models";
+import { MODELS, usesService } from "./models";
 import { parseNumber } from "./request";
 import { parseService, serviceMoments } from "./service";
-import type { ExperimentModelKey, FormValues, MarkovModelKey, ServiceParam } from "./types";
+import type { ExperimentModelKey, FormValues, MetricName, ServiceParam } from "./types";
 
 export type SweepVariable = "lambda" | "mu" | "servers" | "capacity" | "cv" | "k";
 
@@ -29,9 +29,9 @@ export const HIGH_UTILIZATION = 0.8;
  * serviço e preserva o CV; cv e k (lognormal/Weibull e Erlang) variam a variabilidade.
  */
 export function sweepVariables(model: ExperimentModelKey, distribution?: string): SweepVariable[] {
-  if (model === "mg1") {
+  if (usesService(model)) {
     const shape = shapeVariable(distribution);
-    return ["lambda", "mu", ...(shape ? [shape] : [])];
+    return ["lambda", "mu", ...(model === "mgc" ? (["servers"] as const) : []), ...(shape ? [shape] : [])];
   }
   const info = MODELS[model];
   return [
@@ -39,6 +39,31 @@ export function sweepVariables(model: ExperimentModelKey, distribution?: string)
     ...(info.usesServers ? (["servers"] as const) : []),
     ...(info.usesCapacity ? (["capacity"] as const) : []),
   ];
+}
+
+/** Fórmula da carga oferecida por servidor (λ/(c·μ); nos modelos de serviço geral, com E[S] no lugar de 1/μ). */
+export const loadFormula = (model: string | undefined): string =>
+  model === "mg1" ? "λ·E[S]" : model === "mgc" ? "λ·E[S]/c" : "λ/(c·μ)";
+
+/** Métrica mostrada primeiro: o bloqueio no Erlang-B (a espera é sempre zero), o tempo no sistema nos demais. */
+export const defaultMetric = (model: string | undefined): MetricName => (model === "erlangb" ? "p_block" : "W");
+
+/** Textos da análise de sensibilidade: o que varia em cada modelo. */
+export function sensitivityTexts(model: ExperimentModelKey): { label: string; hint: string; effect: (delta: string) => string } {
+  if (usesService(model)) {
+    const unit = model === "mgc" ? "c e o k do Erlang variam ±1" : "o k do Erlang varia ±1";
+    return {
+      label: "Variação de λ, μ e CV (%)",
+      hint: `De 0 a 50. ${model === "mgc" ? "c e o k do Erlang variam ±1." : "O k do Erlang varia ±1."}`,
+      effect: (d) => `λ, μ e o CV variam ±${d}%; ${unit} unidade.`,
+    };
+  }
+  const integers = model === "erlangb" ? "c varia" : "c e K variam";
+  return {
+    label: "Variação de λ e μ (%)",
+    hint: `De 0 a 50. ${integers} ±1.`,
+    effect: (d) => `λ e μ variam ±${d}%; ${integers} ±1 unidade.`,
+  };
 }
 
 /** Valores do sistema como estão digitados no Laboratório (o serviço só existe no M/G/1). */
@@ -51,6 +76,8 @@ export type ExpErrors = Record<string, string>;
 export type Built<T> = { ok: true; body: T } | { ok: false; errors: ExpErrors };
 type Json = number | boolean | string | number[] | Record<string, number | string>;
 export type Body = Record<string, Json | Record<string, number | string>[]>;
+
+export { reader };
 
 const NUMBER_ERROR = "Informe um número.";
 const INTEGER_ERROR = "Informe um número inteiro.";
@@ -95,15 +122,23 @@ export function serviceMomentsOf(system: SystemText) {
 
 const SERVICE_ERROR = "Complete os campos do serviço no Laboratório.";
 
-/** Faixas sugeridas para o M/G/1 (a taxa de serviço vem de 1/E[S], não do campo μ). */
-function suggestMg1Range(variable: SweepVariable, system: SystemText): RangeText {
+/** Faixas sugeridas para M/G/1 e M/G/c (a taxa de serviço vem de 1/E[S], não do campo μ). */
+function suggestServiceRange(variable: SweepVariable, model: ExperimentModelKey, system: SystemText): RangeText {
   const mean = serviceMomentsOf(system)?.mean ?? 0.02;
   const lambda = numberOr(system.lambda ?? "", 1);
+  const servers = model === "mgc" ? Math.max(1, Math.round(numberOr(system.servers ?? "", 1))) : 1;
   const text = (start: number, end: number, step: number): RangeText =>
     ({ start: toText(start), end: toText(end), step: toText(step) });
   switch (variable) {
-    case "lambda": return text(1 / mean / 10, (1 / mean) * 1.2, 1 / mean / 10);   // até além da saturação
-    case "mu": return text(lambda * 0.5, lambda * 2, lambda / 10);
+    case "lambda": {
+      const total = servers / mean;       // capacidade de atendimento: onde a fila satura
+      return text(total / 10, total * 1.2, total / 10);   // até além da saturação
+    }
+    case "mu": {
+      const needed = lambda / servers;    // μ mínimo para a fila ser estável
+      return text(needed * 0.5, needed * 2, needed / 10);
+    }
+    case "servers": return text(1, Math.min(30, Math.max(2, Math.ceil(2 * lambda * mean))), 1);
     case "cv": return text(0.25, 3, 0.25);
     case "k": return text(1, 8, 1);
     default: return text(1, 10, 1);
@@ -112,7 +147,7 @@ function suggestMg1Range(variable: SweepVariable, system: SystemText): RangeText
 
 /** Faixa sugerida para varrer `variable` em torno do sistema do Laboratório. */
 export function suggestRange(variable: SweepVariable, model: ExperimentModelKey, system: SystemText): RangeText {
-  if (model === "mg1") return suggestMg1Range(variable, system);
+  if (usesService(model)) return suggestServiceRange(variable, model, system);
   const lambda = numberOr(system.lambda, 1);
   const mu = numberOr(system.mu, 1);
   const servers = MODELS[model].usesServers ? Math.max(1, Math.round(numberOr(system.servers, 1))) : 1;
@@ -123,7 +158,8 @@ export function suggestRange(variable: SweepVariable, model: ExperimentModelKey,
   switch (variable) {
     case "lambda": {
       const total = servers * mu;               // capacidade de atendimento: onde a fila ilimitada satura
-      return text(total / 10, total * 1.2, total / 10);
+      // No Erlang-B não há saturação: a faixa vai bem além de c·μ, onde o bloqueio fica alto.
+      return text(total / 10, total * (model === "erlangb" ? 1.6 : 1.2), total / 10);
     }
     case "mu": {
       const needed = lambda / servers;          // μ mínimo para a fila ilimitada ser estável
@@ -148,18 +184,19 @@ export function suggestServers(model: ExperimentModelKey, system: SystemText): s
   return [c - 1, c, c + 1].filter((n) => n >= 1).join(", ");
 }
 
-function readSystem(
+export function readSystem(
   model: ExperimentModelKey, system: SystemText, skip: SweepVariable | null, errors: ExpErrors,
 ): Body {
   const read = reader(errors);
   const info = MODELS[model];
   const body: Body = {};
   if (skip !== "lambda") body.lambda = read("lambda", system.lambda);
-  if (model === "mg1") {
+  if (usesService(model)) {
     // O serviço (distribuição e parâmetros) vai junto, mesmo quando a variável varrida é uma delas.
     const service = readServiceBody(system);
     if (service) body.service = service;
     else errors.service = SERVICE_ERROR;
+    if (model === "mgc" && skip !== "servers") body.servers = read("servers", system.servers, true);
     return body;
   }
   if (skip !== "mu") body.mu = read("mu", system.mu);
@@ -208,16 +245,28 @@ export function parseServerList(text: string): number[] | null {
   return values.every(Number.isInteger) ? values : null;
 }
 
-/** Corpo do POST /api/experiments/servers (compara M/M/c, ou M/M/c/K se o modelo tem capacidade). */
+/**
+ * Corpo do POST /api/experiments/servers: compara M/M/c (ou M/M/c/K se o modelo tem capacidade),
+ * o Erlang-B (K = c em cada série) ou o M/G/c (com o serviço do Laboratório).
+ */
 export function buildServersBody(
-  model: MarkovModelKey, system: SystemText, serversText: string, range: RangeText,
+  model: ExperimentModelKey, system: SystemText, serversText: string, range: RangeText,
 ): Built<Body> {
   const errors: ExpErrors = {};
   const read = reader(errors);
   const list = parseServerList(serversText);
   if (list === null) errors.serversList = "Informe números inteiros separados por vírgula.";
-  const body: Body = { servers_list: list ?? [], mu: read("mu", system.mu) };
-  if (MODELS[model].usesCapacity) body.capacity = read("capacity", system.capacity, true);
+  const body: Body = { servers_list: list ?? [] };
+  if (model === "mgc") {
+    body.model = "mgc";
+    const service = readServiceBody(system);
+    if (service) body.service = service;
+    else errors.service = SERVICE_ERROR;
+  } else {
+    if (model === "erlangb") body.model = "erlangb";
+    body.mu = read("mu", system.mu);
+    if (MODELS[model].usesCapacity) body.capacity = read("capacity", system.capacity, true);
+  }
   Object.assign(body, readRange(range, false, errors));
   return Object.keys(errors).length > 0 ? { ok: false, errors } : { ok: true, body };
 }
@@ -258,7 +307,9 @@ export const DEFAULT_SERVICE_CHOICES = [LAB_SERVICE_KEY, "deterministic", "expon
 export const MAX_COMPARED_SERVICES = 8;
 
 /** Corpo do POST /api/experiments/services: as opções marcadas (e o serviço do Laboratório, se marcado). */
-export function buildServicesBody(system: SystemText, chosen: string[], range: RangeText): Built<Body> {
+export function buildServicesBody(
+  system: SystemText, chosen: string[], range: RangeText, model: "mg1" | "mgc" = "mg1",
+): Built<Body> {
   const errors: ExpErrors = {};
   const services: ServiceBody[] = [];
   const moments = serviceMomentsOf(system);
@@ -276,6 +327,10 @@ export function buildServicesBody(system: SystemText, chosen: string[], range: R
     else errors.service = SERVICE_ERROR;
   }
   const body: Body = { services, ...readRange(range, false, errors) };
+  if (model === "mgc") {            // c fixo da comparação (com c = 1 o resultado é o do M/G/1)
+    body.model = "mgc";
+    body.servers = reader(errors)("servers", system.servers ?? "", true);
+  }
   return Object.keys(errors).length > 0 ? { ok: false, errors } : { ok: true, body };
 }
 
@@ -283,6 +338,8 @@ export function buildServicesBody(system: SystemText, chosen: string[], range: R
 const API_TO_EXP: Record<string, string> = {
   start: "start", end: "end", step: "step", servers_list: "serversList", delta_pct: "delta",
   service: "service", services: "services",
+  t: "t", target: "target", target_blocking: "blocking", server_cost: "serverCost", wait_cost: "waitCost",
+  loss_cost: "lossCost", c_min: "cMin", c_max: "cMax",
   lambda: "lambda", mu: "mu", servers: "servers", capacity: "capacity",
   simulation_time: "simulationTime", replications: "replications", warmup_time: "warmupTime", seed: "seed",
 };

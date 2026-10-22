@@ -3,7 +3,7 @@
 > Laboratório interativo de modelagem, simulação e análise de sistemas de filas.
 
 ![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)
-![Versão](https://img.shields.io/badge/vers%C3%A3o-1.6-6F42C1)
+![Versão](https://img.shields.io/badge/vers%C3%A3o-1.8-6F42C1)
 ![Python](https://img.shields.io/badge/backend-Python%20%7C%20FastAPI-3776AB)
 ![SimPy](https://img.shields.io/badge/simula%C3%A7%C3%A3o-SimPy-2E8B57)
 ![Licença](https://img.shields.io/badge/licen%C3%A7a-uso%20acad%C3%AAmico%20(n%C3%A3o%20comercial)-blue)
@@ -29,6 +29,8 @@ O projeto está em desenvolvimento. Os modelos **M/M/1**, **M/M/c**, **M/M/1/K**
 | Serviço geral: M/D/1 e M/G/1 (Pollaczek-Khinchine) com oito distribuições de serviço, simulação e comparação com IC (`/api/models/mg1`, `/api/distributions`, modelo M/G/1 no Laboratório) | ✅ Implementado (Fase 9) |
 | Erlang-B (M/M/c/c) com dimensionamento por bloqueio alvo e M/G/c por Allen–Cunneen (aproximação rotulada, com avisos de faixa), com simulação e comparação com IC (`/api/models/erlangb`, `/api/models/mgc`) | ✅ Implementado (Fase 10) |
 | Experimentos do M/G/1: varredura de λ, μ e da variabilidade do serviço (CV ou k), sensibilidade e comparação de distribuições com a mesma média (`/api/experiments/services`) | ✅ Implementado (Fase 10) |
+| Experimentos em todos os modelos do Laboratório: Erlang-B (curva clássica de Erlang) e M/G/c (servidores e distribuições com c fixo) | ✅ Implementado (Fase 11) |
+| Dimensionamento: tabela por número de servidores, nível de serviço P(Wq ≤ t) e menor c para uma meta, custo total e c ótimo (`/api/sizing`, aba Dimensionamento) | ✅ Implementado (Fase 11) |
 
 ---
 
@@ -99,6 +101,7 @@ O QSimulador permite (ou permitirá) ao usuário:
 7. visualizar resultados em tabelas e gráficos ✅
 8. importar dados reais, por exemplo do Apache JMeter, e compará-los com o modelo e a simulação ✅
 9. salvar resultados e reabri-los depois, em um histórico com PostgreSQL (opcional) ✅
+10. dimensionar o número de servidores por nível de serviço, bloqueio ou custo ✅
 
 ### Modelos de filas
 
@@ -259,6 +262,7 @@ A interface é uma tela única de trabalho: à esquerda, o modelo e os parâmetr
 - **Gráfico de diferenças:** as métricas têm escalas muito diferentes (ρ perto de 0,7 e vazão perto de 22, por exemplo), então todas aparecem como diferença percentual da simulação em relação ao analítico, com o IC. Se a barra cruza o zero, o valor analítico está dentro do intervalo.
 - **Abas:** Resultados, Gráficos (valor de cada réplica, média simulada e analítico), Réplicas (tabela por réplica) e Detalhes (parâmetros usados, semente e resposta completa da API).
 - **M/G/1:** ao escolher esse modelo, no lugar de μ, servidores e capacidade aparecem o seletor **Distribuição do serviço** e os campos da distribuição escolhida. Abaixo deles, um resumo mostra E[S], o desvio padrão, o CV, μ = 1/E[S] e ρ = λ·E[S] antes de executar. A aba Experimentos cobre o M/G/1: além de λ e μ, varre a variabilidade do serviço (CV na lognormal e na Weibull; k no Erlang) e compara distribuições com a mesma média. O Erlang-B e o M/G/c ainda não têm experimentos; nesses modelos a aba continua no último modelo compatível.
+- **Dimensionamento:** a aba herda o modelo e os valores do Laboratório. Dá a tabela por número de servidores (padrão: c − 1 a c + 2), o menor c que atinge a meta (80% em 20 s, por exemplo, ou o bloqueio alvo no Erlang-B) e o c de menor custo, com o gráfico custo × c. Os custos podem ser digitados por segundo, minuto ou hora, e o resultado pode ser salvo no histórico. M/M/1, M/M/1/K e M/G/1 usam a família com c (c = 1); no M/G/c o nível de serviço é uma aproximação rotulada.
 - **Execução:** estimativa de custo antes de rodar, indicador de progresso e botão para cancelar.
 - **Erros:** os erros da API aparecem no campo certo do formulário. A tela só confere o formato (número, inteiro); as regras do modelo (λ < c·μ, capacidade ≥ servidores etc.) ficam na API.
 - **Semente:** o resultado mostra a semente usada. O `/compare` não devolve as réplicas individuais, então as abas Gráficos e Réplicas repetem a simulação com a mesma semente, que reproduz exatamente as mesmas réplicas.
@@ -335,6 +339,7 @@ qsimulador/
     │   │   ├── mg1.py             # M/G/1 e M/D/1 (Pollaczek-Khinchine)
     │   │   ├── erlangb.py         # Erlang-B (M/M/c/c) e dimensionamento por bloqueio alvo
     │   │   ├── mgc.py             # M/G/c (Allen–Cunneen)
+│   │   ├── sizing.py          # dimensionamento: nível de serviço, custo e c ótimo
     │   │   └── mmck.py            # M/M/c (Erlang C), M/M/1/K e M/M/c/K
     │   ├── simulation/
     │   │   ├── mm1.py             # simulação M/M/1 com SimPy
@@ -348,7 +353,7 @@ qsimulador/
     │   │   ├── models/            # nome do modelo em notação de Kendall
     │   │   ├── service/           # distribuições de serviço (média, variância, CV, amostrador)
     │   │   └── validation/        # validação de parâmetros e erros de domínio
-    │   ├── experiments/           # varredura, comparação de servidores e sensibilidade
+    │   ├── experiments/           # varredura, comparação de servidores e sensibilidade (todos os modelos; general.py: M/G/1 e M/G/c)
     │   ├── analysis/
     │   │   ├── comparison.py      # comparação analítico × simulação
     │   │   ├── comparison_mg1.py  # comparação do M/G/1
@@ -392,9 +397,11 @@ Com o servidor no ar (`python -m uvicorn app.main:app --reload`), a documentaç�
 | `POST /api/models/mmc/calculate` · `/simulate` · `/compare` | M/M/c (fila ilimitada) |
 | `POST /api/models/mm1k/calculate` · `/simulate` · `/compare` | M/M/1/K |
 | `POST /api/models/mmck/calculate` · `/simulate` · `/compare` | M/M/c/K |
-| `POST /api/experiments/sweep` | Varre λ, μ, c ou K em uma faixa (analítico e, opcionalmente, simulação em cada ponto) |
-| `POST /api/experiments/servers` | Compara números de servidores (M/M/c ou M/M/c/K) ao longo de uma faixa de λ |
+| `POST /api/experiments/sweep` | Varre λ, μ, c ou K (e o CV ou k nos modelos de serviço geral) em uma faixa, em qualquer um dos sete modelos (analítico e, opcionalmente, simulação em cada ponto) |
+| `POST /api/experiments/servers` | Compara números de servidores (M/M/c, M/M/c/K, Erlang-B ou M/G/c) ao longo de uma faixa de λ |
+| `POST /api/experiments/services` | Compara distribuições de serviço (M/G/1 ou M/G/c com c fixo) ao longo de uma faixa de λ |
 | `POST /api/experiments/sensitivity` | Mede quanto cada métrica muda ao perturbar cada parâmetro |
+| `POST /api/sizing/table` · `/sla` · `/cost` | Dimensionamento: tabela por número de servidores, menor c para uma meta e custo mínimo (ver [como executar](docs/como-executar.md#dimensionamento-fase-11)) |
 | `GET /api/records/status` · `POST/GET /api/records` · `GET/PATCH/DELETE /api/records/{id}` | Histórico: salvar, listar, reabrir, renomear e excluir resultados (exige PostgreSQL configurado e o cabeçalho `X-Client-Id`; ver [como executar](docs/como-executar.md#histórico-com-postgresql-fase-8)) |
 
 ### `POST /api/models/mm1/calculate`
@@ -600,6 +607,7 @@ Toda requisição inválida devolve HTTP 422 com `{"code", "message", "fields"?}
 
 - **Testes do serviço geral (M/D/1 e M/G/1):** valores exatos de [`docs/valores-de-referencia.md`](docs/valores-de-referencia.md) (M/D/1 com λ = 40 e μ = 80 dá Wq = 22,5 s; M/G/1 com λ = 25, μ = 30 e CV = 0,5 dá Lq = 2,6042), propriedades (CV = 1 reproduz o M/M/1, CV = 0 reproduz o M/D/1, M/D/1 tem metade da fila do M/M/1), média e variância de uma amostra grande de cada uma das oito distribuições (tolerância calibrada pela variação entre sementes), validação com o campo identificado, simulação × analítico com IC e Lei de Little.
 - **Testes da Fase 10 (Erlang-B, M/G/c e experimentos do M/G/1):** os 15 valores da seção 2 de [`docs/valores-de-referencia.md`](docs/valores-de-referencia.md) e o exemplo M/M/15/15 (bloqueio de 33%), as propriedades (bloqueio decrescente em c e crescente em a, M/M/c/K com K = c idêntico ao Erlang-B, M/G/c com CV = 1 igual ao M/M/c e com c = 1 igual ao M/G/1 nas oito distribuições, Lei de Little), o dimensionamento mínimo, a estabilidade numérica com c = 1.000, os avisos de faixa, os experimentos do M/G/1 conferidos com a fórmula de Pollaczek-Khinchine, e simulação × analítico com IC.
+- **Testes da Fase 11 (dimensionamento e experimentos em todos os modelos):** a tabela da seção 3 de [`docs/valores-de-referencia.md`](docs/valores-de-referencia.md) (λ = 90/h, μ = 15/h: P(Wq ≤ 20 s) de 43,5% a 92,7% e menor c = 9 para 80/20) e os custos da seção 7 (c ótimo = 12 com R$ 452,0/h); as propriedades (nível de serviço cresce com c, em t = 0 vale 1 − P(esperar), linha instável nunca é ótima, aumentar hₛ reduz o ótimo e aumentar hₑ o eleva); o nível de serviço exato do M/M/c/K conferido contra uma simulação FIFO independente (erro de até 0,01) e o do M/G/c com a tolerância documentada de 0,06; Erlang-B com K = c igual ao M/M/c/K, M/G/c com c = 1 igual ao M/G/1 e com CV = 1 igual ao M/M/c nos experimentos; e, no frontend, a conversão de custos por segundo, minuto ou hora, os fluxos da aba Dimensionamento com respostas reais da API gravadas como fixtures e o histórico do tipo `sizing`.
 
 Para executar: `python -m pytest` (dentro de `backend/`) e `npm test` (dentro de `frontend/`).
 
@@ -655,6 +663,7 @@ users,avg_ms,p90_ms,throughput,error_rate
 - [x] **Fase 8 — Persistência e publicação:** PostgreSQL, Docker, deploy e documentação acadêmica. **Feito:** histórico com PostgreSQL opcional (salvar, listar, reabrir, renomear e excluir resultados do Laboratório, dos experimentos e da análise do JMeter; rotas `/api/records`; migrações com Alembic; configuração por variáveis de ambiente), aba *Histórico* no frontend, arquivo `LICENSE` e [documentação acadêmica](docs/documentacao-academica.md). **Falta:** Docker (`docker compose up`).
 - [x] **Fase 9 — Serviço geral:** M/D/1 e M/G/1 (Pollaczek-Khinchine) com oito distribuições de serviço, simulação com o serviço amostrado da distribuição, comparação analítico × simulação com IC, rotas `/api/models/mg1/*` e `GET /api/distributions`, e modelo M/G/1 no Laboratório. As Fases 11 a 21 (dimensionamento, cenários, testes de hipótese, PDF e outras) estão no [roadmap competitivo](docs/roadmap-competitivo.md).
 - [x] **Fase 10 — Erlang-B e M/G/c:** Erlang-B dedicado (recursão estável, tráfego oferecido e carregado, dimensionamento por bloqueio alvo), M/G/c por Allen–Cunneen com marca de aproximação e avisos de faixa, simulação e comparação com IC nos dois modelos, e experimentos do M/G/1 (varredura de λ, μ e CV ou k, sensibilidade e comparação de distribuições). Rotas `/api/models/erlangb`, `/api/models/mgc` e `/api/experiments/services`.
+- [x] **Fase 11 — Dimensionamento e experimentos em todos os modelos:** experimentos para o Erlang-B (curva de Erlang) e o M/G/c (servidores e distribuições com c fixo), que completam os sete modelos do Laboratório; aba Dimensionamento com tabela por número de servidores, nível de serviço P(Wq ≤ t) e menor c para uma meta (exato no M/M/c e no M/M/c/K, por bloqueio alvo no Erlang-B e aproximado no M/G/c), custo total com c ótimo e gráfico custo × c, e histórico do tipo `sizing`. Rotas `/api/sizing/table`, `/sla` e `/cost`.
 
 ### Possíveis extensões
 

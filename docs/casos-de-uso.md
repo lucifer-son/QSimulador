@@ -48,6 +48,7 @@ flowchart LR
         UC10[UC-10 Verificar estabilidade do sistema]
         UC11[UC-11 Modelar serviço geral M/G/1]
         UC12[UC-12 Dimensionar perda e M/G/c]
+        UC13[UC-13 Dimensionar por nível de serviço e custo]
     end
 
     U --> UC01
@@ -59,6 +60,8 @@ flowchart LR
     U --> UC07
     U --> UC08
     U --> UC09
+    U --> UC13
+    A --> UC13
     U --> UC11
     A --> UC11
     A --> UC02
@@ -88,6 +91,7 @@ flowchart LR
 | UC-10 | Verificar estabilidade do sistema | Sistema (incluído) | ✅ |
 | UC-11 | Modelar serviço geral (M/G/1 e M/D/1) | Usuário, Cliente de API | ✅ |
 | UC-12 | Dimensionar sistema de perda (Erlang-B) e modelar M/G/c | Usuário, Cliente de API | ✅ |
+| UC-13 | Dimensionar por nível de serviço e custo | Usuário, Cliente de API | ✅ |
 
 > **Conferência de 08/10/2026:** os casos de uso implementados (UC-01 a UC-06 e UC-10) foram verificados executando o sistema. As divergências encontradas na auditoria em UC-02 (P0 não retornado), UC-03 (a simulação aceitava 1 réplica) e UC-04 (P0 simulado) foram fechadas. Os detalhes estão na seção 11 de [`requisitos-do-sistema.md`](requisitos-do-sistema.md).
 
@@ -361,6 +365,30 @@ flowchart LR
 
 ---
 
+### UC-13 — Dimensionar por nível de serviço e custo ✅
+
+| Campo | Descrição |
+|-------|-----------|
+| **Ator principal** | Usuário, Cliente de API |
+| **Objetivo** | Descobrir quantos servidores (atendentes, caixas, ramais) atendem a uma meta de nível de serviço ou de bloqueio, e qual número minimiza o custo total. |
+| **Pré-condições** | Modelo e valores do Laboratório (λ, μ ou serviço, K quando houver); meta (t e P(Wq ≤ t), ou bloqueio alvo) e/ou custos hₛ, hₑ (e h_perda nos modelos com perda). |
+| **Pós-condições** | Tabela por número de servidores (ρ, P(esperar), Lq, Wq, bloqueio, nível de serviço, custo), menor c que atinge a meta, c ótimo e gráfico custo × c; o resultado pode ser salvo no histórico como experimento do tipo `sizing`. |
+
+**Fluxo principal**
+1. O usuário abre a aba Dimensionamento, que herda o modelo e os valores do Laboratório.
+2. Informa a meta (por exemplo, 80% atendidos em até 20 s) e os custos (por segundo, minuto ou hora; a interface converte).
+3. Gera a tabela (padrão: c − 1 a c + 2 em torno do c do Laboratório), pede o menor c pela meta ou o custo mínimo.
+4. O sistema mostra as linhas, destaca o c escolhido e as linhas instáveis e, no custo, o gráfico custo × c com a parcela de servidores, de espera e de perda.
+
+**Fluxos alternativos**
+- **M/M/1, M/M/1/K e M/G/1:** não têm c para dimensionar; a aba usa a família com c (M/M/c, M/M/c/K e M/G/c) com os mesmos parâmetros, e o c fica limitado a K no M/M/c/K.
+- **Erlang-B:** não há espera; a meta é o bloqueio e o custo exige h_perda > 0 (sem ele o ótimo seria sempre c = 1).
+- **M/G/c:** o nível de serviço usa uma cauda exponencial, exata só com CV = 1; o resultado é marcado como aproximação, com os avisos de faixa.
+- **Meta inalcançável** (nem 1.000 servidores bastam, ou c > K): erro identificando o campo. **Faixa sem nenhum c estável** ou custos inválidos (hₛ ≤ 0): erro identificando o campo.
+- **Ótimo na ponta da faixa pedida:** o sistema avisa que o verdadeiro pode estar fora da faixa.
+
+---
+
 ## 5. Rastreabilidade
 
 | Caso de uso | Fase do roadmap | Componentes principais |
@@ -375,6 +403,7 @@ flowchart LR
 | UC-09 | Fase 8 — Persistência e deploy | PostgreSQL, Docker |
 | UC-11 | Fase 9 — Serviço geral | Módulo de distribuições de serviço, M/G/1 analítico e simulado |
 | UC-12 | Fase 10 — Erlang-B e M/G/c | Erlang-B (recursão estável), dimensionamento, Allen–Cunneen, simulação reaproveitando o motor do M/M/c/K |
+| UC-13 | Fase 11 — Dimensionamento | Módulo de dimensionamento (Erlang C, M/M/c/K exato, cauda do M/G/c), rotas `/api/sizing`, aba Dimensionamento |
 
 ---
 

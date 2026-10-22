@@ -16,10 +16,12 @@ from app.domain.validation.simulation import (
     validate_simulation_settings,
 )
 
-# Modelos aceitos nos experimentos (as mesmas chaves das rotas /api/models/{modelo}).
-MODELS = ("mm1", "mmc", "mm1k", "mmck", "mg1")
-USES_SERVERS = {"mm1": False, "mmc": True, "mm1k": False, "mmck": True, "mg1": False}
-USES_CAPACITY = {"mm1": False, "mmc": False, "mm1k": True, "mmck": True, "mg1": False}
+# Modelos aceitos nos experimentos (as mesmas chaves das rotas /api/models/{modelo}): os sete do
+# Laboratório. No Erlang-B a capacidade é K = c (não há variável K); mg1 e mgc têm serviço geral.
+MODELS = ("mm1", "mmc", "mm1k", "mmck", "mg1", "erlangb", "mgc")
+GENERAL_SERVICE_MODELS = ("mg1", "mgc")
+USES_SERVERS = {"mm1": False, "mmc": True, "mm1k": False, "mmck": True, "mg1": False, "erlangb": True, "mgc": True}
+USES_CAPACITY = {"mm1": False, "mmc": False, "mm1k": True, "mmck": True, "mg1": False, "erlangb": False, "mgc": False}
 
 # Variáveis que podem ser varridas (nomes dos campos da API).
 # `cv` e `k` (variabilidade do serviço) só existem no M/G/1.

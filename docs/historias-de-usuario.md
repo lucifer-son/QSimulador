@@ -42,6 +42,7 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 | E9 — API e qualidade | US-26 a US-28 | Transversal |
 | E10 — Serviço geral | US-29 | Fase 9 |
 | E11 — Perda e vários servidores | US-30, US-31 | Fase 10 |
+| E12 — Dimensionamento e cobertura dos experimentos | US-32, US-33 | Fase 11 |
 
 ---
 
@@ -285,13 +286,38 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 > Como **estudante**, quero variar o CV do serviço e comparar distribuições com a mesma média nos experimentos do M/G/1, para ver quanto a variabilidade piora a fila.
 
 **Critérios de aceitação**
-- **Dado** o M/G/1 no Laboratório, **quando** abro Experimentos, **então** o experimento usa o M/G/1 (e não o último modelo markoviano).
+- **Dado** o M/G/1 no Laboratório, **quando** abro Experimentos, **então** o experimento usa o M/G/1.
 - **Dado** serviço lognormal, Weibull ou Erlang, **quando** varro o CV (ou k), **então** a espera cresce com o CV e a utilização não muda.
 - **Dado** duas ou mais distribuições com a mesma média, **quando** comparo, **então** vejo uma curva por distribuição e onde cada uma satura.
 - **Dado** a análise de sensibilidade, **quando** o serviço tem parâmetro de forma, **então** o CV (ou k) aparece entre os parâmetros.
 
 ---
 
+### E12 — Dimensionamento e cobertura dos experimentos
+
+#### US-32 — Dimensionar servidores por nível de serviço e por custo ✅ · M · UC-13
+> Como **gerente de operação**, quero saber quantos atendentes preciso para cumprir um nível de serviço e qual número minimiza o custo total, para justificar a contratação.
+
+**Critérios de aceitação**
+- **Dado** λ = 90/h, μ = 15/h e a meta de 80% atendidos em até 20 s, **quando** peço o menor c, **então** recebo 9 servidores (com 84,7% de nível de serviço).
+- **Dado** λ = 50/h, μ = 6/h, hₛ = R$ 35/h e hₑ = R$ 80/h, **quando** peço o custo mínimo, **então** o c ótimo é 12, com R$ 452,0 por hora, e vejo o gráfico custo × c.
+- **Dado** uma linha instável (λ ≥ c·μ) ou com c > K, **quando** a tabela é exibida, **então** ela aparece destacada e nunca é escolhida.
+- **Dado** que aumento o custo do servidor (ou o da espera), **quando** recalculo, **então** o ótimo vai para menos (ou mais) servidores.
+- **Dado** o Erlang-B, **quando** dimensiono, **então** a meta é o bloqueio e o custo exige o custo de perda.
+- **Dado** o M/M/1, o M/M/1/K ou o M/G/1, **quando** abro a aba, **então** ela dimensiona pela família com c e avisa disso; no M/G/c o resultado vem marcado como aproximação.
+- **Dado** um resultado de dimensionamento, **quando** salvo no histórico, **então** posso reabri-lo depois.
+
+#### US-33 — Fazer experimentos em todos os modelos do Laboratório ✅ · M · UC-07
+> Como **estudante**, quero rodar varredura, comparação e sensibilidade também no Erlang-B e no M/G/c, para explorar qualquer modelo do Laboratório sem trocar de ferramenta.
+
+**Critérios de aceitação**
+- **Dado** o Erlang-B, **quando** varro λ, μ ou c, **então** vejo o bloqueio (nenhum ponto fica instável) e posso comparar servidores na curva clássica de Erlang.
+- **Dado** o M/G/c, **quando** varro λ, μ, c ou o CV, **então** vejo as métricas aproximadas, e posso comparar servidores e distribuições com c fixo.
+- **Dado** o M/G/c com c = 1 (ou com CV = 1), **quando** comparo com o M/G/1 (ou com o M/M/c), **então** os resultados coincidem.
+- **Dado** qualquer modelo no Laboratório, **quando** abro Experimentos, **então** não há mais aviso de modelo sem experimentos.
+
+---
+
 ## 4. Rastreabilidade com os casos de uso
 
 | Caso de uso | Histórias |
@@ -302,12 +328,13 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 | UC-04 — Comparar analítico × simulação | US-09, US-10, US-11 |
 | UC-05 — Visualizar gráficos | US-12, US-13, US-14, US-15 |
 | UC-06 — M/M/c e capacidade finita | US-16, US-17, US-18 |
-| UC-07 — Experimentos | US-19, US-20, US-31 |
+| UC-07 — Experimentos | US-19, US-20, US-31, US-33 |
 | UC-08 — JMeter | US-21, US-22 |
 | UC-09 — Persistência | US-23, US-24 |
 | UC-10 — Estabilidade | US-03 |
 | UC-11 — Serviço geral (M/G/1) | US-29, US-31 |
 | UC-12 — Erlang-B e M/G/c | US-30 |
+| UC-13 — Dimensionamento | US-32 |
 | Transversais (API, qualidade, Docker) | US-25, US-26, US-27, US-28 |
 
 ---

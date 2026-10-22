@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { SimText, SystemText } from "../domain/experiments";
+import { usesService } from "../domain/models";
 import type { ExperimentModelKey } from "../domain/types";
 import { SensitivityPanel } from "./SensitivityPanel";
 import { ServersPanel } from "./ServersPanel";
@@ -10,12 +11,16 @@ type Mode = "sweep" | "servers" | "services" | "sensitivity";
 
 const SWEEP: { key: Mode; label: string } = { key: "sweep", label: "Varredura de parâmetro" };
 const SENSITIVITY: { key: Mode; label: string } = { key: "sensitivity", label: "Sensibilidade" };
-/** O M/G/1 tem um servidor só: em vez de comparar servidores, compara distribuições de serviço. */
+const SERVERS: { key: Mode; label: string } = { key: "servers", label: "Comparar servidores" };
+const SERVICES: { key: Mode; label: string } = { key: "services", label: "Comparar distribuições" };
+/**
+ * O M/G/1 tem um servidor só: em vez de comparar servidores, compara distribuições de serviço. O M/G/c
+ * tem as duas (distribuições com c fixo). O Erlang-B compara servidores (a curva clássica de Erlang).
+ */
 const modesFor = (model: ExperimentModelKey) => [
   SWEEP,
-  model === "mg1"
-    ? { key: "services" as Mode, label: "Comparar distribuições" }
-    : { key: "servers" as Mode, label: "Comparar servidores" },
+  ...(model === "mg1" ? [] : [SERVERS]),
+  ...(usesService(model) ? [SERVICES] : []),
   SENSITIVITY,
 ];
 
@@ -55,9 +60,10 @@ export function ExperimentTab({ model, system, sim }: Props) {
         </div>
       </div>
       <SweepPanel active={mode === "sweep"} model={model} system={system} sim={sim} />
-      {model === "mg1"
-        ? <ServicesPanel active={mode === "services"} model={model} system={system} />
-        : <ServersPanel active={mode === "servers"} model={model} system={system} />}
+      {model !== "mg1" && <ServersPanel active={mode === "servers"} model={model} system={system} />}
+      {(model === "mg1" || model === "mgc") && (
+        <ServicesPanel active={mode === "services"} model={model} system={system} />
+      )}
       <SensitivityPanel active={mode === "sensitivity"} model={model} system={system} />
     </div>
   );

@@ -10,6 +10,7 @@ import { fetchRuns, runAction } from "../api/actions";
 import { ApiError } from "../api/client";
 import { createRecord, deleteRecord, getRecord, getRecordsStatus, listRecords, renameRecord } from "../api/records";
 import { runSensitivity, runServerComparison, runServicesComparison, runSweep } from "../api/experiments";
+import { runSizingCost, runSizingSla, runSizingTable } from "../api/sizing";
 import { fieldErrorsFromApi } from "../api/fieldErrors";
 import { buildReport, compareSimulated, type LevelsImport } from "../api/realdataExtra";
 import { MODEL_ORDER, MODELS } from "../domain/models";
@@ -345,6 +346,36 @@ describe.skipIf(!live)("contrato com a API real", () => {
  * Histórico: precisa de uma API com banco (QSIMULADOR_DATABASE_URL). Sem banco, o teste é ignorado.
  * Confere o ciclo completo e que o JSON volta exatamente como foi gravado (RF-26).
  */
+describe.skipIf(!live)("Fase 11: experimentos do Erlang-B e do M/G/c, e dimensionamento", () => {
+  const service = { distribution: "lognormal", mean: 0.1, cv: 1.5 };
+
+  it("Erlang-B e M/G/c: varredura, comparação de servidores e sensibilidade", async () => {
+    const sweep = await runSweep({ model: "erlangb", variable: "lambda", mu: 1, servers: 10, start: 2, end: 20, step: 6 });
+    expect(sweep.model).toBe("erlangb");
+    expect(sweep.points.every((p) => p.status === "ok" && "p_block" in p.metrics!)).toBe(true);
+    const servers = await runServerComparison({ model: "erlangb", servers_list: [5, 10], mu: 1, start: 2, end: 14, step: 4 });
+    expect(servers.model).toBe("erlangb");
+    const mgc = await runSweep({ model: "mgc", variable: "servers", lambda: 80, start: 9, end: 11, step: 1, service });
+    expect(mgc.points.map((p) => p.status)).toEqual(["ok", "ok", "ok"]);
+    const services = await runServicesComparison({
+      model: "mgc", servers: 10, start: 10, end: 90, step: 40,
+      services: [{ distribution: "deterministic", mean: 0.1 }, { distribution: "exponential", mean: 0.1 }],
+    });
+    expect(services.servers).toBe(10);
+    const sens = await runSensitivity({ model: "mgc", lambda: 80, servers: 10, service });
+    expect(sens.parameters.map((p) => p.name)).toEqual(["lambda", "mu", "servers", "cv"]);
+  });
+
+  it("dimensionamento: tabela, menor c pela meta e custo mínimo (referências das seções 3 e 7)", async () => {
+    const callCenter = { model: "mmc", lambda: 90, mu: 15, t: 20 / 3600, target: 0.8 };
+    expect((await runSizingSla(callCenter)).servers).toBe(9);
+    expect((await runSizingTable({ ...callCenter, servers: 8 })).first_meeting_target).toBe(9);
+    const cost = await runSizingCost({ model: "mmc", lambda: 50, mu: 6, server_cost: 35, wait_cost: 80 });
+    expect(cost.optimal_servers).toBe(12);
+    expect(cost.optimal_cost).toBeCloseTo(452, 0);
+  });
+});
+
 describe.skipIf(!live)("contrato do histórico (/api/records)", () => {
   it("salva, lista, reabre, renomeia e exclui, devolvendo os mesmos dados", async (ctx) => {
     const status = await getRecordsStatus();

@@ -21,13 +21,13 @@ import { TextField } from "./TextField";
 
 interface Props {
   active: boolean;
-  model: "mg1";
+  model: "mg1" | "mgc";
   system: SystemText;
 }
 
 /**
- * M/G/1: compara distribuições de serviço com a mesma média E[S] do Laboratório, variando λ.
- * É o experimento que mostra o efeito da variabilidade: quanto maior o CV, mais a fila espera.
+ * M/G/1 e M/G/c: compara distribuições de serviço com a mesma média E[S] do Laboratório, variando λ
+ * (no M/G/c, com o c do Laboratório fixo). Mostra o efeito da variabilidade: quanto maior o CV, mais a fila espera.
  */
 export function ServicesPanel({ active, model, system }: Props) {
   const [chosen, setChosen] = useState<string[]>(DEFAULT_SERVICE_CHOICES);
@@ -52,7 +52,7 @@ export function ServicesPanel({ active, model, system }: Props) {
   };
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    const built = buildServicesBody(system, chosen, range);
+    const built = buildServicesBody(system, chosen, range, model);
     if (!built.ok) {
       setErrors(built.errors);
       return;
@@ -67,7 +67,7 @@ export function ServicesPanel({ active, model, system }: Props) {
       <form className="panel params" aria-label="Parâmetros da comparação de distribuições" onSubmit={submit}>
         <p className="sub">
           Compara distribuições de serviço com o mesmo tempo médio E[S]{moments ? ` (${toText(moments.mean)} s)` : ""},
-          variando λ. Só a variabilidade (o CV) muda entre as curvas.
+          variando λ{model === "mgc" ? ` e com c = ${system.servers || "—"} servidores` : ""}. Só a variabilidade (o CV) muda entre as curvas.
         </p>
         <FixedParameters model={model} system={system} skip="lambda" />
 
@@ -156,8 +156,8 @@ export function ServicesResult({ result, model }: { result: ServicesComparisonRe
       {anyPoint ? (
         <section className="block">
           <p className="sub">
-            Uma curva por distribuição, calculada pela fórmula de Pollaczek-Khinchine: com a mesma média,
-            quanto maior o CV, maior a espera.
+            Uma curva por distribuição, calculada {model === "mgc" ? "pela aproximação de Allen–Cunneen" : "pela fórmula de Pollaczek-Khinchine"}:
+            com a mesma média, quanto maior o CV, maior a espera.
           </p>
           <PlotlyChart data={chart.data} layout={chart.layout} label={`${metricTitle(shown)} por distribuição de serviço`} />
         </section>

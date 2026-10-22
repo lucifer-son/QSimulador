@@ -3,16 +3,17 @@ import { useEffect, useState } from "react";
 import { fieldErrorsFromApi } from "./api/fieldErrors";
 import { ParametersPanel } from "./components/ParametersPanel";
 import { ResultsPanel } from "./components/ResultsPanel";
+import { SizingTab } from "./components/SizingTab";
 import { ExperimentTab } from "./components/ExperimentTab";
 import { HistoryTab } from "./components/HistoryTab";
 import { RealDataTab } from "./components/RealDataTab";
 import { estimateText } from "./domain/estimate";
-import { isExperimentModel, LAB_MODEL_ORDER, MODELS } from "./domain/models";
+import { LAB_MODEL_ORDER, MODELS } from "./domain/models";
 import { serviceToText } from "./domain/service";
 import type { LabSnapshot } from "./domain/records";
 import { parseForm } from "./domain/request";
 import {
-  SYSTEM_FIELDS, type Action, type FieldErrors, type FieldKey, type ExperimentModelKey, type FormValues,
+  SYSTEM_FIELDS, type Action, type FieldErrors, type FieldKey, type FormValues,
   type ModelKey, type SystemFieldKey,
 } from "./domain/types";
 import { RecordsProvider } from "./hooks/RecordsContext";
@@ -35,17 +36,16 @@ function initialSystems(): Record<ModelKey, SystemValues> {
 
 export default function App() {
   const [model, setModel] = useState<ModelKey>("mmck");
-  // Experimentos existem para os modelos markovianos e o M/G/1: ficam no último escolhido (e mantêm os resultados).
-  const [experimentModel, setExperimentModel] = useState<ExperimentModelKey>("mmck");
   const [systems, setSystems] = useState(initialSystems);
   const [sim, setSim] = useState<SimValues>(INITIAL_SIM);
   const [localErrors, setLocalErrors] = useState<FieldErrors>({});
   const [apiErrors, setApiErrors] = useState<FieldErrors>({});
   const [theme, setTheme] = useState<Theme>(initialTheme);
   
-  const [activeTab, setActiveTab] = useState<"laboratorio" | "experimentos" | "dados" | "historico">("laboratorio");
+  const [activeTab, setActiveTab] = useState<"laboratorio" | "experimentos" | "dimensionamento" | "dados" | "historico">("laboratorio");
   // Os experimentos só são montados na primeira visita; depois ficam montados para manter os resultados.
   const [experimentsOpened, setExperimentsOpened] = useState(false);
+  const [sizingOpened, setSizingOpened] = useState(false);
   const [realDataOpened, setRealDataOpened] = useState(false);
 
   const { state, run, cancel, loadRuns, restore } = useRunner();
@@ -80,7 +80,6 @@ export default function App() {
 
   const handleModelChange = (next: ModelKey) => {
     setModel(next);
-    if (isExperimentModel(next)) setExperimentModel(next);
     setLocalErrors({});
     setApiErrors({});
   };
@@ -99,7 +98,6 @@ export default function App() {
   const handleReopenLab = ({ model: savedModel, parameters: p, result }: LabSnapshot) => {
     const text = (v: number | undefined, fallback: string) => (v === undefined ? fallback : String(v));
     setModel(savedModel);
-    if (isExperimentModel(savedModel)) setExperimentModel(savedModel);
     setSystems((prev) => {
       const current = prev[savedModel];
       return {
@@ -152,6 +150,14 @@ export default function App() {
           <button
             type="button"
             className="nav-item"
+            aria-current={activeTab === "dimensionamento" ? "page" : undefined}
+            onClick={() => { setActiveTab("dimensionamento"); setSizingOpened(true); }}
+          >
+            Dimensionamento
+          </button>
+          <button
+            type="button"
+            className="nav-item"
             aria-current={activeTab === "dados" ? "page" : undefined}
             onClick={() => { setActiveTab("dados"); setRealDataOpened(true); }}
           >
@@ -194,13 +200,13 @@ export default function App() {
 
       {experimentsOpened && (
         <main className="layout layout-wide" hidden={activeTab !== "experimentos"}>
-          {!isExperimentModel(model) && (
-            <div className="panel banner banner-info" role="note">
-              Os experimentos cobrem os modelos markovianos e o M/G/1; o Erlang-B e o M/G/c ainda não têm
-              experimentos. Esta aba usa o último modelo compatível escolhido: {MODELS[experimentModel].label}.
-            </div>
-          )}
-          <ExperimentTab model={experimentModel} system={systems[experimentModel]} sim={sim} />
+          <ExperimentTab model={model} system={systems[model]} sim={sim} />
+        </main>
+      )}
+
+      {sizingOpened && (
+        <main className="layout layout-wide" hidden={activeTab !== "dimensionamento"}>
+          <SizingTab model={model} system={systems[model]} active={activeTab === "dimensionamento"} />
         </main>
       )}
 

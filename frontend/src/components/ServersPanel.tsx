@@ -3,12 +3,12 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { runServerComparison, type ServerComparisonResponse } from "../api/experiments";
 import { describeServerLimits, metricScale, serverLines, serversChart } from "../charts/experiments";
 import {
-  buildServersBody, experimentFieldErrors, parseServerList, suggestRange, suggestServers,
+  buildServersBody, defaultMetric, experimentFieldErrors, parseServerList, suggestRange, suggestServers,
   type ExpErrors, type RangeText, type SystemText,
 } from "../domain/experiments";
 import { formatMetric, formatNumber } from "../domain/format";
 import { MODELS } from "../domain/models";
-import type { MarkovModelKey, MetricName } from "../domain/types";
+import type { ExperimentModelKey, MetricName } from "../domain/types";
 import { useExperiment } from "../hooks/useExperiment";
 import { useThemeColors } from "../hooks/useThemeColors";
 import { experimentRecord, experimentTitle } from "../domain/records";
@@ -20,21 +20,28 @@ import { TextField } from "./TextField";
 
 interface Props {
   active: boolean;
-  model: MarkovModelKey;
+  /** Qualquer modelo com servidores a comparar (o M/G/1 compara distribuições, não servidores). */
+  model: ExperimentModelKey;
   system: SystemText;
 }
 
+/** Família da comparação: o Erlang-B e o M/G/c mantêm o próprio modelo; os markovianos usam M/M/c (ou M/M/c/K). */
+const familyOf = (model: ExperimentModelKey): ExperimentModelKey =>
+  model === "erlangb" || model === "mgc" ? model : "mmc";
+
 /** Faixa de λ que cobre o maior número de servidores da lista (onde ele satura). */
-function suggestLambdaRange(system: SystemText, serversText: string): RangeText {
+function suggestLambdaRange(model: ExperimentModelKey, system: SystemText, serversText: string): RangeText {
   const list = parseServerList(serversText) ?? [];
   const largest = Math.max(1, ...list.filter((n) => n >= 1));
-  // Sempre como M/M/c (que tem servidores), mesmo com o Laboratório no M/M/1.
-  return suggestRange("lambda", "mmc", { ...system, servers: String(largest) });
+  // Como M/M/c (que tem servidores), mesmo com o Laboratório no M/M/1.
+  return suggestRange("lambda", familyOf(model), { ...system, servers: String(largest) });
 }
+
+const FAMILY_LABEL: Partial<Record<ExperimentModelKey, string>> = { erlangb: "Erlang-B, K = c", mgc: "M/G/c" };
 
 export function ServersPanel({ active, model, system }: Props) {
   const [serversText, setServersText] = useState(() => suggestServers(model, system));
-  const [range, setRange] = useState<RangeText>(() => suggestLambdaRange(system, suggestServers(model, system)));
+  const [range, setRange] = useState<RangeText>(() => suggestLambdaRange(model, system, suggestServers(model, system)));
   const [errors, setErrors] = useState<ExpErrors>({});
   const { state, run, cancel } = useExperiment<ServerComparisonResponse>();
   const lastRequest = useRef<unknown>(null);   // o pedido que gerou o resultado, para o histórico
@@ -58,13 +65,17 @@ export function ServersPanel({ active, model, system }: Props) {
     setRange((r) => ({ ...r, [field]: value }));
     setErrors(({ [field]: _gone, ...rest }) => rest);
   };
-  const family = MODELS[model].usesCapacity ? "M/M/c/K" : "M/M/c";
+  const family = FAMILY_LABEL[model] ?? (MODELS[model].usesCapacity ? "M/M/c/K" : "M/M/c");
+  const idleText = model === "erlangb"
+    ? "Informe quais valores de c comparar e a faixa de λ. A curva do bloqueio por carga é a curva clássica de Erlang."
+    : "Informe quais valores de c comparar e a faixa de λ. O gráfico mostra uma curva por número de servidores.";
 
   return (
     <div className="exp-grid" hidden={!active} role="tabpanel" id="exp-panel-servers" aria-labelledby="exp-tab-servers">
       <form className="panel params" aria-label="Parâmetros da comparação de servidores" onSubmit={submit}>
         <p className="sub">
-          Compara o desempenho com números diferentes de servidores sob a mesma carga ({family}, cada servidor com taxa μ).
+          Compara o desempenho com números diferentes de servidores sob a mesma carga ({family}
+          {model === "mgc" ? ", com o serviço do Laboratório em cada servidor" : ", cada servidor com taxa μ"}).
         </p>
         <FixedParameters model={model} system={system} skip="servers" />
 
@@ -82,7 +93,7 @@ export function ServersPanel({ active, model, system }: Props) {
             type="button" className="btn btn-small suggest"
             onClick={() => {
               setServersText(suggestServers(model, system));
-              setRange(suggestLambdaRange(system, suggestServers(model, system)));
+              setRange(suggestLambdaRange(model, system, suggestServers(model, system)));
               setErrors({});
             }}
           >
@@ -97,7 +108,7 @@ export function ServersPanel({ active, model, system }: Props) {
       <ResultArea
         state={state}
         idleTitle="Compare números de servidores"
-        idleText="Informe quais valores de c comparar e a faixa de λ. O gráfico mostra uma curva por número de servidores."
+        idleText={idleText}
         loadingText="Calculando as séries"
       >
         {(result) => {
@@ -117,9 +128,9 @@ export function ServersPanel({ active, model, system }: Props) {
   );
 }
 
-export function ServersResult({ result, model }: { result: ServerComparisonResponse; model: MarkovModelKey }) {
+export function ServersResult({ result, model }: { result: ServerComparisonResponse; model: ExperimentModelKey }) {
   const colors = useThemeColors();
-  const [metric, setMetric] = useState<MetricName>("W");
+  const [metric, setMetric] = useState<MetricName>(defaultMetric(model));
   const has = (n: MetricName) => result.series.some((s) => s.points.some((p) => p.metrics && n in p.metrics));
   const shown = has(metric) ? metric : "rho";
   const lines = useMemo(() => serverLines(result.series, shown), [result, shown]);
@@ -144,7 +155,9 @@ export function ServersResult({ result, model }: { result: ServerComparisonRespo
       </div>
       {anyPoint ? (
         <section className="block">
-          <p className="sub">Uma curva por número de servidores, calculada com o modelo analítico.</p>
+          <p className="sub">
+            Uma curva por número de servidores, calculada com {model === "mgc" ? "a aproximação de Allen–Cunneen" : "o modelo analítico"}.
+          </p>
           <PlotlyChart data={chart.data} layout={chart.layout} label={`${metricTitle(shown)} por número de servidores`} />
         </section>
       ) : (

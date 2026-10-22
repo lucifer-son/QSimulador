@@ -22,7 +22,7 @@ Cada fase foi dimensionada para caber em **um chat de trabalho** (plano, impleme
 |---|---|---|---|---|
 | 9 | Serviço geral: M/D/1 e M/G/1 ✅ | L-01, L-02 | M | M1 |
 | 10 | Erlang-B dedicado e M/G/c ✅ | L-03, L-04 | M | M1 |
-| 11 | Dimensionamento, nível de serviço e custo | L-05, L-06 | M | M1 |
+| 11 | Dimensionamento, nível de serviço e custo ✅| L-05, L-06 | M | M1 |
 | 12 | Comparação de cenários | L-07 | M | M2 |
 | 13 | Gráficos de distribuição e ajuste de amostras | L-08, L-09 | M | M2 |
 | 14 | Chegadas variáveis (NHPP) e warm-up | L-10, L-11 | M | M2 |
@@ -196,7 +196,7 @@ Expor o sistema de perda pura como modelo de primeira classe e estender o servi�
 
 ### Fora de escopo
 
-Dimensionamento com custo e SLA (Fase 11); Engset (já coberto por M/M/c//N); experimentos do Erlang-B e do M/G/c.
+Dimensionamento com custo e SLA (feito na Fase 11); Engset (já coberto por M/M/c//N); experimentos do Erlang-B e do M/G/c (feitos na Fase 11).
 
 ### Testes
 
@@ -220,7 +220,8 @@ Dimensionamento com custo e SLA (Fase 11); Engset (já coberto por M/M/c//N); ex
 | Lacunas | L-05, L-06 |
 | Esforço / prioridade | M / Alta |
 | Depende de | Fase 10 |
-| Requisitos | RFC-12 a RFC-16 |
+| Status | ✅ Concluída em 21/10/2026 (QSimulador 1.8) |
+| Requisitos | RFC-12 a RFC-16 (oficiais: RF-59 a RF-63; mais RF-57 e RF-58, experimentos do Erlang-B e do M/G/c, e a US-32 e a US-33; caso de uso UC-13) |
 | História | USC-11: como gerente de operação, quero saber quantos atendentes preciso para cumprir um SLA e qual o custo total, para justificar a contratação |
 
 ### Objetivo
@@ -239,6 +240,15 @@ Transformar o simulador em ferramenta de **decisão**: quantos servidores, a que
 **API (propostas)**: `POST /api/sizing/table`, `POST /api/sizing/sla`, `POST /api/sizing/cost`.
 
 **Interface**: aba "Dimensionamento" com a tabela, campos de SLA e de custos, destaque da linha ótima e das instáveis, gráfico de custo × c.
+
+### Decisões tomadas
+
+- **Etapa 1, experimentos em todos os modelos:** Erlang-B (varredura de λ, μ e c com K = c; comparar servidores como a curva de Erlang; sensibilidade a λ, μ e c ±1) e M/G/c (varredura de λ, μ, c, CV ou k; comparar servidores e distribuições com c fixo; sensibilidade a λ, μ, c ±1 e CV). Ficaram de fora: comparar distribuições no Erlang-B (o bloqueio só depende da média do serviço, então todas as curvas coincidiriam) e a aba Dados reais para esses modelos (exige ajustar uma distribuição aos dados, o que é a Fase 13).
+- **Modelos de um servidor:** M/M/1, M/M/1/K e M/G/1 não têm c; a aba usa a família com c (M/M/c, M/M/c/K e M/G/c) com os mesmos parâmetros, e no M/M/c/K o c fica limitado a K.
+- **Custo com perda:** nos modelos com bloqueio entra o termo opcional λ·B·h_perda, e o custo de espera usa a vazão λ(1 − B). No Erlang-B o custo exige h_perda > 0.
+- **Unidades:** a API usa a mesma unidade de tempo de λ e μ; a interface converte custos por segundo, minuto ou hora.
+- **M/G/c:** nível de serviço pela cauda exponencial P(Wq>t) ≈ P(esperar)·exp(−t·P(esperar)/Wq), exata com CV = 1, rotulada como aproximação.
+- **Histórico:** o dimensionamento é salvo como experimento do tipo `sizing` (kind `experiment`), sem mudar o esquema do banco.
 
 ### Fora de escopo
 

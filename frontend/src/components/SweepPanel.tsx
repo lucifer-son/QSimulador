@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { runSweep, type SweepResponse } from "../api/experiments";
 import { describeUnstable, sweepChart, sweepSeries, type XAxis } from "../charts/experiments";
 import {
-  buildSweepBody, experimentFieldErrors, suggestRange, sweepVariables, VARIABLE_INFO,
+  buildSweepBody, defaultMetric, experimentFieldErrors, loadFormula, suggestRange, sweepVariables, VARIABLE_INFO,
   type ExpErrors, type RangeText, type SimText, type SweepVariable, type SystemText,
 } from "../domain/experiments";
 import { formatInteger, formatNumber } from "../domain/format";
@@ -148,7 +148,7 @@ export function SweepResult({ result }: { result: SweepResponse }) {
   const colors = useThemeColors();
   const model = result.model as ExperimentModelKey;
   const variable = result.variable as SweepVariable;
-  const [metric, setMetric] = useState<MetricName>("W");
+  const [metric, setMetric] = useState<MetricName>(defaultMetric(model));
   const [xAxis, setXAxis] = useState<XAxis>("value");
 
   const hasMetric = (n: MetricName) => result.points.some((p) => p.metrics && n in p.metrics);
@@ -187,7 +187,7 @@ export function SweepResult({ result }: { result: SweepResponse }) {
           <label htmlFor="sweep-xaxis">Eixo horizontal</label>
           <select id="sweep-xaxis" value={xAxis} onChange={(e) => setXAxis(e.target.value as XAxis)}>
             <option value="value">{VARIABLE_INFO[variable].label}</option>
-            <option value="utilization">{model === "mg1" ? "Carga oferecida λ·E[S]" : "Carga oferecida λ/(c·μ)"}</option>
+            <option value="utilization">Carga oferecida {loadFormula(model)}</option>
           </select>
         </div>
       </div>

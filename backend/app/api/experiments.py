@@ -14,7 +14,13 @@ from app.api.schemas import (
     SweepResponse,
 )
 from app.domain.validation.errors import QueueValidationError
-from app.experiments.mg1 import run_mg1_sensitivity, run_mg1_sweep, run_services_comparison
+from app.domain.validation.experiments import GENERAL_SERVICE_MODELS
+from app.experiments.general import (
+    run_general_sensitivity,
+    run_general_server_comparison,
+    run_general_sweep,
+    run_services_comparison,
+)
 from app.experiments.sensitivity import run_sensitivity
 from app.experiments.sweep import SimulationSettings, run_server_comparison, run_sweep
 
@@ -23,9 +29,9 @@ router = APIRouter(prefix="/api/experiments", tags=["Experimentos"])
 _errors = {422: {"model": ErrorResponse, "description": "Parâmetros inválidos"}}
 
 
-def _required_service(service):
+def _required_service(service, model: str = "mg1"):
     if service is None:
-        raise QueueValidationError("service é obrigatório para o modelo mg1.", "service")
+        raise QueueValidationError(f"service é obrigatório para o modelo {model}.", "service")
     return service
 
 
@@ -47,11 +53,12 @@ def sweep(request: SweepRequest) -> SweepResponse:
             seed=request.seed,
             confidence_level=request.confidence_level,
         )
-    if request.model == "mg1":
-        service = _required_service(request.service)
-        result = run_mg1_sweep(
-            service.distribution, service.service_values(), request.variable,
-            request.start, request.end, request.step, lam=request.lam, simulation=simulation,
+    if request.model in GENERAL_SERVICE_MODELS:
+        service = _required_service(request.service, request.model)
+        result = run_general_sweep(
+            request.model, service.distribution, service.service_values(), request.variable,
+            request.start, request.end, request.step, lam=request.lam, servers=request.servers,
+            simulation=simulation,
         )
         return SweepResponse.model_validate(result.as_dict())
     result = run_sweep(
@@ -64,10 +71,20 @@ def sweep(request: SweepRequest) -> SweepResponse:
 
 @router.post("/servers", response_model=ServerComparisonResponse, responses=_errors)
 def compare_servers(request: ServerComparisonRequest) -> ServerComparisonResponse:
-    """Compara o desempenho com números diferentes de servidores, variando λ na mesma faixa."""
+    """Compara o desempenho com números diferentes de servidores, variando λ na mesma faixa.
+
+    Cobre M/M/c, M/M/c/K, Erlang-B (curva clássica do bloqueio) e M/G/c (com o serviço dado).
+    """
+    if request.model == "mgc":
+        service = _required_service(request.service, "mgc")
+        result = run_general_server_comparison(
+            service.distribution, service.service_values(), request.servers_list,
+            request.start, request.end, request.step,
+        )
+        return ServerComparisonResponse.model_validate(result.as_dict())
     result = run_server_comparison(
         request.servers_list, request.mu, request.start, request.end, request.step,
-        capacity=request.capacity,
+        capacity=request.capacity, model=request.model,
     )
     return ServerComparisonResponse.model_validate(result.as_dict())
 
@@ -75,10 +92,11 @@ def compare_servers(request: ServerComparisonRequest) -> ServerComparisonRespons
 @router.post("/sensitivity", response_model=SensitivityResponse, responses=_errors)
 def sensitivity(request: SensitivityRequest) -> SensitivityResponse:
     """Mede quanto cada métrica muda ao perturbar cada parâmetro em torno do ponto base."""
-    if request.model == "mg1":
-        service = _required_service(request.service)
-        result = run_mg1_sensitivity(
-            service.distribution, service.service_values(), request.lam, request.delta_pct
+    if request.model in GENERAL_SERVICE_MODELS:
+        service = _required_service(request.service, request.model)
+        result = run_general_sensitivity(
+            request.model, service.distribution, service.service_values(), request.lam,
+            request.delta_pct, servers=request.servers,
         )
         return SensitivityResponse.model_validate(result.as_dict())
     if request.mu is None:
@@ -92,9 +110,10 @@ def sensitivity(request: SensitivityRequest) -> SensitivityResponse:
 
 @router.post("/services", response_model=ServicesComparisonResponse, responses=_errors)
 def compare_services(request: ServicesComparisonRequest) -> ServicesComparisonResponse:
-    """Compara distribuições de serviço no M/G/1, variando λ na mesma faixa para todas."""
+    """Compara distribuições de serviço no M/G/1 ou no M/G/c (c fixo), variando λ na mesma faixa."""
     result = run_services_comparison(
         [(spec.distribution, spec.service_values()) for spec in request.services],
         request.start, request.end, request.step,
+        model=request.model, servers=request.servers,
     )
     return ServicesComparisonResponse.model_validate(result.as_dict())

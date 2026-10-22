@@ -277,11 +277,16 @@ class QueueComparisonResponse(BaseModel):
 # Fase 6: Experimentos (varredura, comparação de servidores e sensibilidade)
 # ======================================================================
 
-ModelKey = Literal["mm1", "mmc", "mm1k", "mmck", "mg1"]
+ModelKey = Literal["mm1", "mmc", "mm1k", "mmck", "mg1", "erlangb", "mgc"]
+ServerCompareModel = Literal["mmc", "mmck", "erlangb", "mgc"]
+GeneralModelKey = Literal["mg1", "mgc"]
 SweepVariable = Literal["lambda", "mu", "servers", "capacity", "cv", "k"]
 PointStatus = Literal["ok", "unstable", "invalid"]
 
-_MODEL_DESCRIPTION = "Modelo: mm1, mmc, mm1k, mmck ou mg1 (as mesmas chaves das rotas /api/models)."
+_MODEL_DESCRIPTION = (
+    "Modelo: mm1, mmc, mm1k, mmck, mg1, erlangb ou mgc (as mesmas chaves das rotas /api/models). "
+    "No erlangb a capacidade é sempre K = c; mg1 e mgc recebem o serviço em `service`."
+)
 _FIXED_NOTE = "Obrigatório para o modelo, a menos que seja o parâmetro varrido (então é ignorado)."
 
 
@@ -307,12 +312,12 @@ class SweepRequest(BaseModel):
     end: StrictFloat = Field(description="Último valor da faixa (incluído quando start + n·step = end).")
     step: StrictFloat = Field(description="Incremento entre os pontos (maior que zero; inteiro para servers e capacity).")
     lam: StrictFloat | None = Field(default=None, alias="lambda", description="Taxa de chegada (λ). " + _FIXED_NOTE)
-    mu: StrictFloat | None = Field(default=None, description="Taxa de serviço (μ). " + _FIXED_NOTE + " Ignorado no M/G/1 (use `service`).")
+    mu: StrictFloat | None = Field(default=None, description="Taxa de serviço (μ). " + _FIXED_NOTE + " Ignorado em mg1 e mgc (use `service`).")
     servers: StrictInt | None = Field(default=None, description="Servidores (c). " + _FIXED_NOTE)
     capacity: StrictInt | None = Field(default=None, description="Capacidade total (K). " + _FIXED_NOTE)
     service: ServiceSpec | None = Field(
         default=None,
-        description="Serviço do ponto base. Obrigatório no M/G/1 (e ignorado nos demais). Com `variable` = mu, "
+        description="Serviço do ponto base. Obrigatório em mg1 e mgc (e ignorado nos demais). Com `variable` = mu, "
                     "a escala do serviço varia e o CV é preservado; cv varia o CV (lognormal e Weibull) e k, as etapas do Erlang.",
     )
     simulate: StrictBool = Field(
@@ -331,18 +336,38 @@ class SweepRequest(BaseModel):
 class ServerComparisonRequest(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
-            "examples": [{"servers_list": [1, 2, 3], "mu": 10, "start": 5, "end": 30, "step": 5}]
+            "examples": [
+                {"servers_list": [1, 2, 3], "mu": 10, "start": 5, "end": 30, "step": 5},
+                {"model": "erlangb", "servers_list": [5, 10, 15], "mu": 1, "start": 2, "end": 20, "step": 2},
+                {"model": "mgc", "servers_list": [9, 10, 11], "start": 10, "end": 100, "step": 10,
+                 "service": {"distribution": "lognormal", "mean": 0.1, "cv": 1.5}},
+            ]
         }
     )
 
     servers_list: list[StrictInt] = Field(description="Números de servidores a comparar (de 2 a 8 valores distintos).")
-    mu: StrictFloat = Field(description="Taxa de serviço de cada servidor (μ).")
-    capacity: StrictInt | None = Field(
-        default=None, description="Capacidade total (K). Se omitida, a fila é ilimitada (M/M/c)."
+    model: ServerCompareModel | None = Field(
+        default=None,
+        description="mmc, mmck, erlangb ou mgc. Se omitido: mmck quando há `capacity`, senão mmc.",
     )
+    mu: StrictFloat | None = Field(
+        default=None, validate_default=True,
+        description="Taxa de serviço de cada servidor (μ). Obrigatório, exceto no mgc (use `service`).",
+    )
+    capacity: StrictInt | None = Field(
+        default=None, description="Capacidade total (K). Se omitida, a fila é ilimitada (M/M/c). Não vale no erlangb."
+    )
+    service: ServiceSpec | None = Field(default=None, description="Serviço de cada servidor. Obrigatório no mgc.")
     start: StrictFloat = Field(description="Primeiro valor de λ.")
     end: StrictFloat = Field(description="Último valor de λ.")
     step: StrictFloat = Field(description="Incremento de λ entre os pontos.")
+
+    @field_validator("mu")
+    @classmethod
+    def _mu_required_outside_mgc(cls, value: float | None, info: ValidationInfo) -> float | None:
+        if value is None and info.data.get("model") != "mgc":
+            raise ValueError("Field required")
+        return value
 
 
 class ServicesComparisonRequest(BaseModel):
@@ -359,7 +384,9 @@ class ServicesComparisonRequest(BaseModel):
         }
     )
 
-    services: list[ServiceSpec] = Field(description="Distribuições de serviço a comparar no M/G/1 (de 2 a 8).")
+    model: GeneralModelKey = Field(default="mg1", description="mg1 (um servidor) ou mgc (c servidores fixos).")
+    servers: StrictInt | None = Field(default=None, description="Servidores (c). Obrigatório no mgc.")
+    services: list[ServiceSpec] = Field(description="Distribuições de serviço a comparar no M/G/1 ou M/G/c (de 2 a 8).")
     start: StrictFloat = Field(description="Primeiro valor de λ.")
     end: StrictFloat = Field(description="Último valor de λ.")
     step: StrictFloat = Field(description="Incremento de λ entre os pontos.")
@@ -371,6 +398,9 @@ class SensitivityRequest(BaseModel):
             "examples": [
                 {"model": "mmck", "lambda": 25, "mu": 10, "servers": 3, "capacity": 6, "delta_pct": 10},
                 {"model": "mg1", "lambda": 25, "delta_pct": 10, "service": {"distribution": "lognormal", "mean": 0.02, "cv": 1.5}},
+                {"model": "erlangb", "lambda": 20, "mu": 1, "servers": 15, "delta_pct": 10},
+                {"model": "mgc", "lambda": 80, "servers": 10, "delta_pct": 10,
+                 "service": {"distribution": "lognormal", "mean": 0.1, "cv": 1.5}},
             ]
         }
     )
@@ -379,10 +409,10 @@ class SensitivityRequest(BaseModel):
     lam: StrictFloat = Field(alias="lambda", description="Taxa média de chegada (λ) do ponto base.")
     mu: StrictFloat | None = Field(
         default=None, validate_default=True,
-        description="Taxa média de serviço (μ) do ponto base. Obrigatório nos modelos markovianos.",
+        description="Taxa média de serviço (μ) do ponto base. Obrigatório nos modelos markovianos e no erlangb.",
     )
-    service: ServiceSpec | None = Field(default=None, description="Serviço do ponto base. Obrigatório no M/G/1.")
-    servers: StrictInt | None = Field(default=None, description="Servidores (c). Obrigatório em mmc e mmck.")
+    service: ServiceSpec | None = Field(default=None, description="Serviço do ponto base. Obrigatório em mg1 e mgc.")
+    servers: StrictInt | None = Field(default=None, description="Servidores (c). Obrigatório em mmc, mmck, erlangb e mgc.")
     capacity: StrictInt | None = Field(default=None, description="Capacidade total (K). Obrigatório em mm1k e mmck.")
     delta_pct: StrictFloat = Field(
         default=10.0,
@@ -395,8 +425,8 @@ class SensitivityRequest(BaseModel):
     @field_validator("mu")
     @classmethod
     def _mu_required_outside_mg1(cls, value: float | None, info: ValidationInfo) -> float | None:
-        # Os modelos markovianos precisam de μ; o M/G/1 recebe o serviço em `service`.
-        if value is None and info.data.get("model") not in (None, "mg1"):
+        # Os modelos markovianos e o Erlang-B precisam de μ; mg1 e mgc recebem o serviço em `service`.
+        if value is None and info.data.get("model") not in (None, "mg1", "mgc"):
             raise ValueError("Field required")
         return value
 
@@ -425,7 +455,7 @@ class SweepResponse(BaseModel):
     fixed: dict[str, float] = Field(description="Parâmetros mantidos fixos, com os nomes da API.")
     points: list[SweepPointOut]
     simulation: SweepSimulationOut | None = Field(description="Configuração efetiva da simulação, com a semente usada.")
-    service: ServiceOut | None = Field(default=None, description="Só no M/G/1: o serviço do ponto base.")
+    service: ServiceOut | None = Field(default=None, description="Só em mg1 e mgc: o serviço do ponto base.")
 
 
 class ServerSeriesOut(BaseModel):
@@ -441,13 +471,15 @@ class ServiceSeriesOut(BaseModel):
 class ServicesComparisonResponse(BaseModel):
     model: str
     series: list[ServiceSeriesOut]
+    servers: int | None = Field(default=None, description="Só no mgc: o c fixo da comparação.")
 
 
 class ServerComparisonResponse(BaseModel):
-    model: str = Field(description="mmc (fila ilimitada) ou mmck (capacidade finita).")
-    mu: float
+    model: str = Field(description="mmc (fila ilimitada), mmck (capacidade finita), erlangb (perda) ou mgc.")
+    mu: float = Field(description="Taxa de serviço de cada servidor (no mgc, 1/E[S]).")
     capacity: int | None
     series: list[ServerSeriesOut]
+    service: ServiceOut | None = Field(default=None, description="Só no mgc: o serviço de cada servidor.")
 
 
 class SensitivitySideOut(BaseModel):
@@ -478,4 +510,4 @@ class SensitivityResponse(BaseModel):
     base: dict[str, float]
     base_metrics: dict[str, float]
     parameters: list[ParameterSensitivityOut]
-    service: ServiceOut | None = Field(default=None, description="Só no M/G/1: o serviço do ponto base.")
+    service: ServiceOut | None = Field(default=None, description="Só em mg1 e mgc: o serviço do ponto base.")

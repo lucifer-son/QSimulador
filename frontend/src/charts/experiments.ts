@@ -1,6 +1,6 @@
 import type { ParameterSensitivity, SweepPoint } from "../api/experiments";
 import { formatNumber, formatSignedPercent } from "../domain/format";
-import { HIGH_UTILIZATION, VARIABLE_INFO, type SweepVariable } from "../domain/experiments";
+import { HIGH_UTILIZATION, loadFormula, VARIABLE_INFO, type SweepVariable } from "../domain/experiments";
 import { METRIC_INFO, metricAxisTitle } from "../domain/metrics";
 import type { MetricName } from "../domain/types";
 import type { ThemeColors } from "../hooks/useThemeColors";
@@ -23,7 +23,7 @@ const BASE_LAYOUT = (colors: ThemeColors) => ({
 });
 
 export function xTitle(variable: SweepVariable, xAxis: XAxis, model?: string): string {
-  if (xAxis === "utilization") return model === "mg1" ? "Carga oferecida λ·E[S]" : "Carga oferecida λ/(c·μ)";
+  if (xAxis === "utilization") return `Carga oferecida ${loadFormula(model)}`;
   const { label, unit } = VARIABLE_INFO[variable];
   return unit ? `${label} (${unit})` : label;
 }

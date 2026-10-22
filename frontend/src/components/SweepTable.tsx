@@ -1,7 +1,7 @@
 import { IconCheck, IconX } from "@tabler/icons-react";
 import type { SweepResponse } from "../api/experiments";
 import { formatMetric, formatNumber, formatPercentNumber } from "../domain/format";
-import { VARIABLE_INFO, type SweepVariable } from "../domain/experiments";
+import { loadFormula, VARIABLE_INFO, type SweepVariable } from "../domain/experiments";
 import { METRIC_INFO } from "../domain/metrics";
 import { MODELS } from "../domain/models";
 import type { ExperimentModelKey, MetricName } from "../domain/types";
@@ -26,7 +26,7 @@ export function SweepTable({ result }: { result: SweepResponse }) {
         <thead>
           <tr>
             <th scope="col">{VARIABLE_INFO[variable].label}</th>
-            <th scope="col" className="num">{model === "mg1" ? "λ·E[S]" : "λ/(c·μ)"}</th>
+            <th scope="col" className="num">{loadFormula(model)}</th>
             <th scope="col">Situação</th>
             {names.map((n) => <th key={n} scope="col" className="num">{METRIC_INFO[n].short}</th>)}
           </tr>

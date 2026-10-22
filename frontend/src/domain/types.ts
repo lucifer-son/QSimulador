@@ -1,12 +1,12 @@
 /** Modelos markovianos (serviço exponencial): os únicos com dados reais. */
 export type MarkovModelKey = "mm1" | "mmc" | "mm1k" | "mmck";
-/** Modelos com experimentos: os markovianos e o serviço geral M/G/1 (M/D/1 se determinístico). */
-export type ExperimentModelKey = MarkovModelKey | "mg1";
 /**
- * Modelos do Laboratório. `erlangb` é o sistema de perda M/M/c/c (Fase 10) e `mgc` é o M/G/c por
- * Allen–Cunneen (Fase 10, aproximado); os dois só existem no Laboratório.
+ * Modelos do Laboratório. `mg1` é o serviço geral (M/D/1 se determinístico), `erlangb` é o sistema
+ * de perda M/M/c/c e `mgc` é o M/G/c por Allen–Cunneen (aproximado).
  */
-export type ModelKey = ExperimentModelKey | "erlangb" | "mgc";
+export type ModelKey = MarkovModelKey | "mg1" | "erlangb" | "mgc";
+/** Desde a Fase 11 os experimentos cobrem todos os modelos do Laboratório. */
+export type ExperimentModelKey = ModelKey;
 
 export type DistributionKey =
   | "deterministic" | "exponential" | "erlang" | "lognormal" | "weibull"

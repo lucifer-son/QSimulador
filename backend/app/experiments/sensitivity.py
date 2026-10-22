@@ -8,7 +8,9 @@ Um lado que sai do regime estável ou do domínio do modelo é sinalizado, sem d
 
 from dataclasses import asdict, dataclass
 
+from app.domain.validation.errors import QueueValidationError
 from app.domain.validation.experiments import (
+    GENERAL_SERVICE_MODELS,
     USES_CAPACITY,
     USES_SERVERS,
     validate_delta_pct,
@@ -81,6 +83,10 @@ def run_sensitivity(
     do /calculate. Levanta QueueValidationError para parâmetros inválidos.
     """
     model = validate_model(model)
+    if model in GENERAL_SERVICE_MODELS:
+        raise QueueValidationError(
+            f"O modelo {model} usa o serviço geral: a sensibilidade dele exige `service`.", "service"
+        )
     delta = validate_delta_pct(delta_pct)
     lam_v, mu_v, servers_v, capacity_v = validate_fixed_parameters(
         model, None, lam, mu, servers, capacity

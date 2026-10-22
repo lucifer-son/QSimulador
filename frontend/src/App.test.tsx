@@ -470,11 +470,25 @@ describe("serviço geral (M/G/1)", () => {
     expect(screen.queryByText(/não cobrem o serviço geral/)).toBeNull();
   });
 
-  it("Erlang-B e M/G/c ainda não têm experimentos: a aba avisa e mantém o último modelo compatível", async () => {
+  it("a aba Experimentos cobre o Erlang-B: varredura, comparar servidores e sensibilidade, sem aviso", async () => {
     const { user } = setup();
     await user.selectOptions(modelSelect(), "erlangb");
     await user.click(screen.getByRole("button", { name: "Experimentos" }));
-    expect(await screen.findByText(/o Erlang-B e o M\/G\/c ainda não têm experimentos/)).toBeInTheDocument();
-    expect(screen.getByText(/último modelo compatível escolhido: M\/M\/c\/K/)).toBeInTheDocument();
+    expect(await screen.findByRole("tab", { name: "Comparar servidores" })).toBeInTheDocument();
+    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual([
+      "Varredura de parâmetro", "Comparar servidores", "Sensibilidade",
+    ]);
+    expect(screen.queryByText(/ainda não têm experimentos/)).toBeNull();
+  });
+
+  it("a aba Experimentos cobre o M/G/c: compara servidores e também distribuições", async () => {
+    const { user } = setup();
+    await user.selectOptions(modelSelect(), "mgc");
+    await user.click(screen.getByRole("button", { name: "Experimentos" }));
+    expect(await screen.findByRole("tab", { name: "Comparar distribuições" })).toBeInTheDocument();
+    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual([
+      "Varredura de parâmetro", "Comparar servidores", "Comparar distribuições", "Sensibilidade",
+    ]);
+    expect(screen.queryByText(/ainda não têm experimentos/)).toBeNull();
   });
 });

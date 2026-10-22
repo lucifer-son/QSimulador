@@ -1,0 +1,75 @@
+{
+  "model": "mgc",
+  "variable": "servers",
+  "fixed": {
+    "lambda": 80.0,
+    "mu": 10.0,
+    "cv": 1.5000000000000002
+  },
+  "points": [
+    {
+      "value": 9.0,
+      "status": "ok",
+      "message": null,
+      "offered_utilization": 0.8888888888888888,
+      "metrics": {
+        "rho": 0.8888888888888888,
+        "L": 16.49325006744636,
+        "Lq": 8.493250067446361,
+        "W": 0.20616562584307951,
+        "Wq": 0.10616562584307951,
+        "throughput": 80.0,
+        "p_wait": 0.6533269282651049
+      },
+      "simulation": null
+    },
+    {
+      "value": 10.0,
+      "status": "ok",
+      "message": null,
+      "offered_utilization": 0.8,
+      "metrics": {
+        "rho": 0.8,
+        "L": 10.659670980176886,
+        "Lq": 2.6596709801768843,
+        "W": 0.13324588725221106,
+        "Wq": 0.03324588725221105,
+        "throughput": 80.0,
+        "p_wait": 0.40918015079644354
+      },
+      "simulation": null
+    },
+    {
+      "value": 11.0,
+      "status": "ok",
+      "message": null,
+      "offered_utilization": 0.7272727272727273,
+      "metrics": {
+        "rho": 0.7272727272727273,
+        "L": 9.061484346249497,
+        "Lq": 1.0614843462494965,
+        "W": 0.1132685543281187,
+        "Wq": 0.013268554328118706,
+        "throughput": 80.0,
+        "p_wait": 0.24495792605757605
+      },
+      "simulation": null
+    }
+  ],
+  "simulation": null,
+  "service": {
+    "distribution": "lognormal",
+    "label": "Lognormal",
+    "mean": 0.1,
+    "std": 0.15000000000000002,
+    "variance": 0.022500000000000006,
+    "cv": 1.5000000000000002,
+    "mu": 10.0,
+    "parameters": {
+      "mean": 0.1,
+      "cv": 1.5,
+      "sigma": 1.085658784490618,
+      "mu_log": -2.8919125911648687
+    }
+  }
+}

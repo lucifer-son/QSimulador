@@ -4,7 +4,7 @@ Laboratório interativo de modelagem, simulação e análise de sistemas de fila
 
 Este documento especifica os **requisitos funcionais (RF)** e **não funcionais (RNF)** do sistema e os relaciona aos [Casos de Uso](casos-de-uso.md) e às [Histórias de Usuário](historias-de-usuario.md). Para instruções de execução, veja [`como-executar.md`](como-executar.md).
 
-**Versão:** 1.6 (Fase 9: Serviço geral em 16/10/2026)
+**Versão:** 1.8 (Fase 11: Dimensionamento e experimentos em todos os modelos)
 
 ---
 
@@ -20,6 +20,7 @@ Este documento especifica os **requisitos funcionais (RF)** e **não funcionais 
 | 1.5 | Fase 8 (persistência): RF-25, RF-26 e RNF-26 passam a ✅ (histórico com PostgreSQL opcional, rotas `/api/records`, Alembic e variáveis de ambiente); RNF-31 passa a ✅ (arquivo `LICENSE` na raiz). RNF-17 (Docker) segue 📋, adiado. Não há autenticação: o histórico usa um identificador anônimo por navegador. |
 | 1.6 | Fase 9 (serviço geral): incluídos RF-45 a RF-50 (M/D/1, M/G/1 por Pollaczek-Khinchine, oito distribuições de serviço, simulação, comparação com IC e validação com erro identificado), que correspondem aos RFC-01 a RFC-06 do [roadmap competitivo](roadmap-competitivo.md); incluída a seção 4.11; parâmetros do serviço na seção 6. As rotas seguem a convenção do repositório (`/calculate`, `/simulate`, `/compare`) e não os nomes provisórios do roadmap (`/analytic`). |
 | 1.7 | Fase 10: incluídos RF-51 a RF-56 (Erlang-B dedicado e dimensionamento por bloqueio alvo, M/G/c por Allen–Cunneen com marca de aproximação e avisos de faixa, e experimentos do M/G/1), que correspondem aos RFC-07 a RFC-11 do [roadmap competitivo](roadmap-competitivo.md) mais a extensão dos experimentos ao M/G/1; incluída a seção 4.12. Rotas na convenção do repositório. |
+| 1.8 | Fase 11: incluídos RF-57 a RF-63 (experimentos do Erlang-B e do M/G/c, que completam a cobertura dos sete modelos do Laboratório; tabela de dimensionamento por número de servidores, nível de serviço P(Wq ≤ t) e menor c para uma meta, custo total e c ótimo, dimensionamento dos modelos de um servidor pela família com c, e histórico do tipo `sizing`), que correspondem aos RFC-12 a RFC-16 do [roadmap competitivo](roadmap-competitivo.md) mais a extensão dos experimentos; incluída a seção 4.13. O M/G/c tem o nível de serviço aproximado (cauda exponencial) e rotulado como tal. |
 
 ---
 
@@ -207,6 +208,18 @@ As rotas são `POST /api/models/mg1/calculate`, `/simulate` e `/compare` e `GET 
 | RF-55 | O sistema deve avisar quando a aproximação do M/G/c está fora da faixa de validade (ρ > 0,9 ou CV > 2, limiares propostos). | S | T | UC-12 | US-30 | ✅ |
 | RF-56 | O sistema deve estender os experimentos ao M/G/1: varredura de λ, μ (preservando o CV) e da variabilidade do serviço (CV na lognormal e na Weibull; k no Erlang), análise de sensibilidade a esses parâmetros e comparação de distribuições de serviço com a mesma média. | M | T | UC-07, UC-11 | US-31 | ✅ |
 
+### 4.13 Dimensionamento e experimentos em todos os modelos (Fase 11)
+
+| ID | Requisito | Prior. | Verif. | UC | US | Status |
+|----|-----------|--------|--------|----|----|--------|
+| RF-57 | O sistema deve estender os experimentos ao Erlang-B: varredura de λ, μ e c (a capacidade é K = c, sem variável K), comparação de servidores (a curva clássica do bloqueio de Erlang) e análise de sensibilidade a λ, μ e c (±1); os pontos nunca ficam instáveis e a métrica principal é o bloqueio. | M | T | UC-07, UC-12 | US-33 | ✅ |
+| RF-58 | O sistema deve estender os experimentos ao M/G/c: varredura de λ, μ, c e da variabilidade do serviço (CV ou k), comparação de servidores com o mesmo serviço, comparação de distribuições com c fixo e análise de sensibilidade (λ, μ, CV e c ±1); com c = 1 os resultados coincidem com os do M/G/1. | M | T | UC-07, UC-11, UC-12 | US-33 | ✅ |
+| RF-59 | O sistema deve gerar a tabela de dimensionamento para uma faixa de servidores c (padrão: c − 1 a c + 2 em torno do c do Laboratório) com ρ, P(esperar), Lq, Wq, bloqueio quando aplicável, nível de serviço e custo, destacando as linhas instáveis (ou com c > K) e nunca as escolhendo. | M | T | UC-13 | US-32 | ✅ |
+| RF-60 | O sistema deve calcular o nível de serviço P(Wq ≤ t) e o menor c que atinge uma meta (ex.: 80% em 20 s): exato no M/M/c e no M/M/c/K (para quem entra no sistema), por bloqueio alvo no Erlang-B e por cauda exponencial rotulada como aproximação no M/G/c. | M | T | UC-13 | US-32 | ✅ |
+| RF-61 | O sistema deve calcular o custo total C(c) = c·hₛ + λ·(1 − B)·Wq·hₑ + λ·B·h_perda, o c ótimo e o gráfico custo × c; no Erlang-B o custo exige h_perda > 0, e a API usa a mesma unidade de tempo de λ e μ (a interface converte custos por segundo, minuto ou hora). | M | T | UC-13 | US-32 | ✅ |
+| RF-62 | O sistema deve dimensionar o M/M/1, o M/M/1/K e o M/G/1 pela família com c (M/M/c, M/M/c/K e M/G/c, com o mesmo λ, μ, K e serviço), limitando c a K no M/M/c/K. | S | T | UC-13 | US-32 | ✅ |
+| RF-63 | O sistema deve permitir salvar o resultado do dimensionamento no histórico como experimento do tipo `sizing`, sem alterar o esquema do banco, e reabri-lo. | S | T | UC-09, UC-13 | US-32 | ✅ |
+
 As rotas são `POST /api/models/erlangb/calculate`, `/simulate`, `/compare` e `/size`, `POST /api/models/mgc/calculate`, `/simulate` e `/compare`, e, nos experimentos, `POST /api/experiments/sweep` e `/sensitivity` com `model: "mg1"` e o objeto `service`, mais `POST /api/experiments/services`. O Erlang-B delega a simulação ao motor do M/M/c/K com K = c. O M/G/c não define P₀ nem P(n). Os experimentos continuam, para os demais modelos de Fase 10 (Erlang-B e M/G/c), fora de escopo.
 
 ### 4.10 API
@@ -377,6 +390,7 @@ Restrições de validação por parâmetro. Valores marcados como **(proposto)**
 | 8 | PostgreSQL, Docker, deploy | RF-25, RF-26, RNF-17, RNF-26 |
 | 9 | Serviço geral (M/D/1 e M/G/1) | RF-45 a RF-50 |
 | 10 | Erlang-B dedicado, M/G/c e experimentos do M/G/1 | RF-51 a RF-56 |
+| 11 | Dimensionamento e experimentos em todos os modelos | RF-57 a RF-63 |
 | Transversal | Qualidade, desempenho, segurança, observabilidade | RNF-05, RNF-06, RNF-08 a RNF-12, RNF-14, RNF-16, RNF-18, RNF-19, RNF-21 a RNF-23, RNF-27 a RNF-32 |
 
 ---
@@ -391,12 +405,13 @@ Restrições de validação por parâmetro. Valores marcados como **(proposto)**
 | UC-04 | RF-10 a RF-13, RF-31 |
 | UC-05 | RF-14 a RF-17, RF-34, RF-36 |
 | UC-06 | RF-18 a RF-20, RF-35, RF-37 |
-| UC-07 | RF-21, RF-22, RF-38, RF-56 |
+| UC-07 | RF-21, RF-22, RF-38, RF-56 a RF-58 |
 | UC-08 | RF-23, RF-24 |
-| UC-09 | RF-25, RF-26 |
+| UC-09 | RF-25, RF-26, RF-63 |
 | UC-10 | RF-04 |
-| UC-11 | RF-45 a RF-50, RF-56 |
-| UC-12 | RF-51 a RF-55 |
+| UC-11 | RF-45 a RF-50, RF-56, RF-58 |
+| UC-12 | RF-51 a RF-55, RF-57, RF-58 |
+| UC-13 | RF-59 a RF-63 |
 
 ---
 

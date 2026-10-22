@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { runSensitivity, type SensitivityResponse } from "../api/experiments";
 import { tornadoChart, tornadoRows } from "../charts/experiments";
 import {
-  buildSensitivityBody, experimentFieldErrors, VARIABLE_INFO, type ExpErrors, type SweepVariable, type SystemText,
+  buildSensitivityBody, defaultMetric, experimentFieldErrors, sensitivityTexts, VARIABLE_INFO, type ExpErrors, type SweepVariable, type SystemText,
 } from "../domain/experiments";
 import { formatMetric, formatNumber, formatSignedPercent } from "../domain/format";
 import type { ExperimentModelKey, MetricName } from "../domain/types";
@@ -53,8 +53,8 @@ export function SensitivityPanel({ active, model, system }: Props) {
         <FixedParameters model={model} system={system} title="Ponto base" />
         <h2 className="group-title">Perturbação</h2>
         <TextField
-          id="sens-delta" label={model === "mg1" ? "Variação de λ, μ e CV (%)" : "Variação de λ e μ (%)"} value={delta} error={errors.delta}
-          hint={model === "mg1" ? "De 0 a 50. O k do Erlang varia ±1." : "De 0 a 50. c e K variam ±1."}
+          id="sens-delta" label={sensitivityTexts(model).label} value={delta} error={errors.delta}
+          hint={sensitivityTexts(model).hint}
           onChange={(v) => { setDelta(v); setErrors(({ delta: _gone, ...rest }) => rest); }}
         />
         <div className="actions spaced">
@@ -87,7 +87,7 @@ export function SensitivityPanel({ active, model, system }: Props) {
 
 export function SensitivityResult({ result, model }: { result: SensitivityResponse; model: ExperimentModelKey }) {
   const colors = useThemeColors();
-  const [metric, setMetric] = useState<MetricName>("W");
+  const [metric, setMetric] = useState<MetricName>(defaultMetric(model));
   const shown = metric in result.base_metrics ? metric : "rho";
   const rows = useMemo(() => tornadoRows(result.parameters, shown), [result, shown]);
   const chart = useMemo(() => tornadoChart(rows, shown, colors), [rows, shown, colors]);
@@ -111,9 +111,7 @@ export function SensitivityResult({ result, model }: { result: SensitivityRespon
         <IconInfoCircle size={18} aria-hidden="true" />
         <div>
           Ponto base: {metricTitle(shown)} = {formatMetric(shown, result.base_metrics[shown], { precise: true })}.
-          {model === "mg1"
-            ? `λ, μ e o CV variam ±${formatNumber(result.delta_pct)}%; o k do Erlang varia ±1 unidade.`
-            : `λ e μ variam ±${formatNumber(result.delta_pct)}%; c e K variam ±1 unidade.`}
+          {sensitivityTexts(model).effect(formatNumber(result.delta_pct))}
           <div className="banner-detail">
             Elasticidade: quantos % a métrica muda para cada 1% de mudança no parâmetro. Quanto maior em módulo, mais sensível.
           </div>

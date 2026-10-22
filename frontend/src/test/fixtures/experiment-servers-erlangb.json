@@ -1,0 +1,186 @@
+{
+  "model": "erlangb",
+  "mu": 1.0,
+  "capacity": null,
+  "series": [
+    {
+      "servers": 5,
+      "points": [
+        {
+          "value": 2.0,
+          "status": "ok",
+          "message": null,
+          "offered_utilization": 0.4,
+          "metrics": {
+            "offered_load": 2.0,
+            "carried_load": 1.926605504587156,
+            "lost_rate": 0.07339449541284403,
+            "rho": 0.3853211009174312,
+            "L": 1.926605504587156,
+            "Lq": 0.0,
+            "W": 1.0,
+            "Wq": 0.0,
+            "p0": 0.1376146788990826,
+            "throughput": 1.926605504587156,
+            "p_wait": 0.0,
+            "p_block": 0.03669724770642201
+          },
+          "simulation": null
+        },
+        {
+          "value": 6.0,
+          "status": "ok",
+          "message": null,
+          "offered_utilization": 1.2,
+          "metrics": {
+            "offered_load": 6.0,
+            "carried_load": 3.8375973303670743,
+            "lost_rate": 2.1624026696329253,
+            "rho": 0.7675194660734148,
+            "L": 3.8375973303670743,
+            "Lq": 0.0,
+            "W": 1.0,
+            "Wq": 0.0,
+            "p0": 0.00556173526140156,
+            "throughput": 3.8375973303670743,
+            "p_wait": 0.0,
+            "p_block": 0.3604004449388209
+          },
+          "simulation": null
+        },
+        {
+          "value": 10.0,
+          "status": "ok",
+          "message": null,
+          "offered_utilization": 2.0,
+          "metrics": {
+            "offered_load": 10.0,
+            "carried_load": 4.360478231445973,
+            "lost_rate": 5.639521768554027,
+            "rho": 0.8720956462891947,
+            "L": 4.360478231445973,
+            "Lq": 0.0,
+            "W": 1.0,
+            "Wq": 0.0,
+            "p0": 0.0006767426122264824,
+            "throughput": 4.360478231445973,
+            "p_wait": 0.0,
+            "p_block": 0.5639521768554027
+          },
+          "simulation": null
+        },
+        {
+          "value": 14.0,
+          "status": "ok",
+          "message": null,
+          "offered_utilization": 2.8,
+          "metrics": {
+            "offered_load": 14.0,
+            "carried_load": 4.568556912809516,
+            "lost_rate": 9.431443087190484,
+            "rho": 0.9137113825619032,
+            "L": 4.568556912809516,
+            "Lq": 0.0,
+            "W": 1.0,
+            "Wq": 0.0,
+            "p0": 0.00015031114406822147,
+            "throughput": 4.568556912809516,
+            "p_wait": 0.0,
+            "p_block": 0.6736745062278917
+          },
+          "simulation": null
+        }
+      ]
+    },
+    {
+      "servers": 10,
+      "points": [
+        {
+          "value": 2.0,
+          "status": "ok",
+          "message": null,
+          "offered_utilization": 0.2,
+          "metrics": {
+            "offered_load": 2.0,
+            "carried_load": 1.9999236196641175,
+            "lost_rate": 7.638033588252703e-05,
+            "rho": 0.19999236196641174,
+            "L": 1.9999236196641175,
+            "Lq": 0.0,
+            "W": 1.0,
+            "Wq": 0.0,
+            "p0": 0.13533640764185265,
+            "throughput": 1.9999236196641175,
+            "p_wait": 0.0,
+            "p_block": 3.8190167941263515e-05
+          },
+          "simulation": null
+        },
+        {
+          "value": 6.0,
+          "status": "ok",
+          "message": null,
+          "offered_utilization": 0.6,
+          "metrics": {
+            "offered_load": 6.0,
+            "carried_load": 5.741148969537364,
+            "lost_rate": 0.2588510304626356,
+            "rho": 0.5741148969537364,
+            "L": 5.741148969537364,
+            "Lq": 0.0,
+            "W": 1.0,
+            "Wq": 0.0,
+            "p0": 0.0025891020993919307,
+            "throughput": 5.741148969537364,
+            "p_wait": 0.0,
+            "p_block": 0.04314183841043926
+          },
+          "simulation": null
+        },
+        {
+          "value": 10.0,
+          "status": "ok",
+          "message": null,
+          "offered_utilization": 1.0,
+          "metrics": {
+            "offered_load": 10.0,
+            "carried_load": 7.854176568926526,
+            "lost_rate": 2.145823431073474,
+            "rho": 0.7854176568926526,
+            "L": 7.854176568926526,
+            "Lq": 0.0,
+            "W": 1.0,
+            "Wq": 0.0,
+            "p0": 7.786764066679402e-05,
+            "throughput": 7.854176568926526,
+            "p_wait": 0.0,
+            "p_block": 0.21458234310734736
+          },
+          "simulation": null
+        },
+        {
+          "value": 14.0,
+          "status": "ok",
+          "message": null,
+          "offered_utilization": 1.4,
+          "metrics": {
+            "offered_load": 14.0,
+            "carried_load": 8.718013439640432,
+            "lost_rate": 5.281986560359569,
+            "rho": 0.8718013439640432,
+            "L": 8.718013439640432,
+            "Lq": 0.0,
+            "W": 1.0,
+            "Wq": 0.0,
+            "p0": 4.733168137117095e-06,
+            "throughput": 8.718013439640432,
+            "p_wait": 0.0,
+            "p_block": 0.3772847543113978
+          },
+          "simulation": null
+        }
+      ]
+    }
+  ],
+  "service": null
+}

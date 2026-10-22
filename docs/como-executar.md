@@ -54,7 +54,7 @@ Quando o ambiente virtual está ativo, o prompt começa com `(.venv)`. **Todos o
 python -m pytest
 ```
 
-Todos os testes devem passar (1.108 no backend na Fase 10; os que dependem de um PostgreSQL real são ignorados quando `QSIMULADOR_TEST_POSTGRES_URL` não está definida). Um aviso de depreciação do Starlette sobre o `httpx` pode aparecer e é inofensivo.
+Todos os testes devem passar (1.180 no backend na Fase 11; os que dependem de um PostgreSQL real são ignorados quando `QSIMULADOR_TEST_POSTGRES_URL` não está definida). Um aviso de depreciação do Starlette sobre o `httpx` pode aparecer e é inofensivo.
 
 ---
 
@@ -174,12 +174,13 @@ Abra **http://127.0.0.1:8000/docs** no navegador. A página lista os endpoints, 
 | `POST /api/models/mmck/calculate` · `/simulate` · `/compare` | M/M/c/K. Entradas extras: `servers` e `capacity` |
 | `POST /api/models/erlangb/calculate` · `/simulate` · `/compare` · `/size` | Erlang-B (sistema de perda M/M/c/c) e dimensionamento por bloqueio alvo ([detalhes](#erlang-b-e-mgc-fase-10)) |
 | `POST /api/models/mgc/calculate` · `/simulate` · `/compare` | M/G/c por Allen–Cunneen (aproximação), com `exact` e `warnings` ([detalhes](#erlang-b-e-mgc-fase-10)) |
-| `POST /api/experiments/services` | M/G/1: compara distribuições de serviço variando λ ([detalhes](#experimentos-fase-6)) |
+| `POST /api/experiments/services` | M/G/1 e M/G/c: compara distribuições de serviço variando λ (no M/G/c, com c fixo) ([detalhes](#experimentos-fase-6)) |
 | `POST /api/models/mg1/calculate` · `/simulate` · `/compare` | M/G/1 e M/D/1 (serviço geral). Entradas: `lambda`, `distribution` e os parâmetros dela, no lugar de `mu` ([detalhes](#serviço-geral-mg1-e-md1-fase-9)) |
 | `GET /api/distributions` | Lista as oito distribuições de serviço e seus parâmetros |
-| `POST /api/experiments/sweep` | Varredura de λ, μ, c ou K; no M/G/1, também do CV ou k do serviço ([detalhes](#experimentos-fase-6)) |
-| `POST /api/experiments/servers` | Comparação de números de servidores |
+| `POST /api/experiments/sweep` | Varredura de λ, μ, c ou K; nos modelos de serviço geral (M/G/1 e M/G/c), também do CV ou k do serviço; vale para os sete modelos ([detalhes](#experimentos-fase-6)) |
+| `POST /api/experiments/servers` | Comparação de números de servidores (M/M/c, M/M/c/K, Erlang-B e M/G/c) |
 | `POST /api/experiments/sensitivity` | Análise de sensibilidade |
+| `POST /api/sizing/table` · `/sla` · `/cost` | Dimensionamento: tabela por número de servidores, menor c para uma meta de nível de serviço (ou de bloqueio) e custo mínimo ([detalhes](#dimensionamento-fase-11)) |
 | `GET/POST /api/records` · `GET/PATCH/DELETE /api/records/{id}` | Histórico de resultados com PostgreSQL ([detalhes](#histórico-com-postgresql-fase-8)) |
 
 ### Chamadas de exemplo
@@ -335,9 +336,13 @@ No site, escolha **Erlang-B (perda)** ou **M/G/c** no seletor de modelo. No Erla
 
 ### Experimentos (Fase 6)
 
-Os experimentos respondem às perguntas do tipo "e se...". O corpo usa as mesmas chaves de modelo das rotas (`mm1`, `mmc`, `mm1k`, `mmck`) e os mesmos nomes de campo (`lambda`, `mu`, `servers`, `capacity`).
+Os experimentos respondem às perguntas do tipo "e se...". Desde a Fase 11 cobrem todos os modelos do Laboratório. O corpo usa as mesmas chaves de modelo das rotas (`mm1`, `mmc`, `mm1k`, `mmck`, `mg1`, `erlangb`, `mgc`) e os mesmos nomes de campo (`lambda`, `mu`, `servers`, `capacity`).
 
 **M/G/1 nos experimentos:** use `model: "mg1"` e o objeto `service` (`distribution` e os parâmetros, como em `/api/models/mg1`) no lugar de `mu`. Na varredura, `variable` pode ser `lambda`, `mu` (muda a escala do serviço e preserva o CV), `cv` (lognormal e Weibull) ou `k` (Erlang), mantendo a média E[S]; para as demais distribuições, só `lambda` e `mu`. A sensibilidade perturba λ, μ e o CV (o k do Erlang varia ±1). `POST /api/experiments/services` compara de 2 a 8 distribuições (`services`, uma lista de objetos como o `service`) variando λ de `start` a `end`:
+
+**Erlang-B nos experimentos:** use `model: "erlangb"` com `lambda`, `mu` e `servers`; não há `capacity` (a capacidade é sempre K = c) e a variável varrida pode ser `lambda`, `mu` ou `servers`. Os pontos nunca ficam instáveis (a perda limita o sistema): a métrica principal é o bloqueio `p_block`. Na comparação de servidores, `model: "erlangb"` devolve a curva clássica do bloqueio de Erlang (uma série por c, λ no eixo). A sensibilidade perturba λ e μ em ±`delta_pct` % e c em ±1. Comparar distribuições não existe no Erlang-B: o bloqueio de Erlang só depende da média do serviço (insensibilidade), então todas as curvas coincidiriam.
+
+**M/G/c nos experimentos:** use `model: "mgc"`, `servers` e o objeto `service`, como no M/G/1. A varredura aceita `lambda`, `mu`, `servers`, `cv` e `k` (`servers` fixo é obrigatório, a menos que seja a variável varrida). `/api/experiments/servers` com `model: "mgc"` e `service` compara números de servidores com o mesmo serviço; `/api/experiments/services` com `model: "mgc"` e `servers` compara distribuições com c fixo; a sensibilidade inclui c (±1) e o CV. Com c = 1 os resultados coincidem com os do M/G/1.
 
 ```powershell
 Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/experiments/sweep `
@@ -367,6 +372,37 @@ Para simular cada ponto estável, acrescente `"simulate": true` e `simulation_ti
 ```json
 { "model": "mmck", "lambda": 25, "mu": 10, "servers": 3, "capacity": 6, "delta_pct": 10 }
 ```
+
+### Dimensionamento (Fase 11)
+
+O dimensionamento responde "quantos servidores?" e "a que custo?". As três rotas recebem o mesmo sistema das rotas dos modelos (`model`, `lambda`, `mu` ou `service`, `servers`, `capacity`) e partem de `servers` para centrar a tabela (padrão: de c − 1 a c + 2).
+
+- **`/api/sizing/table`:** uma linha por c, com `rho`, `p_wait`, `Lq`, `Wq`, `p_block` e, se pedido, o nível de serviço `P(Wq ≤ t)` (`t` e `target`) e o custo (`server_cost` = hₛ, `wait_cost` = hₑ e, nos modelos com perda, `loss_cost` = h_perda). As linhas instáveis (λ ≥ c·μ) ou com c > K voltam com `status` diferente de `ok` e nunca são escolhidas.
+- **`/api/sizing/sla`:** o menor c com `P(Wq ≤ t) ≥ target`. No Erlang-B não há espera: informe `target_blocking` (mesma busca do `/api/models/erlangb/size`).
+- **`/api/sizing/cost`:** o c que minimiza C(c) = c·hₛ + λ·(1 − B)·Wq·hₑ + λ·B·h_perda, com o custo de cada c (o gráfico custo × c). Sem `c_min` e `c_max`, procura o ótimo global; com a faixa, procura dentro dela e avisa em `at_boundary` se o ótimo caiu numa ponta.
+
+**Unidades:** a API não converte nada: `t`, os custos, λ e μ devem estar na mesma unidade de tempo (por exemplo, tudo por hora). A aba converte custos por segundo, minuto ou hora para a unidade de λ e μ (por segundo) antes de enviar.
+
+**Famílias:** o M/M/1, o M/M/1/K e o M/G/1 não têm c para dimensionar; a resposta traz `family` (`mmc`, `mmck` ou `mgc`) e usa o caso c = 1. No M/M/c/K o c fica limitado a K. O nível de serviço é exato no M/M/c e no M/M/c/K (para quem entra no sistema); no M/G/c é uma aproximação (cauda exponencial, exata só com CV = 1), com `exact: false` e `warnings`. No Erlang-B o custo exige `loss_cost` > 0 (sem ele o ótimo seria sempre c = 1).
+
+```powershell
+# Central de atendimento (λ = 90/h, μ = 15/h): menor c para 80% atendidos em até 20 s (t = 20/3600 h) -> 9
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/sizing/sla `
+  -ContentType "application/json" `
+  -Body '{"model":"mmc","lambda":90,"mu":15,"t":0.005556,"target":0.8}'
+
+# Central de seguros (λ = 50/h, μ = 6/h, hs = 35, he = 80 por hora): custo mínimo -> c = 12, R$ 452,0/h
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/sizing/cost `
+  -ContentType "application/json" `
+  -Body '{"model":"mmc","lambda":50,"mu":6,"server_cost":35,"wait_cost":80}'
+
+# Erlang-B: 20 Erlangs, no máximo 1% de bloqueio -> 30 servidores
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/sizing/sla `
+  -ContentType "application/json" `
+  -Body '{"model":"erlangb","lambda":20,"mu":1,"target_blocking":0.01}'
+```
+
+Na interface, a aba **Dimensionamento** herda o modelo e os valores do Laboratório: informe a faixa de c, a meta (t e P(Wq ≤ t), ou o bloqueio no Erlang-B) e os custos, e use **Gerar tabela**, **Menor c pela meta** ou **Custo mínimo**. O resultado destaca o c escolhido e as linhas sem solução, mostra o gráfico de nível de serviço ou de custo × c e pode ser salvo no histórico (experimento do tipo `sizing`).
 
 ### Erros da API
 
@@ -562,6 +598,7 @@ VITE_DEV_API=http://127.0.0.1:8001 npm run dev              # bash
 4. **Explore as abas.** Gráficos mostra o valor de cada réplica, a média simulada e o analítico, e permite escolher a métrica. Réplicas traz a tabela por réplica. Detalhes mostra os parâmetros, a semente (com botão de copiar) e a resposta completa da API. Como o Comparar não devolve as réplicas individuais, as abas Gráficos e Réplicas têm o botão **Carregar réplicas**, que repete a simulação com a mesma semente e reproduz exatamente os mesmos números.
 5. **Cancele** uma execução demorada com o botão que substitui o Comparar enquanto ela roda.
 6. **Experimente a aba Experimentos.** Ela parte do modelo e dos valores do Laboratório e tem três modos: **Varredura de parâmetro** (curva e tabela de todas as métricas, com faixa sugerida, simulação opcional por ponto, trecho instável sombreado e alta utilização marcada), **Comparar servidores** (uma curva por número de servidores) e **Sensibilidade** (gráfico de barras e elasticidade por parâmetro). No M/G/1, o segundo modo vira **Comparar distribuições** (uma curva por distribuição, todas com a mesma média) e a varredura inclui o CV ou k do serviço. Os resultados de cada modo permanecem ao alternar entre abas.
+7. **Use a aba Dimensionamento.** Ela também parte do modelo e dos valores do Laboratório: dá a tabela por número de servidores, o menor c que atinge uma meta de nível de serviço (ou de bloqueio, no Erlang-B) e o c de menor custo, com os custos digitados por segundo, minuto ou hora. No M/M/1, no M/M/1/K e no M/G/1 ela usa a família com c (c = 1 é o próprio modelo); no M/G/c o nível de serviço vem marcado como aproximação. Os modos da aba Experimentos agora existem para todos os modelos: o Erlang-B compara servidores (a curva de Erlang) e o M/G/c compara servidores e distribuições.
 
 Como ler o gráfico de diferenças: cada linha é uma métrica, mostrada como a diferença percentual da média simulada em relação ao analítico, com a barra do intervalo de confiança. Se a barra **cruza o zero**, o valor analítico está dentro do intervalo. Métricas com valor analítico igual a 0 (como a probabilidade de recusa no M/M/c) não têm diferença relativa e aparecem em uma nota abaixo do gráfico.
 
@@ -664,7 +701,7 @@ O histórico guarda resultados para reabri-los depois. É **opcional** (RNF-18):
 | Tela | Tipo do registro | Ao reabrir |
 | --- | --- | --- |
 | Laboratório (Calcular, Simular, Comparar) | `model`, `simulation` ou `comparison` | **Reabrir no Laboratório** devolve o modelo, os parâmetros e o resultado, sem recalcular |
-| Experimentos (varredura, servidores ou distribuições, sensibilidade) | `experiment` | O resultado aparece na própria aba Histórico |
+| Experimentos (varredura, servidores ou distribuições, sensibilidade) e dimensionamento (`sizing`) | `experiment` | O resultado aparece na própria aba Histórico |
 | Dados reais, análise do JTL do JMeter | `realdata` | O resultado aparece na própria aba Histórico |
 
 A importação de níveis de carga (CSV agregado) ainda não é salva. Os dados ficam em JSONB, como a API os devolveu; ao reabrir, os valores voltam iguais (a ordem das chaves do objeto pode mudar, o que não altera o significado).

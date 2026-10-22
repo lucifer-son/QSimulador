@@ -252,6 +252,10 @@ span.nav-item { cursor: default; }
 .spaced { margin-top: 10px; }
 .suggest { align-self: end; }
 .check { display: flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 0.9rem; }
+.choices .check { align-items: flex-start; margin-top: 8px; }
+.choices .check input[type="checkbox"] {
+  flex: 0 0 16px; width: 16px; height: 16px; margin: 2px 0 0; padding: 0;
+}
 .exp-controls { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-bottom: 8px; }
 .cell-sim { display: block; font-size: 0.72rem; color: var(--text-muted); }
 
@@ -311,3 +315,8 @@ input[type="file"] { max-width: 100%; font-size: 0.85rem; }
   margin: 0; padding: 8px 10px; font-size: 0.82rem; color: var(--text-secondary);
   background: var(--surface-2); border-radius: var(--radius);
 }
+
+/* Dimensionamento (Fase 11): linha escolhida (c ótimo ou menor c que atinge a meta) e linhas sem solução */
+.table tbody tr.row-best { background: var(--success-bg); }
+.table tbody tr.row-best:hover { background: var(--success-bg); }
+.table tbody tr.row-bad { color: var(--text-muted); }

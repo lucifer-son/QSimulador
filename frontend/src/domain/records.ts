@@ -5,6 +5,8 @@
  * são conferidos antes de usar: um registro salvo por outra versão do app não pode
  * derrubar a tela.
  */
+import type { SizingResponse } from "../api/sizing";
+import type { CostUnit, SizingAction } from "./sizing";
 import type { NewRecord, RecordDetail, RecordKind } from "../api/records";
 import type { AnalysisResponse } from "../api/realdata";
 import type {
@@ -12,7 +14,7 @@ import type {
 } from "../api/experiments";
 import { VARIABLE_INFO, type SweepVariable } from "./experiments";
 import { EXPERIMENT_MODEL_ORDER, LAB_MODEL_ORDER, MODELS, usesService } from "./models";
-import type { Action, ExperimentModelKey, MarkovModelKey, ModelKey, Params, ViewResult } from "./types";
+import type { Action, ExperimentModelKey, ModelKey, Params, ViewResult } from "./types";
 
 export const KIND_LABELS: Record<RecordKind, string> = {
   model: "Cálculo analítico",
@@ -67,13 +69,14 @@ export function parseLabRecord(record: RecordDetail): LabSnapshot | null {
 
 // ---------- Experimentos ----------
 
-export type ExperimentType = "sweep" | "servers" | "services" | "sensitivity";
+export type ExperimentType = "sweep" | "servers" | "services" | "sensitivity" | "sizing";
 
 export type ExperimentSnapshot =
   | { type: "sweep"; model: ExperimentModelKey; result: SweepResponse }
-  | { type: "servers"; model: MarkovModelKey; result: ServerComparisonResponse }
-  | { type: "services"; model: "mg1"; result: ServicesComparisonResponse }
-  | { type: "sensitivity"; model: ExperimentModelKey; result: SensitivityResponse };
+  | { type: "servers"; model: ExperimentModelKey; result: ServerComparisonResponse }
+  | { type: "services"; model: "mg1" | "mgc"; result: ServicesComparisonResponse }
+  | { type: "sensitivity"; model: ExperimentModelKey; result: SensitivityResponse }
+  | { type: "sizing"; model: ExperimentModelKey; action: SizingAction; costUnit: CostUnit; result: SizingResponse };
 
 export function experimentTitle(type: ExperimentType, model: ExperimentModelKey, result: { variable?: string }): string {
   const label = MODELS[model].label;
@@ -82,16 +85,19 @@ export function experimentTitle(type: ExperimentType, model: ExperimentModelKey,
     return `Varredura de ${variable} · ${label}`;
   }
   if (type === "services") return `Comparação de distribuições · ${label}`;
+  if (type === "sizing") return `Dimensionamento · ${label}`;
   return type === "servers" ? `Comparação de servidores · ${label}` : `Sensibilidade · ${label}`;
 }
 
 export function experimentRecord(
   type: ExperimentType, model: ExperimentModelKey, request: unknown, result: object, title: string,
+  extra: Record<string, unknown> = {},
 ): NewRecord {
   return {
     kind: "experiment",
     title,
-    params: { origin: "experiment", experiment: type, model, request: request ?? null },
+    // O dimensionamento é um experimento do tipo "sizing" (kind continua "experiment": o esquema do banco não muda).
+    params: { origin: "experiment", experiment: type, model, request: request ?? null, ...extra },
     result: result as Record<string, unknown>,
   };
 }
@@ -107,10 +113,17 @@ export function parseExperimentRecord(record: RecordDetail): ExperimentSnapshot 
       return Array.isArray(result.series) && model !== "mg1"
         ? { type: "servers", model, result: result as unknown as ServerComparisonResponse } : null;
     case "services":
-      return Array.isArray(result.series) && model === "mg1"
+      return Array.isArray(result.series) && (model === "mg1" || model === "mgc")
         ? { type: "services", model, result: result as unknown as ServicesComparisonResponse } : null;
     case "sensitivity":
       return Array.isArray(result.parameters) ? { type: "sensitivity", model, result: result as unknown as SensitivityResponse } : null;
+    case "sizing": {
+      const action = params.sizing_action;
+      if (action !== "table" && action !== "sla" && action !== "cost") return null;
+      if (!Array.isArray(result.rows)) return null;
+      const costUnit: CostUnit = params.cost_unit === "s" || params.cost_unit === "min" ? params.cost_unit : "h";
+      return { type: "sizing", model, action, costUnit, result: result as unknown as SizingResponse };
+    }
     default:
       return null;
   }

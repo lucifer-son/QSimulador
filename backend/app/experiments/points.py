@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 
+from app.analytical.erlangb import erlangb_metrics
 from app.analytical.mm1 import mm1_metrics
 from app.analytical.mmck import queue_metrics
 from app.domain.validation.errors import QueueValidationError, UnstableSystemError
@@ -16,11 +17,19 @@ def analytical_metrics(
 ) -> dict[str, float]:
     """Métricas analíticas pelo conjunto de métricas do modelo.
 
-    O M/M/1 traz sete métricas (a vazão é λ, como na comparação); os demais, nove. Levanta
-    QueueValidationError (ou UnstableSystemError) quando o ponto não é válido.
+    O M/M/1 traz sete métricas (a vazão é λ, como na comparação); os demais markovianos, nove; o
+    Erlang-B, as do sistema de perda (bloqueio, tráfego carregado...). Os modelos de serviço geral
+    (mg1 e mgc) têm módulo próprio, porque dependem da distribuição. Levanta QueueValidationError
+    (ou UnstableSystemError) quando o ponto não é válido.
     """
+    if model in ("mg1", "mgc"):
+        raise QueueValidationError(
+            f"O modelo {model} usa o serviço geral: os experimentos dele pedem `service`.", "model"
+        )
     if model == "mm1":
         return {**mm1_metrics(lam, mu).as_dict(), "throughput": float(lam)}
+    if model == "erlangb":
+        return erlangb_metrics(lam, mu, servers).as_dict()
     return queue_metrics(lam, mu, servers, capacity).as_dict()
 
 

@@ -8,8 +8,9 @@ e a faixa continua (RF-22). Este módulo não depende da API: recebe e devolve e
 import secrets
 from dataclasses import asdict, dataclass, replace
 
-from app.domain.validation.errors import InsufficientSampleError
+from app.domain.validation.errors import InsufficientSampleError, QueueValidationError
 from app.domain.validation.experiments import (
+    GENERAL_SERVICE_MODELS,
     USES_CAPACITY,
     USES_SERVERS,
     validate_fixed_parameters,
@@ -71,6 +72,8 @@ def _simulate_point(
     )
     if model == "mm1":
         return simulate_mm1(lam, mu, *args).summary
+    if model == "erlangb":
+        return simulate_mmck(lam, mu, servers, servers, *args).summary   # perda pura: K = c
     return simulate_mmck(lam, mu, servers, capacity, *args).summary
 
 
@@ -95,6 +98,10 @@ def run_sweep(
     Levanta QueueValidationError para faixa, parâmetros ou configuração inválidos.
     """
     model = validate_model(model)
+    if model in GENERAL_SERVICE_MODELS:
+        raise QueueValidationError(
+            f"O modelo {model} usa o serviço geral: a varredura dele exige `service`.", "service"
+        )
     variable = validate_variable(model, variable)
     values = validate_range(variable, start, end, step)
     lam_f, mu_f, servers_f, capacity_f = validate_fixed_parameters(
@@ -163,10 +170,11 @@ class ServerSeries:
 
 @dataclass(frozen=True)
 class ServerComparisonResult:
-    model: str                  # "mmc" (fila ilimitada) ou "mmck" (capacidade finita)
+    model: str                  # "mmc" (fila ilimitada), "mmck" (capacidade finita), "erlangb" ou "mgc"
     mu: float
     capacity: int | None
     series: list[ServerSeries]
+    service: dict | None = None     # só no M/G/c: o serviço (com o μ = 1/E[S] equivalente)
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -179,15 +187,28 @@ def run_server_comparison(
     end: float,
     step: float,
     capacity: int | None = None,
+    model: str | None = None,
 ) -> ServerComparisonResult:
     """Compara o desempenho com c servidores diferentes, variando λ na mesma faixa para todos.
 
-    `capacity=None` compara M/M/c (fila ilimitada); com K, compara M/M/c/K. Cada servidor tem
-    taxa μ (mais servidores somam capacidade). Um c maior que K não existe (K ≥ c): essa série
-    sai com todos os pontos "invalid" e as demais continuam.
+    `capacity=None` compara M/M/c (fila ilimitada); com K, compara M/M/c/K. Com `model="erlangb"`
+    compara o sistema de perda (K = c em cada série): é a curva clássica do bloqueio de Erlang.
+    Cada servidor tem taxa μ (mais servidores somam capacidade). Um c maior que K não existe
+    (K ≥ c): essa série sai com todos os pontos "invalid" e as demais continuam.
     """
     cs = validate_server_list(servers_list)
     mu_v = validate_positive_finite("μ", mu)
+    if model == "erlangb":
+        if capacity is not None:
+            raise QueueValidationError("O Erlang-B não tem capacity: a capacidade é sempre K = c.", "capacity")
+        validate_range("lambda", start, end, step)   # confere a faixa antes de montar as séries
+        series = [
+            ServerSeries(c, run_sweep("erlangb", "lambda", start, end, step, mu=mu_v, servers=c).points)
+            for c in cs
+        ]
+        return ServerComparisonResult(model="erlangb", mu=mu_v, capacity=None, series=series)
+    if model not in (None, "mmc", "mmck"):
+        raise QueueValidationError("model deve ser mmc, mmck ou erlangb nesta comparação.", "model")
     if capacity is not None:
         capacity = validate_capacity(capacity, 1)
     model = "mmc" if capacity is None else "mmck"
