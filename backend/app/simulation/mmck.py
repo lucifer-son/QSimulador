@@ -80,11 +80,19 @@ def run_replication(
     index: int = 0,
     interarrival: Callable[[], float] | None = None,
     service: Callable[[], float] | None = None,
+    service_at_arrival: Callable[[], float] | None = None,
 ) -> QueueReplicationResult:
     """Executa uma replicação. Não valida parâmetros (isso é feito em simulate_mmck).
 
     `interarrival` e `service` permitem injetar amostradores determinísticos
     (úteis em testes); por padrão, ambos são exponenciais.
+
+    `service_at_arrival` (usado na comparação de cenários) muda *quando* o serviço é sorteado:
+    em vez de no início do atendimento, no instante da chegada, uma vez por chegada (inclusive
+    das recusadas e das anteriores ao warm-up). Assim o cliente de número k recebe sempre o
+    k-ésimo sorteio do fluxo, mesmo que outro cenário mude λ, c ou K e a ordem dos eventos
+    seja outra: é o que mantém os números aleatórios comuns sincronizados. Quando é None
+    (padrão), o comportamento é exatamente o de sempre.
     """
     sample_arrival = interarrival or (lambda: rng.exponential(1.0 / lam))
     sample_service = service or (lambda: rng.exponential(1.0 / mu))
@@ -95,6 +103,8 @@ def run_replication(
 
     def customer():
         arrival = env.now
+        # Sorteio na chegada (só na comparação de cenários): o cliente k recebe o k-ésimo valor.
+        own_service = service_at_arrival() if service_at_arrival is not None else None
         mon.advance(arrival)
         counting = arrival >= warmup_time
         if counting:
@@ -117,7 +127,7 @@ def run_replication(
             if queued:
                 mon.n_queue -= 1
             start = env.now
-            yield env.timeout(sample_service())
+            yield env.timeout(own_service if own_service is not None else sample_service())
             now = env.now
             mon.advance(now)
             mon.n_system -= 1

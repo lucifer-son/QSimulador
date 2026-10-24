@@ -47,6 +47,10 @@ import sizingTableMmc from "./fixtures/sizing-table-mmc.json";
 import experimentServersErlangb from "./fixtures/experiment-servers-erlangb.json";
 import experimentSweepErlangb from "./fixtures/experiment-sweep-erlangb.json";
 import experimentSweepMgc from "./fixtures/experiment-sweep-mgc.json";
+import errorScenariosCapacity from "./fixtures/error-scenarios-capacity.json";
+import scenariosCompareMmc from "./fixtures/scenarios-compare-mmc.json";
+import scenariosCompareMmcBonferroni from "./fixtures/scenarios-compare-mmc-bonferroni.json";
+import scenariosExportMmc from "./fixtures/scenarios-export-mmc.json";
 import type { ThemeColors } from "../hooks/useThemeColors";
 
 /** Respostas reais da API, gravadas em arquivos (ver src/test/fixtures). */
@@ -64,6 +68,7 @@ export const fixtures = {
   experimentSensitivityMg1, experimentServicesMg1, experimentSweepMg1,
   experimentServersErlangb, experimentSweepErlangb, experimentSweepMgc,
   sizingCostMmc, sizingSlaErlangb, sizingSlaMmc, sizingTableMgc, sizingTableMmc,
+  errorScenariosCapacity, scenariosCompareMmc, scenariosCompareMmcBonferroni, scenariosExportMmc,
 };
 
 export const colors: ThemeColors = {
@@ -76,7 +81,38 @@ export function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-export interface FakeReply { status?: number; body: unknown }
+export function readBlobText(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") resolve(reader.result);
+      else reject(new Error("Não foi possível ler o Blob como texto."));
+    };
+    reader.onerror = () => reject(reader.error ?? new Error("Falha ao ler o Blob."));
+    reader.readAsText(blob);
+  });
+}
+
+export function readBlobArrayBuffer(blob: Blob): Promise<ArrayBuffer> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (reader.result instanceof ArrayBuffer) resolve(reader.result);
+      else reject(new Error("Não foi possível ler o Blob como bytes."));
+    };
+    reader.onerror = () => reject(reader.error ?? new Error("Falha ao ler o Blob."));
+    reader.readAsArrayBuffer(blob);
+  });
+}
+
+export interface FakeReply {
+  status?: number;
+  body: unknown;
+  /** `body` é uma lista de eventos: a resposta sai como NDJSON, em pedaços que cortam as linhas ao meio. */
+  ndjson?: boolean;
+  /** Resposta em texto puro (CSV), em vez de JSON. */
+  text?: string;
+}
 export type FakeHandler = (url: string, body: Record<string, unknown>) => FakeReply | Promise<FakeReply>;
 
 // ---------- Histórico (/api/records) ----------
@@ -172,12 +208,29 @@ function route(fn: (url: string, init?: RequestInit) => Promise<Response>, recor
     String(url).startsWith("/api/records") ? Promise.resolve(records.handle(String(url), init)) : fn(url, init);
 }
 
+/** NDJSON em pedaços de 700 bytes (cortando linhas ao meio), como a rede entrega; cancelar a leitura aborta. */
+function ndjsonResponse(events: unknown[], signal?: AbortSignal): Response {
+  const bytes = new TextEncoder().encode(events.map((e) => JSON.stringify(e)).join("\n") + "\n");
+  let offset = 0;
+  const stream = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      if (signal?.aborted) { controller.error(new DOMException("Aborted", "AbortError")); return; }
+      if (offset >= bytes.length) { controller.close(); return; }
+      controller.enqueue(bytes.slice(offset, offset + 700));
+      offset += 700;
+    },
+  });
+  return new Response(stream, { status: 200, headers: { "Content-Type": "application/x-ndjson" } });
+}
+
 /** Substitui o fetch global; devolve o mock para inspecionar as chamadas. */
 export function mockFetch(handler: FakeHandler, records: FakeRecords = new FakeRecords(false)) {
   const fn = vi.fn(async (url: string, init?: RequestInit) => {
     // Envios de arquivo (FormData) não são JSON: o corpo chega vazio ao handler.
     const body = typeof init?.body === "string" ? (JSON.parse(init.body) as Record<string, unknown>) : {};
     const reply = await handler(url, body);
+    if (reply.text !== undefined) return new Response(reply.text, { status: reply.status ?? 200, headers: { "Content-Type": "text/csv" } });
+    if (reply.ndjson) return ndjsonResponse(reply.body as unknown[], init?.signal ?? undefined);
     return new Response(JSON.stringify(reply.body), {
       status: reply.status ?? 200,
       headers: { "Content-Type": "application/json" },

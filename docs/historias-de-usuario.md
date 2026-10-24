@@ -43,6 +43,7 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 | E10 — Serviço geral | US-29 | Fase 9 |
 | E11 — Perda e vários servidores | US-30, US-31 | Fase 10 |
 | E12 — Dimensionamento e cobertura dos experimentos | US-32, US-33 | Fase 11 |
+| E13 — Comparação de cenários | US-34 | Fase 12 |
 
 ---
 
@@ -316,6 +317,21 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 - **Dado** o M/G/c com c = 1 (ou com CV = 1), **quando** comparo com o M/G/1 (ou com o M/M/c), **então** os resultados coincidem.
 - **Dado** qualquer modelo no Laboratório, **quando** abro Experimentos, **então** não há mais aviso de modelo sem experimentos.
 
+#### US-34 — Comparar cenários com intervalo de confiança ✅ · M · UC-14
+> Como **pesquisador**, quero comparar configurações alternativas com intervalo de confiança, para saber se a diferença é estatisticamente real.
+
+**Critérios de aceitação**
+- **Dado** a base M/M/c (λ = 8, μ = 1, c = 10) e os cenários “λ +20%” e “+1 servidor”, **quando** executo todos, **então** cada cenário traz a média ± IC, o analítico, a diferença contra a base com IC pareado e o veredito (aumento significativo no primeiro, redução significativa no segundo).
+- **Dado** dois cenários idênticos com a mesma semente, **quando** comparo, **então** a diferença é exatamente zero e o veredito é inconclusivo.
+- **Dado** a mesma semente e o mesmo pedido, **quando** repito a comparação, **então** o resultado é o mesmo.
+- **Dado** um cenário com ρ ≥ 1 (fila ilimitada), **quando** executo, **então** ele aparece destacado como instável, não é simulado e os demais seguem.
+- **Dado** um cenário com ρ ≥ 0,9, **quando** executo, **então** ele é simulado e marcado em risco.
+- **Dado** mais de um cenário, **quando** vejo o resultado, **então** a tela avisa que os ICs são individuais; com a correção de Bonferroni ligada, os intervalos ficam mais largos e o aviso muda.
+- **Dado** um diferença com IC que contém 0, **quando** leio o veredito, **então** ele diz “inconclusivo” e a tela explica que isso não significa igual.
+- **Dado** uma execução em andamento, **quando** clico em cancelar, **então** o que falta é interrompido.
+- **Dado** uma comparação concluída, **quando** exporto o CSV ou salvo no histórico, **então** o CSV traz uma linha por cenário e métrica, e o registro pode ser reaberto depois.
+
+
 ---
 
 ## 4. Rastreabilidade com os casos de uso
@@ -335,6 +351,7 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 | UC-11 — Serviço geral (M/G/1) | US-29, US-31 |
 | UC-12 — Erlang-B e M/G/c | US-30 |
 | UC-13 — Dimensionamento | US-32 |
+| UC-14 — Comparação de cenários | US-34 |
 | Transversais (API, qualidade, Docker) | US-25, US-26, US-27, US-28 |
 
 ---

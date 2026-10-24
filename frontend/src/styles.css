@@ -320,3 +320,20 @@ input[type="file"] { max-width: 100%; font-size: 0.85rem; }
 .table tbody tr.row-best { background: var(--success-bg); }
 .table tbody tr.row-best:hover { background: var(--success-bg); }
 .table tbody tr.row-bad { color: var(--text-muted); }
+
+/* ---------- Cenários (Fase 12) ---------- */
+.scenario-card { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px 12px; margin: 0 0 12px; display: grid; gap: 8px; min-width: 0; }
+.scenario-card legend { padding: 0 6px; font-weight: 600; font-size: 0.9rem; }
+.check { display: flex; align-items: flex-start; gap: 8px; font-size: 0.88rem; margin: 10px 0 4px; }
+.check input { margin-top: 3px; }
+.save-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.cell-sub { font-weight: 400; font-size: 0.78rem; color: var(--text-muted); max-width: 26ch; }
+.table tbody tr.row-warn { background: var(--warning-bg); }
+.table tbody tr.row-warn:hover { background: var(--warning-bg); }
+.scn-alerts { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 6px; font-size: 0.86rem; }
+.scn-alerts li { padding: 6px 10px; border-radius: 6px; }
+.scn-alerts .alert-bad { background: var(--danger-bg); color: var(--danger-text); }
+.scn-alerts .alert-warn { background: var(--warning-bg); color: var(--warning-text); }
+.progress-wrap { margin-bottom: 12px; }
+.progress { height: 8px; border-radius: 4px; background: var(--border); overflow: hidden; }
+.progress-bar { height: 100%; background: var(--chart-accent); transition: width 0.2s ease; }

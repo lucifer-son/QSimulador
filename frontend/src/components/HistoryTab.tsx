@@ -14,6 +14,7 @@ import { useRecords } from "../hooks/RecordsContext";
 import { SensitivityResult } from "./SensitivityPanel";
 import { ServersResult } from "./ServersPanel";
 import { ServicesResult } from "./ServicesPanel";
+import { ScenariosView } from "./ScenariosView";
 import { SizingResultView } from "./SizingTab";
 import { SweepResult } from "./SweepPanel";
 import { RealDataResults } from "./RealDataTab";
@@ -57,6 +58,7 @@ function ExperimentView({ snapshot }: { snapshot: ExperimentSnapshot }) {
   if (snapshot.type === "sizing") {
     return <SizingResultView action={snapshot.action} result={snapshot.result} costUnit={snapshot.costUnit} />;
   }
+  if (snapshot.type === "scenarios") return <ScenariosView data={snapshot.result} />;
   return <SensitivityResult result={snapshot.result} model={snapshot.model} />;
 }
 

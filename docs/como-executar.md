@@ -54,7 +54,7 @@ Quando o ambiente virtual está ativo, o prompt começa com `(.venv)`. **Todos o
 python -m pytest
 ```
 
-Todos os testes devem passar (1.180 no backend na Fase 11; os que dependem de um PostgreSQL real são ignorados quando `QSIMULADOR_TEST_POSTGRES_URL` não está definida). Um aviso de depreciação do Starlette sobre o `httpx` pode aparecer e é inofensivo.
+Todos os testes devem passar (1.233 no backend na Fase 12, mais 1 teste lento de cobertura estatística que só roda com `python -m pytest --runslow`, em cerca de 1 minuto; os que dependem de um PostgreSQL real são ignorados quando `QSIMULADOR_TEST_POSTGRES_URL` não está definida). Um aviso de depreciação do Starlette sobre o `httpx` pode aparecer e é inofensivo.
 
 ---
 
@@ -403,6 +403,28 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/sizing/sla `
 ```
 
 Na interface, a aba **Dimensionamento** herda o modelo e os valores do Laboratório: informe a faixa de c, a meta (t e P(Wq ≤ t), ou o bloqueio no Erlang-B) e os custos, e use **Gerar tabela**, **Menor c pela meta** ou **Custo mínimo**. O resultado destaca o c escolhido e as linhas sem solução, mostra o gráfico de nível de serviço ou de custo × c e pode ser salvo no histórico (experimento do tipo `sizing`).
+
+### Comparação de cenários (Fase 12)
+
+A comparação responde "essa mudança altera de verdade a métrica?". A rota recebe a **base** (o mesmo sistema das rotas dos modelos: `model`, `lambda`, `mu` ou `service`, `servers`, `capacity`), de 1 a 10 **cenários** e a simulação (`simulation_time`, `replications` de 2 a 100, `warmup_time`, `seed`, `confidence_level`). Cada cenário traz só o que muda; o resto fica como na base.
+
+- **Sobrescritas:** `lambda`, `mu`, `servers`, `capacity`, `cv`, `k`, `model` e `service`. Os numéricos são `{"mode": "absolute" | "relative", "value": x}`. Em λ, μ e CV, `relative` é percentual (`20` = +20%); em c, K e k, são unidades (`1` = um a mais). A resposta devolve os valores já resolvidos e a lista do que mudou.
+- **Troca de modelo:** M/M/1, M/M/1/K e M/G/1 ficam com c = 1; no Erlang-B, K = c; M/M/1/K e M/M/c/K exigem K. De M/G para um modelo markoviano, o serviço vira exponencial com a mesma média. `cv` e `k` só valem nos modelos M/G (lognormal e Weibull usam CV; Erlang usa k). Métricas que o modelo não define voltam sem valor ("—" na tela).
+- **Números aleatórios comuns:** a base e todos os cenários usam as mesmas sementes. Em cada réplica, as chegadas e os serviços saem de dois fluxos independentes, e o serviço é sorteado por número do cliente. Por isso a diferença é pareada, o IC dela é mais justo e dois cenários idênticos têm diferença exatamente zero. O ganho de variância é moderado (cerca de 30% a 50% menos ao mudar c ou μ) e menor ao mudar λ.
+- **Veredito:** `higher` ou `lower` quando o IC da diferença exclui 0; `inconclusive` quando o contém (não significa igual). Os ICs são individuais; `"bonferroni": true` divide α pelo número de cenários simulados.
+- **Alertas:** `unstable` (ρ ≥ 1 com fila ilimitada: o cenário não é simulado, sem analítico) e `at_risk` (ρ ≥ 0,9). A base instável é erro 422 (`base.lambda`).
+- **Limites:** até 10 cenários além da base, R até 100 e um teto de trabalho (a soma de λ·T·R entre a base e os cenários simulados, o mesmo teto dos experimentos: 5 milhões de chegadas), conferido antes de rodar.
+- **Streaming:** `POST /api/scenarios/compare` devolve `application/x-ndjson`: `start`, `base`, um `scenario` por cenário concluído (com `completed` e `total`) e `done` com o resultado completo. Fechar a conexão interrompe o que falta. Erros de validação saem antes, como o 422 de sempre.
+- **CSV:** `POST /api/scenarios/export.csv` recebe o mesmo corpo e refaz a comparação (use a semente devolvida em `done` para reproduzir). É RFC 4180 (vírgula, ponto decimal, UTF-8 com BOM); no Excel em português use Dados → De Texto/CSV.
+
+```powershell
+# M/M/c (λ = 8, μ = 1, c = 10): +20% de λ e mais um servidor, 10 réplicas com a semente 2026
+curl.exe -N -X POST http://127.0.0.1:8000/api/scenarios/compare `
+  -H "Content-Type: application/json" `
+  -d '{"base":{"model":"mmc","lambda":8,"mu":1,"servers":10},"scenarios":[{"name":"+20% de λ","lambda":{"mode":"relative","value":20}},{"name":"+1 servidor","servers":{"mode":"relative","value":1}}],"simulation_time":2000,"replications":10,"warmup_time":100,"seed":2026}'
+```
+
+Na interface, a aba **Cenários** usa o modelo, os valores e a simulação do Laboratório como base. Em cada campo digite o valor (`12`) ou a variação (`+20%` em λ, μ e CV; `+1` ou `−1` em c, K e k). Ao executar, as linhas aparecem conforme cada cenário termina; o botão Cancelar interrompe o que falta.
 
 ### Erros da API
 

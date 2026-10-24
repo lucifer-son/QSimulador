@@ -108,6 +108,8 @@ Número ótimo de servidores: **12**.
 | Erlang-B é decrescente em c e crescente em a | Fase 10 |
 | Nível de serviço cresce com c | Fase 11 |
 | Cenários com a mesma semente e parâmetros idênticos geram diferença zero | Fase 12 |
+| Com a semente comum (fluxos separados de chegada e serviço), a variância da diferença pareada é menor que com sementes independentes: razão de ≈ 0,5 a 0,7 ao mudar c ou μ (M/M/5, λ = 4, T = 400, 100 réplicas); o ganho é menor ao mudar λ (≈ 0,7), porque as chegadas se descolam ao longo do tempo | Fase 12 |
+| O IC pareado de 95% cobre a diferença analítica em 94% a 96% de 300 repetições com sementes distintas (M/M/2, λ de 1,0 para 1,4, μ = 1, 10 réplicas, T = 600, warm-up 100); com T = 300 a cobertura cai para 87% a 93%, o viés de regime | Fase 12 |
 | Lei de conservação de Kleinrock para prioridades não preemptivas: Σ ρₖ·Wq,ₖ é invariante (igual ao caso FIFO quando os tempos de serviço são iguais) | Fase 15 |
 | Erlang-A tende ao Erlang-C quando a taxa de abandono tende a zero | Fase 20 |
 | Equações de tráfego de Jackson: λ = (I − Rᵀ)⁻¹ Λ; cada nó M/M/c com o λ resultante | Fase 19 |

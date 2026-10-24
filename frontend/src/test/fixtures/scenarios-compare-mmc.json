@@ -1,0 +1,1391 @@
+[
+ {
+  "type": "start",
+  "total": 4,
+  "settings": {
+   "simulation_time": 2000.0,
+   "warmup_time": 100.0,
+   "replications": 10,
+   "seed": 2026,
+   "confidence_level": 0.95,
+   "bonferroni": false,
+   "diff_confidence_level": 0.95,
+   "simulated_scenarios": 2,
+   "expected_arrivals": 512000.0
+  },
+  "multiple_comparison": {
+   "correction": "none",
+   "comparisons": 2,
+   "confidence_level": 0.95,
+   "individual_intervals": true,
+   "note": "ICs individuais: cada intervalo tem confiança de 95% sozinho. Com 2 cenários e várias métricas, a chance de algum IC excluir 0 por acaso é maior do que a nominal; a correção de Bonferroni deixa os intervalos mais conservadores."
+  }
+ },
+ {
+  "type": "base",
+  "completed": 1,
+  "total": 4,
+  "scenario": {
+   "index": 0,
+   "role": "base",
+   "name": "Base",
+   "model": "mmc",
+   "model_label": "M/M/c",
+   "status": "ok",
+   "message": null,
+   "parameters": {
+    "model": "mmc",
+    "lambda": 8.0,
+    "mu": 1.0,
+    "servers": 10,
+    "capacity": null,
+    "service": null
+   },
+   "changes": [],
+   "alerts": [],
+   "offered_utilization": 0.8,
+   "analytic_exact": true,
+   "metrics": {
+    "rho": {
+     "analytic": 0.8,
+     "simulation": {
+      "mean": 0.7967888032851631,
+      "std": 0.007525009893454324,
+      "ci_low": 0.791405735490383,
+      "ci_high": 0.8021718710799433,
+      "n": 10
+     },
+     "diff": null,
+     "relative_change": null,
+     "verdict": null,
+     "analytic_diff": null,
+     "analytic_relative_change": null,
+     "analytic_diff_in_ci": null
+    },
+    "L": {
+     "analytic": 9.636720603185776,
+     "simulation": {
+      "mean": 9.50490958339253,
+      "std": 0.25125107154779525,
+      "ci_low": 9.325175394228285,
+      "ci_high": 9.684643772556775,
+      "n": 10
+     },
+     "diff": null,
+     "relative_change": null,
+     "verdict": null,
+     "analytic_diff": null,
+     "analytic_relative_change": null,
+     "analytic_diff_in_ci": null
+    },
+    "Lq": {
+     "analytic": 1.6367206031857746,
+     "simulation": {
+      "mean": 1.5370215505408815,
+      "std": 0.19595180802557977,
+      "ci_low": 1.3968460714323452,
+      "ci_high": 1.6771970296494179,
+      "n": 10
+     },
+     "diff": null,
+     "relative_change": null,
+     "verdict": null,
+     "analytic_diff": null,
+     "analytic_relative_change": null,
+     "analytic_diff_in_ci": null
+    },
+    "W": {
+     "analytic": 1.204590075398222,
+     "simulation": {
+      "mean": 1.1910202220320805,
+      "std": 0.034994250358950325,
+      "ci_low": 1.165986843368539,
+      "ci_high": 1.216053600695622,
+      "n": 10
+     },
+     "diff": null,
+     "relative_change": null,
+     "verdict": null,
+     "analytic_diff": null,
+     "analytic_relative_change": null,
+     "analytic_diff_in_ci": null
+    },
+    "Wq": {
+     "analytic": 0.20459007539822183,
+     "simulation": {
+      "mean": 0.19273591820026825,
+      "std": 0.025119387767561313,
+      "ci_low": 0.17476659068698824,
+      "ci_high": 0.21070524571354826,
+      "n": 10
+     },
+     "diff": null,
+     "relative_change": null,
+     "verdict": null,
+     "analytic_diff": null,
+     "analytic_relative_change": null,
+     "analytic_diff_in_ci": null
+    },
+    "p0": {
+     "analytic": 0.0002765716856736946,
+     "simulation": {
+      "mean": 0.00027737146246936933,
+      "std": 0.00017007974884779338,
+      "ci_low": 0.00015570373956534414,
+      "ci_high": 0.0003990391853733945,
+      "n": 10
+     },
+     "diff": null,
+     "relative_change": null,
+     "verdict": null,
+     "analytic_diff": null,
+     "analytic_relative_change": null,
+     "analytic_diff_in_ci": null
+    },
+    "throughput": {
+     "analytic": 8.0,
+     "simulation": {
+      "mean": 7.978947368421052,
+      "std": 0.062373787614254474,
+      "ci_low": 7.934327848699647,
+      "ci_high": 8.023566888142456,
+      "n": 10
+     },
+     "diff": null,
+     "relative_change": null,
+     "verdict": null,
+     "analytic_diff": null,
+     "analytic_relative_change": null,
+     "analytic_diff_in_ci": null
+    },
+    "p_wait": {
+     "analytic": 0.40918015079644354,
+     "simulation": {
+      "mean": 0.3970261103533766,
+      "std": 0.016845468371227194,
+      "ci_low": 0.38497558821970884,
+      "ci_high": 0.40907663248704434,
+      "n": 10
+     },
+     "diff": null,
+     "relative_change": null,
+     "verdict": null,
+     "analytic_diff": null,
+     "analytic_relative_change": null,
+     "analytic_diff_in_ci": null
+    },
+    "p_block": {
+     "analytic": 0.0,
+     "simulation": {
+      "mean": 0.0,
+      "std": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0,
+      "n": 10
+     },
+     "diff": null,
+     "relative_change": null,
+     "verdict": null,
+     "analytic_diff": null,
+     "analytic_relative_change": null,
+     "analytic_diff_in_ci": null
+    }
+   }
+  }
+ },
+ {
+  "type": "scenario",
+  "completed": 2,
+  "total": 4,
+  "scenario": {
+   "index": 1,
+   "role": "scenario",
+   "name": "+20% de λ",
+   "model": "mmc",
+   "model_label": "M/M/c",
+   "status": "ok",
+   "message": null,
+   "parameters": {
+    "model": "mmc",
+    "lambda": 9.6,
+    "mu": 1.0,
+    "servers": 10,
+    "capacity": null,
+    "service": null
+   },
+   "changes": [
+    {
+     "field": "lambda",
+     "from_value": 8.0,
+     "to_value": 9.6
+    }
+   ],
+   "alerts": [
+    {
+     "code": "at_risk",
+     "level": "warning",
+     "message": "ρ = 0.96 ≥ 0.9: perto da saturação, a simulação converge devagar e a diferença para o analítico depende de simulation_time e do warm-up."
+    }
+   ],
+   "offered_utilization": 0.96,
+   "analytic_exact": true,
+   "metrics": {
+    "rho": {
+     "analytic": 0.96,
+     "simulation": {
+      "mean": 0.9558270331264952,
+      "std": 0.00804717308762435,
+      "ci_low": 0.9500704322847219,
+      "ci_high": 0.9615836339682685,
+      "n": 10
+     },
+     "diff": {
+      "mean": 0.15903822984133206,
+      "std": 0.004172603513379155,
+      "ci_low": 0.15605332910215883,
+      "ci_high": 0.1620231305805053,
+      "n": 10
+     },
+     "relative_change": 0.1995989767747951,
+     "verdict": "higher",
+     "analytic_diff": 0.15999999999999992,
+     "analytic_relative_change": 0.1999999999999999,
+     "analytic_diff_in_ci": true
+    },
+    "L": {
+     "analytic": 30.21792825632317,
+     "simulation": {
+      "mean": 27.59114126334456,
+      "std": 5.26699989002907,
+      "ci_low": 23.823356518265534,
+      "ci_high": 31.358926008423587,
+      "n": 10
+     },
+     "diff": {
+      "mean": 18.08623167995203,
+      "std": 5.1357900412209565,
+      "ci_low": 14.412308806349253,
+      "ci_high": 21.760154553554806,
+      "n": 10
+     },
+     "relative_change": 1.902830481581143,
+     "verdict": "higher",
+     "analytic_diff": 20.581207653137394,
+     "analytic_relative_change": 2.135706585322554,
+     "analytic_diff_in_ci": true
+    },
+    "Lq": {
+     "analytic": 20.61792825632317,
+     "simulation": {
+      "mean": 18.03287093207954,
+      "std": 5.2066679981284185,
+      "ci_low": 14.30824502252192,
+      "ci_high": 21.75749684163716,
+      "n": 10
+     },
+     "diff": {
+      "mean": 16.49584938153866,
+      "std": 5.112401716578847,
+      "ci_low": 12.838657507487703,
+      "ci_high": 20.15304125558962,
+      "n": 10
+     },
+     "relative_change": 10.732347490985884,
+     "verdict": "higher",
+     "analytic_diff": 18.981207653137396,
+     "analytic_relative_change": 11.59709703427186,
+     "analytic_diff_in_ci": true
+    },
+    "W": {
+     "analytic": 3.147700860033664,
+     "simulation": {
+      "mean": 2.8741899870914525,
+      "std": 0.5424254286014087,
+      "ci_low": 2.486162210767337,
+      "ci_high": 3.262217763415568,
+      "n": 10
+     },
+     "diff": {
+      "mean": 1.6831697650593722,
+      "std": 0.5261621585413482,
+      "ci_low": 1.306776031286387,
+      "ci_high": 2.0595634988323575,
+      "n": 10
+     },
+     "relative_change": 1.4132167816492671,
+     "verdict": "higher",
+     "analytic_diff": 1.9431107846354418,
+     "analytic_relative_change": 1.6130888211021284,
+     "analytic_diff_in_ci": true
+    },
+    "Wq": {
+     "analytic": 2.147700860033664,
+     "simulation": {
+      "mean": 1.8773121711092866,
+      "std": 0.5383173225793264,
+      "ci_low": 1.4922231567985276,
+      "ci_high": 2.2624011854200456,
+      "n": 10
+     },
+     "diff": {
+      "mean": 1.6845762529090187,
+      "std": 0.5262789148081343,
+      "ci_low": 1.3080989967342727,
+      "ci_high": 2.0610535090837647,
+      "n": 10
+     },
+     "relative_change": 8.740333761549351,
+     "verdict": "higher",
+     "analytic_diff": 1.9431107846354418,
+     "analytic_relative_change": 9.497580861893217,
+     "analytic_diff_in_ci": true
+    },
+    "p0": {
+     "analytic": 1.8756183638349056e-05,
+     "simulation": {
+      "mean": 1.3159435994228524e-05,
+      "std": 3.058444243444222e-05,
+      "ci_low": -8.719356116511967e-06,
+      "ci_high": 3.5038228104969015e-05,
+      "n": 10
+     },
+     "diff": {
+      "mean": -0.00026421202647514076,
+      "std": 0.000168332032475674,
+      "ci_low": -0.00038462950840269233,
+      "ci_high": -0.0001437945445475892,
+      "n": 10
+     },
+     "relative_change": -0.952556633342618,
+     "verdict": "lower",
+     "analytic_diff": -0.0002578155020353456,
+     "analytic_relative_change": -0.9321832833586661,
+     "analytic_diff_in_ci": true
+    },
+    "throughput": {
+     "analytic": 9.6,
+     "simulation": {
+      "mean": 9.582263157894737,
+      "std": 0.06606471080810249,
+      "ci_low": 9.535003310777206,
+      "ci_high": 9.629523005012267,
+      "n": 10
+     },
+     "diff": {
+      "mean": 1.6033157894736838,
+      "std": 0.031046237819309735,
+      "ci_low": 1.581106648845233,
+      "ci_high": 1.6255249301021346,
+      "n": 10
+     },
+     "relative_change": 0.20094327176781,
+     "verdict": "higher",
+     "analytic_diff": 1.5999999999999996,
+     "analytic_relative_change": 0.19999999999999996,
+     "analytic_diff_in_ci": true
+    },
+    "p_wait": {
+     "analytic": 0.8590803440134662,
+     "simulation": {
+      "mean": 0.8456259619002523,
+      "std": 0.029961981754152427,
+      "ci_low": 0.8241924513358523,
+      "ci_high": 0.8670594724646523,
+      "n": 10
+     },
+     "diff": {
+      "mean": 0.44859985154687587,
+      "std": 0.02245145439524149,
+      "ci_low": 0.43253904859615444,
+      "ci_high": 0.4646606544975973,
+      "n": 10
+     },
+     "relative_change": 1.1299001245726525,
+     "verdict": "higher",
+     "analytic_diff": 0.4499001932170227,
+     "analytic_relative_change": 1.0995161723786457,
+     "analytic_diff_in_ci": true
+    },
+    "p_block": {
+     "analytic": 0.0,
+     "simulation": {
+      "mean": 0.0,
+      "std": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0,
+      "n": 10
+     },
+     "diff": {
+      "mean": 0.0,
+      "std": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0,
+      "n": 10
+     },
+     "relative_change": null,
+     "verdict": "inconclusive",
+     "analytic_diff": 0.0,
+     "analytic_relative_change": null,
+     "analytic_diff_in_ci": true
+    }
+   }
+  }
+ },
+ {
+  "type": "scenario",
+  "completed": 3,
+  "total": 4,
+  "scenario": {
+   "index": 2,
+   "role": "scenario",
+   "name": "+1 servidor",
+   "model": "mmc",
+   "model_label": "M/M/c",
+   "status": "ok",
+   "message": null,
+   "parameters": {
+    "model": "mmc",
+    "lambda": 8.0,
+    "mu": 1.0,
+    "servers": 11,
+    "capacity": null,
+    "service": null
+   },
+   "changes": [
+    {
+     "field": "servers",
+     "from_value": 10,
+     "to_value": 11
+    }
+   ],
+   "alerts": [],
+   "offered_utilization": 0.7272727272727273,
+   "analytic_exact": true,
+   "metrics": {
+    "rho": {
+     "analytic": 0.7272727272727273,
+     "simulation": {
+      "mean": 0.7243475252922826,
+      "std": 0.006872608768222857,
+      "ci_low": 0.7194311571478998,
+      "ci_high": 0.7292638934366654,
+      "n": 10
+     },
+     "diff": {
+      "mean": -0.07244127799288048,
+      "std": 0.000661214749690758,
+      "ci_low": -0.07291428253040143,
+      "ci_high": -0.07196827345535954,
+      "n": 10
+     },
+     "relative_change": -0.0909165360936359,
+     "verdict": "lower",
+     "analytic_diff": -0.07272727272727275,
+     "analytic_relative_change": -0.09090909090909094,
+     "analytic_diff_in_ci": true
+    },
+    "L": {
+     "analytic": 8.653221136153537,
+     "simulation": {
+      "mean": 8.590876434912916,
+      "std": 0.16123273972272253,
+      "ci_low": 8.475537481083697,
+      "ci_high": 8.706215388742136,
+      "n": 10
+     },
+     "diff": {
+      "mean": -0.9140331484796157,
+      "std": 0.10614651561133176,
+      "ci_low": -0.9899657914669049,
+      "ci_high": -0.8381005054923265,
+      "n": 10
+     },
+     "relative_change": -0.09616431807796065,
+     "verdict": "lower",
+     "analytic_diff": -0.9834994670322388,
+     "analytic_relative_change": -0.10205748485715219,
+     "analytic_diff_in_ci": true
+    },
+    "Lq": {
+     "analytic": 0.6532211361535362,
+     "simulation": {
+      "mean": 0.6230536566978139,
+      "std": 0.10189023141416473,
+      "ci_low": 0.550165776004742,
+      "ci_high": 0.6959415373908857,
+      "n": 10
+     },
+     "diff": {
+      "mean": -0.9139678938430675,
+      "std": 0.10644952575488746,
+      "ci_low": -0.9901172972291284,
+      "ci_high": -0.8378184904570066,
+      "n": 10
+     },
+     "relative_change": -0.5946357053493753,
+     "verdict": "lower",
+     "analytic_diff": -0.9834994670322385,
+     "analytic_relative_change": -0.6008963687008755,
+     "analytic_diff_in_ci": true
+    },
+    "W": {
+     "analytic": 1.081652642019192,
+     "simulation": {
+      "mean": 1.0764629091371876,
+      "std": 0.023844128495015948,
+      "ci_low": 1.059405847151426,
+      "ci_high": 1.093519971122949,
+      "n": 10
+     },
+     "diff": {
+      "mean": -0.11455731289489306,
+      "std": 0.013449349111714208,
+      "ci_low": -0.12417839766276824,
+      "ci_high": -0.10493622812701787,
+      "n": 10
+     },
+     "relative_change": -0.09618418795563273,
+     "verdict": "lower",
+     "analytic_diff": -0.12293743337902985,
+     "analytic_relative_change": -0.10205748485715219,
+     "analytic_diff_in_ci": true
+    },
+    "Wq": {
+     "analytic": 0.08165264201919202,
+     "simulation": {
+      "mean": 0.07816600234423973,
+      "std": 0.013146456628424293,
+      "ci_low": 0.0687615938060526,
+      "ci_high": 0.08757041088242687,
+      "n": 10
+     },
+     "diff": {
+      "mean": -0.11456991585602853,
+      "std": 0.01347003982305405,
+      "ci_low": -0.12420580186715012,
+      "ci_high": -0.10493402984490695,
+      "n": 10
+     },
+     "relative_change": -0.5944398788033951,
+     "verdict": "lower",
+     "analytic_diff": -0.1229374333790298,
+     "analytic_relative_change": -0.6008963687008755,
+     "analytic_diff_in_ci": true
+    },
+    "p0": {
+     "analytic": 0.0003104458989381329,
+     "simulation": {
+      "mean": 0.0002898036891595433,
+      "std": 0.00016822821291356726,
+      "ci_low": 0.00016946047527271958,
+      "ci_high": 0.000410146903046367,
+      "n": 10
+     },
+     "diff": {
+      "mean": 1.2432226690173979e-05,
+      "std": 2.2819334247645708e-05,
+      "ci_low": -3.8917416535322795e-06,
+      "ci_high": 2.8756195033880238e-05,
+      "n": 10
+     },
+     "relative_change": 0.04482157818072901,
+     "verdict": "inconclusive",
+     "analytic_diff": 3.387421326443826e-05,
+     "analytic_relative_change": 0.12247896302878888,
+     "analytic_diff_in_ci": false
+    },
+    "throughput": {
+     "analytic": 8.0,
+     "simulation": {
+      "mean": 7.978947368421052,
+      "std": 0.06196882624582313,
+      "ci_low": 7.934617540611206,
+      "ci_high": 8.023277196230897,
+      "n": 10
+     },
+     "diff": {
+      "mean": -8.881784197001253e-17,
+      "std": 0.0009924305700864799,
+      "ci_low": -0.0007099420620078559,
+      "ci_high": 0.0007099420620076783,
+      "n": 10
+     },
+     "relative_change": -1.1131523729750911e-17,
+     "verdict": "inconclusive",
+     "analytic_diff": 0.0,
+     "analytic_relative_change": 0.0,
+     "analytic_diff_in_ci": true
+    },
+    "p_wait": {
+     "analytic": 0.24495792605757605,
+     "simulation": {
+      "mean": 0.2357122896116956,
+      "std": 0.013000267670701098,
+      "ci_low": 0.2264124583539924,
+      "ci_high": 0.2450121208693988,
+      "n": 10
+     },
+     "diff": {
+      "mean": -0.16131382074168094,
+      "std": 0.007738423117991452,
+      "ci_low": -0.16684955516045916,
+      "ci_high": -0.15577808632290271,
+      "n": 10
+     },
+     "relative_change": -0.40630531981411033,
+     "verdict": "lower",
+     "analytic_diff": -0.1642222247388675,
+     "analytic_relative_change": -0.401344553051313,
+     "analytic_diff_in_ci": true
+    },
+    "p_block": {
+     "analytic": 0.0,
+     "simulation": {
+      "mean": 0.0,
+      "std": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0,
+      "n": 10
+     },
+     "diff": {
+      "mean": 0.0,
+      "std": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0,
+      "n": 10
+     },
+     "relative_change": null,
+     "verdict": "inconclusive",
+     "analytic_diff": 0.0,
+     "analytic_relative_change": null,
+     "analytic_diff_in_ci": true
+    }
+   }
+  }
+ },
+ {
+  "type": "scenario",
+  "completed": 4,
+  "total": 4,
+  "scenario": {
+   "index": 3,
+   "role": "scenario",
+   "name": "Sobrecarga",
+   "model": "mmc",
+   "model_label": "M/M/c",
+   "status": "unstable",
+   "message": "O modelo não está em condição estável. Para M/M/c, é necessário que λ < c·μ.",
+   "parameters": {
+    "model": "mmc",
+    "lambda": 12.0,
+    "mu": 1.0,
+    "servers": 10,
+    "capacity": null,
+    "service": null
+   },
+   "changes": [
+    {
+     "field": "lambda",
+     "from_value": 8.0,
+     "to_value": 12.0
+    }
+   ],
+   "alerts": [
+    {
+     "code": "unstable",
+     "level": "error",
+     "message": "ρ = 1.2 ≥ 1: com fila ilimitada o sistema não atinge regime estacionário. O cenário não foi simulado e não tem valores analíticos."
+    }
+   ],
+   "offered_utilization": 1.2,
+   "analytic_exact": false,
+   "metrics": {}
+  }
+ },
+ {
+  "type": "done",
+  "result": {
+   "settings": {
+    "simulation_time": 2000.0,
+    "warmup_time": 100.0,
+    "replications": 10,
+    "seed": 2026,
+    "confidence_level": 0.95,
+    "bonferroni": false,
+    "diff_confidence_level": 0.95,
+    "simulated_scenarios": 2,
+    "expected_arrivals": 512000.0
+   },
+   "multiple_comparison": {
+    "correction": "none",
+    "comparisons": 2,
+    "confidence_level": 0.95,
+    "individual_intervals": true,
+    "note": "ICs individuais: cada intervalo tem confiança de 95% sozinho. Com 2 cenários e várias métricas, a chance de algum IC excluir 0 por acaso é maior do que a nominal; a correção de Bonferroni deixa os intervalos mais conservadores."
+   },
+   "base": {
+    "index": 0,
+    "role": "base",
+    "name": "Base",
+    "model": "mmc",
+    "model_label": "M/M/c",
+    "status": "ok",
+    "message": null,
+    "parameters": {
+     "model": "mmc",
+     "lambda": 8.0,
+     "mu": 1.0,
+     "servers": 10,
+     "capacity": null,
+     "service": null
+    },
+    "changes": [],
+    "alerts": [],
+    "offered_utilization": 0.8,
+    "analytic_exact": true,
+    "metrics": {
+     "rho": {
+      "analytic": 0.8,
+      "simulation": {
+       "mean": 0.7967888032851631,
+       "std": 0.007525009893454324,
+       "ci_low": 0.791405735490383,
+       "ci_high": 0.8021718710799433,
+       "n": 10
+      },
+      "diff": null,
+      "relative_change": null,
+      "verdict": null,
+      "analytic_diff": null,
+      "analytic_relative_change": null,
+      "analytic_diff_in_ci": null
+     },
+     "L": {
+      "analytic": 9.636720603185776,
+      "simulation": {
+       "mean": 9.50490958339253,
+       "std": 0.25125107154779525,
+       "ci_low": 9.325175394228285,
+       "ci_high": 9.684643772556775,
+       "n": 10
+      },
+      "diff": null,
+      "relative_change": null,
+      "verdict": null,
+      "analytic_diff": null,
+      "analytic_relative_change": null,
+      "analytic_diff_in_ci": null
+     },
+     "Lq": {
+      "analytic": 1.6367206031857746,
+      "simulation": {
+       "mean": 1.5370215505408815,
+       "std": 0.19595180802557977,
+       "ci_low": 1.3968460714323452,
+       "ci_high": 1.6771970296494179,
+       "n": 10
+      },
+      "diff": null,
+      "relative_change": null,
+      "verdict": null,
+      "analytic_diff": null,
+      "analytic_relative_change": null,
+      "analytic_diff_in_ci": null
+     },
+     "W": {
+      "analytic": 1.204590075398222,
+      "simulation": {
+       "mean": 1.1910202220320805,
+       "std": 0.034994250358950325,
+       "ci_low": 1.165986843368539,
+       "ci_high": 1.216053600695622,
+       "n": 10
+      },
+      "diff": null,
+      "relative_change": null,
+      "verdict": null,
+      "analytic_diff": null,
+      "analytic_relative_change": null,
+      "analytic_diff_in_ci": null
+     },
+     "Wq": {
+      "analytic": 0.20459007539822183,
+      "simulation": {
+       "mean": 0.19273591820026825,
+       "std": 0.025119387767561313,
+       "ci_low": 0.17476659068698824,
+       "ci_high": 0.21070524571354826,
+       "n": 10
+      },
+      "diff": null,
+      "relative_change": null,
+      "verdict": null,
+      "analytic_diff": null,
+      "analytic_relative_change": null,
+      "analytic_diff_in_ci": null
+     },
+     "p0": {
+      "analytic": 0.0002765716856736946,
+      "simulation": {
+       "mean": 0.00027737146246936933,
+       "std": 0.00017007974884779338,
+       "ci_low": 0.00015570373956534414,
+       "ci_high": 0.0003990391853733945,
+       "n": 10
+      },
+      "diff": null,
+      "relative_change": null,
+      "verdict": null,
+      "analytic_diff": null,
+      "analytic_relative_change": null,
+      "analytic_diff_in_ci": null
+     },
+     "throughput": {
+      "analytic": 8.0,
+      "simulation": {
+       "mean": 7.978947368421052,
+       "std": 0.062373787614254474,
+       "ci_low": 7.934327848699647,
+       "ci_high": 8.023566888142456,
+       "n": 10
+      },
+      "diff": null,
+      "relative_change": null,
+      "verdict": null,
+      "analytic_diff": null,
+      "analytic_relative_change": null,
+      "analytic_diff_in_ci": null
+     },
+     "p_wait": {
+      "analytic": 0.40918015079644354,
+      "simulation": {
+       "mean": 0.3970261103533766,
+       "std": 0.016845468371227194,
+       "ci_low": 0.38497558821970884,
+       "ci_high": 0.40907663248704434,
+       "n": 10
+      },
+      "diff": null,
+      "relative_change": null,
+      "verdict": null,
+      "analytic_diff": null,
+      "analytic_relative_change": null,
+      "analytic_diff_in_ci": null
+     },
+     "p_block": {
+      "analytic": 0.0,
+      "simulation": {
+       "mean": 0.0,
+       "std": 0.0,
+       "ci_low": 0.0,
+       "ci_high": 0.0,
+       "n": 10
+      },
+      "diff": null,
+      "relative_change": null,
+      "verdict": null,
+      "analytic_diff": null,
+      "analytic_relative_change": null,
+      "analytic_diff_in_ci": null
+     }
+    }
+   },
+   "scenarios": [
+    {
+     "index": 1,
+     "role": "scenario",
+     "name": "+20% de λ",
+     "model": "mmc",
+     "model_label": "M/M/c",
+     "status": "ok",
+     "message": null,
+     "parameters": {
+      "model": "mmc",
+      "lambda": 9.6,
+      "mu": 1.0,
+      "servers": 10,
+      "capacity": null,
+      "service": null
+     },
+     "changes": [
+      {
+       "field": "lambda",
+       "from_value": 8.0,
+       "to_value": 9.6
+      }
+     ],
+     "alerts": [
+      {
+       "code": "at_risk",
+       "level": "warning",
+       "message": "ρ = 0.96 ≥ 0.9: perto da saturação, a simulação converge devagar e a diferença para o analítico depende de simulation_time e do warm-up."
+      }
+     ],
+     "offered_utilization": 0.96,
+     "analytic_exact": true,
+     "metrics": {
+      "rho": {
+       "analytic": 0.96,
+       "simulation": {
+        "mean": 0.9558270331264952,
+        "std": 0.00804717308762435,
+        "ci_low": 0.9500704322847219,
+        "ci_high": 0.9615836339682685,
+        "n": 10
+       },
+       "diff": {
+        "mean": 0.15903822984133206,
+        "std": 0.004172603513379155,
+        "ci_low": 0.15605332910215883,
+        "ci_high": 0.1620231305805053,
+        "n": 10
+       },
+       "relative_change": 0.1995989767747951,
+       "verdict": "higher",
+       "analytic_diff": 0.15999999999999992,
+       "analytic_relative_change": 0.1999999999999999,
+       "analytic_diff_in_ci": true
+      },
+      "L": {
+       "analytic": 30.21792825632317,
+       "simulation": {
+        "mean": 27.59114126334456,
+        "std": 5.26699989002907,
+        "ci_low": 23.823356518265534,
+        "ci_high": 31.358926008423587,
+        "n": 10
+       },
+       "diff": {
+        "mean": 18.08623167995203,
+        "std": 5.1357900412209565,
+        "ci_low": 14.412308806349253,
+        "ci_high": 21.760154553554806,
+        "n": 10
+       },
+       "relative_change": 1.902830481581143,
+       "verdict": "higher",
+       "analytic_diff": 20.581207653137394,
+       "analytic_relative_change": 2.135706585322554,
+       "analytic_diff_in_ci": true
+      },
+      "Lq": {
+       "analytic": 20.61792825632317,
+       "simulation": {
+        "mean": 18.03287093207954,
+        "std": 5.2066679981284185,
+        "ci_low": 14.30824502252192,
+        "ci_high": 21.75749684163716,
+        "n": 10
+       },
+       "diff": {
+        "mean": 16.49584938153866,
+        "std": 5.112401716578847,
+        "ci_low": 12.838657507487703,
+        "ci_high": 20.15304125558962,
+        "n": 10
+       },
+       "relative_change": 10.732347490985884,
+       "verdict": "higher",
+       "analytic_diff": 18.981207653137396,
+       "analytic_relative_change": 11.59709703427186,
+       "analytic_diff_in_ci": true
+      },
+      "W": {
+       "analytic": 3.147700860033664,
+       "simulation": {
+        "mean": 2.8741899870914525,
+        "std": 0.5424254286014087,
+        "ci_low": 2.486162210767337,
+        "ci_high": 3.262217763415568,
+        "n": 10
+       },
+       "diff": {
+        "mean": 1.6831697650593722,
+        "std": 0.5261621585413482,
+        "ci_low": 1.306776031286387,
+        "ci_high": 2.0595634988323575,
+        "n": 10
+       },
+       "relative_change": 1.4132167816492671,
+       "verdict": "higher",
+       "analytic_diff": 1.9431107846354418,
+       "analytic_relative_change": 1.6130888211021284,
+       "analytic_diff_in_ci": true
+      },
+      "Wq": {
+       "analytic": 2.147700860033664,
+       "simulation": {
+        "mean": 1.8773121711092866,
+        "std": 0.5383173225793264,
+        "ci_low": 1.4922231567985276,
+        "ci_high": 2.2624011854200456,
+        "n": 10
+       },
+       "diff": {
+        "mean": 1.6845762529090187,
+        "std": 0.5262789148081343,
+        "ci_low": 1.3080989967342727,
+        "ci_high": 2.0610535090837647,
+        "n": 10
+       },
+       "relative_change": 8.740333761549351,
+       "verdict": "higher",
+       "analytic_diff": 1.9431107846354418,
+       "analytic_relative_change": 9.497580861893217,
+       "analytic_diff_in_ci": true
+      },
+      "p0": {
+       "analytic": 1.8756183638349056e-05,
+       "simulation": {
+        "mean": 1.3159435994228524e-05,
+        "std": 3.058444243444222e-05,
+        "ci_low": -8.719356116511967e-06,
+        "ci_high": 3.5038228104969015e-05,
+        "n": 10
+       },
+       "diff": {
+        "mean": -0.00026421202647514076,
+        "std": 0.000168332032475674,
+        "ci_low": -0.00038462950840269233,
+        "ci_high": -0.0001437945445475892,
+        "n": 10
+       },
+       "relative_change": -0.952556633342618,
+       "verdict": "lower",
+       "analytic_diff": -0.0002578155020353456,
+       "analytic_relative_change": -0.9321832833586661,
+       "analytic_diff_in_ci": true
+      },
+      "throughput": {
+       "analytic": 9.6,
+       "simulation": {
+        "mean": 9.582263157894737,
+        "std": 0.06606471080810249,
+        "ci_low": 9.535003310777206,
+        "ci_high": 9.629523005012267,
+        "n": 10
+       },
+       "diff": {
+        "mean": 1.6033157894736838,
+        "std": 0.031046237819309735,
+        "ci_low": 1.581106648845233,
+        "ci_high": 1.6255249301021346,
+        "n": 10
+       },
+       "relative_change": 0.20094327176781,
+       "verdict": "higher",
+       "analytic_diff": 1.5999999999999996,
+       "analytic_relative_change": 0.19999999999999996,
+       "analytic_diff_in_ci": true
+      },
+      "p_wait": {
+       "analytic": 0.8590803440134662,
+       "simulation": {
+        "mean": 0.8456259619002523,
+        "std": 0.029961981754152427,
+        "ci_low": 0.8241924513358523,
+        "ci_high": 0.8670594724646523,
+        "n": 10
+       },
+       "diff": {
+        "mean": 0.44859985154687587,
+        "std": 0.02245145439524149,
+        "ci_low": 0.43253904859615444,
+        "ci_high": 0.4646606544975973,
+        "n": 10
+       },
+       "relative_change": 1.1299001245726525,
+       "verdict": "higher",
+       "analytic_diff": 0.4499001932170227,
+       "analytic_relative_change": 1.0995161723786457,
+       "analytic_diff_in_ci": true
+      },
+      "p_block": {
+       "analytic": 0.0,
+       "simulation": {
+        "mean": 0.0,
+        "std": 0.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "n": 10
+       },
+       "diff": {
+        "mean": 0.0,
+        "std": 0.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "n": 10
+       },
+       "relative_change": null,
+       "verdict": "inconclusive",
+       "analytic_diff": 0.0,
+       "analytic_relative_change": null,
+       "analytic_diff_in_ci": true
+      }
+     }
+    },
+    {
+     "index": 2,
+     "role": "scenario",
+     "name": "+1 servidor",
+     "model": "mmc",
+     "model_label": "M/M/c",
+     "status": "ok",
+     "message": null,
+     "parameters": {
+      "model": "mmc",
+      "lambda": 8.0,
+      "mu": 1.0,
+      "servers": 11,
+      "capacity": null,
+      "service": null
+     },
+     "changes": [
+      {
+       "field": "servers",
+       "from_value": 10,
+       "to_value": 11
+      }
+     ],
+     "alerts": [],
+     "offered_utilization": 0.7272727272727273,
+     "analytic_exact": true,
+     "metrics": {
+      "rho": {
+       "analytic": 0.7272727272727273,
+       "simulation": {
+        "mean": 0.7243475252922826,
+        "std": 0.006872608768222857,
+        "ci_low": 0.7194311571478998,
+        "ci_high": 0.7292638934366654,
+        "n": 10
+       },
+       "diff": {
+        "mean": -0.07244127799288048,
+        "std": 0.000661214749690758,
+        "ci_low": -0.07291428253040143,
+        "ci_high": -0.07196827345535954,
+        "n": 10
+       },
+       "relative_change": -0.0909165360936359,
+       "verdict": "lower",
+       "analytic_diff": -0.07272727272727275,
+       "analytic_relative_change": -0.09090909090909094,
+       "analytic_diff_in_ci": true
+      },
+      "L": {
+       "analytic": 8.653221136153537,
+       "simulation": {
+        "mean": 8.590876434912916,
+        "std": 0.16123273972272253,
+        "ci_low": 8.475537481083697,
+        "ci_high": 8.706215388742136,
+        "n": 10
+       },
+       "diff": {
+        "mean": -0.9140331484796157,
+        "std": 0.10614651561133176,
+        "ci_low": -0.9899657914669049,
+        "ci_high": -0.8381005054923265,
+        "n": 10
+       },
+       "relative_change": -0.09616431807796065,
+       "verdict": "lower",
+       "analytic_diff": -0.9834994670322388,
+       "analytic_relative_change": -0.10205748485715219,
+       "analytic_diff_in_ci": true
+      },
+      "Lq": {
+       "analytic": 0.6532211361535362,
+       "simulation": {
+        "mean": 0.6230536566978139,
+        "std": 0.10189023141416473,
+        "ci_low": 0.550165776004742,
+        "ci_high": 0.6959415373908857,
+        "n": 10
+       },
+       "diff": {
+        "mean": -0.9139678938430675,
+        "std": 0.10644952575488746,
+        "ci_low": -0.9901172972291284,
+        "ci_high": -0.8378184904570066,
+        "n": 10
+       },
+       "relative_change": -0.5946357053493753,
+       "verdict": "lower",
+       "analytic_diff": -0.9834994670322385,
+       "analytic_relative_change": -0.6008963687008755,
+       "analytic_diff_in_ci": true
+      },
+      "W": {
+       "analytic": 1.081652642019192,
+       "simulation": {
+        "mean": 1.0764629091371876,
+        "std": 0.023844128495015948,
+        "ci_low": 1.059405847151426,
+        "ci_high": 1.093519971122949,
+        "n": 10
+       },
+       "diff": {
+        "mean": -0.11455731289489306,
+        "std": 0.013449349111714208,
+        "ci_low": -0.12417839766276824,
+        "ci_high": -0.10493622812701787,
+        "n": 10
+       },
+       "relative_change": -0.09618418795563273,
+       "verdict": "lower",
+       "analytic_diff": -0.12293743337902985,
+       "analytic_relative_change": -0.10205748485715219,
+       "analytic_diff_in_ci": true
+      },
+      "Wq": {
+       "analytic": 0.08165264201919202,
+       "simulation": {
+        "mean": 0.07816600234423973,
+        "std": 0.013146456628424293,
+        "ci_low": 0.0687615938060526,
+        "ci_high": 0.08757041088242687,
+        "n": 10
+       },
+       "diff": {
+        "mean": -0.11456991585602853,
+        "std": 0.01347003982305405,
+        "ci_low": -0.12420580186715012,
+        "ci_high": -0.10493402984490695,
+        "n": 10
+       },
+       "relative_change": -0.5944398788033951,
+       "verdict": "lower",
+       "analytic_diff": -0.1229374333790298,
+       "analytic_relative_change": -0.6008963687008755,
+       "analytic_diff_in_ci": true
+      },
+      "p0": {
+       "analytic": 0.0003104458989381329,
+       "simulation": {
+        "mean": 0.0002898036891595433,
+        "std": 0.00016822821291356726,
+        "ci_low": 0.00016946047527271958,
+        "ci_high": 0.000410146903046367,
+        "n": 10
+       },
+       "diff": {
+        "mean": 1.2432226690173979e-05,
+        "std": 2.2819334247645708e-05,
+        "ci_low": -3.8917416535322795e-06,
+        "ci_high": 2.8756195033880238e-05,
+        "n": 10
+       },
+       "relative_change": 0.04482157818072901,
+       "verdict": "inconclusive",
+       "analytic_diff": 3.387421326443826e-05,
+       "analytic_relative_change": 0.12247896302878888,
+       "analytic_diff_in_ci": false
+      },
+      "throughput": {
+       "analytic": 8.0,
+       "simulation": {
+        "mean": 7.978947368421052,
+        "std": 0.06196882624582313,
+        "ci_low": 7.934617540611206,
+        "ci_high": 8.023277196230897,
+        "n": 10
+       },
+       "diff": {
+        "mean": -8.881784197001253e-17,
+        "std": 0.0009924305700864799,
+        "ci_low": -0.0007099420620078559,
+        "ci_high": 0.0007099420620076783,
+        "n": 10
+       },
+       "relative_change": -1.1131523729750911e-17,
+       "verdict": "inconclusive",
+       "analytic_diff": 0.0,
+       "analytic_relative_change": 0.0,
+       "analytic_diff_in_ci": true
+      },
+      "p_wait": {
+       "analytic": 0.24495792605757605,
+       "simulation": {
+        "mean": 0.2357122896116956,
+        "std": 0.013000267670701098,
+        "ci_low": 0.2264124583539924,
+        "ci_high": 0.2450121208693988,
+        "n": 10
+       },
+       "diff": {
+        "mean": -0.16131382074168094,
+        "std": 0.007738423117991452,
+        "ci_low": -0.16684955516045916,
+        "ci_high": -0.15577808632290271,
+        "n": 10
+       },
+       "relative_change": -0.40630531981411033,
+       "verdict": "lower",
+       "analytic_diff": -0.1642222247388675,
+       "analytic_relative_change": -0.401344553051313,
+       "analytic_diff_in_ci": true
+      },
+      "p_block": {
+       "analytic": 0.0,
+       "simulation": {
+        "mean": 0.0,
+        "std": 0.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "n": 10
+       },
+       "diff": {
+        "mean": 0.0,
+        "std": 0.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "n": 10
+       },
+       "relative_change": null,
+       "verdict": "inconclusive",
+       "analytic_diff": 0.0,
+       "analytic_relative_change": null,
+       "analytic_diff_in_ci": true
+      }
+     }
+    },
+    {
+     "index": 3,
+     "role": "scenario",
+     "name": "Sobrecarga",
+     "model": "mmc",
+     "model_label": "M/M/c",
+     "status": "unstable",
+     "message": "O modelo não está em condição estável. Para M/M/c, é necessário que λ < c·μ.",
+     "parameters": {
+      "model": "mmc",
+      "lambda": 12.0,
+      "mu": 1.0,
+      "servers": 10,
+      "capacity": null,
+      "service": null
+     },
+     "changes": [
+      {
+       "field": "lambda",
+       "from_value": 8.0,
+       "to_value": 12.0
+      }
+     ],
+     "alerts": [
+      {
+       "code": "unstable",
+       "level": "error",
+       "message": "ρ = 1.2 ≥ 1: com fila ilimitada o sistema não atinge regime estacionário. O cenário não foi simulado e não tem valores analíticos."
+      }
+     ],
+     "offered_utilization": 1.2,
+     "analytic_exact": false,
+     "metrics": {}
+    }
+   ]
+  }
+ }
+]

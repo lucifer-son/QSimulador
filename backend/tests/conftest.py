@@ -45,3 +45,25 @@ def database(request) -> Database:
     with engine.begin() as conn:
         conn.execute(text("DROP TABLE IF EXISTS saved_records, alembic_version"))
     engine.dispose()
+
+
+# ---------- testes lentos (marcados com @pytest.mark.slow) ----------
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--runslow", action="store_true", default=False,
+        help="Roda também os testes marcados como lentos (ex.: cobertura do IC pareado, ~1 min).",
+    )
+
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "slow: teste estatístico lento; só roda com --runslow")
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--runslow"):
+        return
+    skip_slow = pytest.mark.skip(reason="teste lento: use --runslow para rodar")
+    for item in items:
+        if "slow" in item.keywords:
+            item.add_marker(skip_slow)

@@ -49,6 +49,7 @@ flowchart LR
         UC11[UC-11 Modelar serviço geral M/G/1]
         UC12[UC-12 Dimensionar perda e M/G/c]
         UC13[UC-13 Dimensionar por nível de serviço e custo]
+        UC14[UC-14 Comparar cenários com IC pareado]
     end
 
     U --> UC01
@@ -62,6 +63,10 @@ flowchart LR
     U --> UC09
     U --> UC13
     A --> UC13
+    U --> UC14
+    A --> UC14
+    UC14 -. inclui .-> UC03
+    UC14 -. inclui .-> UC10
     U --> UC11
     A --> UC11
     A --> UC02
@@ -92,6 +97,7 @@ flowchart LR
 | UC-11 | Modelar serviço geral (M/G/1 e M/D/1) | Usuário, Cliente de API | ✅ |
 | UC-12 | Dimensionar sistema de perda (Erlang-B) e modelar M/G/c | Usuário, Cliente de API | ✅ |
 | UC-13 | Dimensionar por nível de serviço e custo | Usuário, Cliente de API | ✅ |
+| UC-14 | Comparar cenários com intervalo de confiança pareado | Usuário, Cliente de API | ✅ |
 
 > **Conferência de 08/10/2026:** os casos de uso implementados (UC-01 a UC-06 e UC-10) foram verificados executando o sistema. As divergências encontradas na auditoria em UC-02 (P0 não retornado), UC-03 (a simulação aceitava 1 réplica) e UC-04 (P0 simulado) foram fechadas. Os detalhes estão na seção 11 de [`requisitos-do-sistema.md`](requisitos-do-sistema.md).
 
@@ -389,6 +395,33 @@ flowchart LR
 
 ---
 
+### UC-14 — Comparar cenários com intervalo de confiança pareado ✅
+
+| Campo | Descrição |
+|-------|-----------|
+| **Ator principal** | Usuário, Cliente de API |
+| **Objetivo** | Saber se uma mudança (mais carga, mais um servidor, outro modelo, serviço mais variável) altera de verdade uma métrica, com rigor estatístico, e não só na média de uma rodada. |
+| **Pré-condições** | Modelo e valores do Laboratório (a base) e a simulação do Laboratório (T, réplicas, warm-up, semente); de 1 a 10 cenários com as sobrescritas desejadas. |
+| **Pós-condições** | Para cada cenário: média ± IC, analítico, diferença contra a base com IC pareado, variação relativa e veredito; alertas de instável e de risco; o resultado pode ser exportado em CSV e salvo no histórico como experimento do tipo `scenarios`. |
+
+**Fluxo principal**
+1. O usuário abre a aba Cenários, que herda o modelo, os valores e a simulação do Laboratório (a base).
+2. Monta os cenários: nome e, em cada campo, o valor absoluto ou a variação em relação à base (por exemplo, λ +20%, c +1).
+3. Executa todos. O sistema simula a base e cada cenário com as mesmas sementes (números aleatórios comuns) e mostra, conforme cada um termina, a linha na tabela e o progresso.
+4. A tabela traz, para a métrica escolhida, a média ± IC, o analítico, a diferença com o IC pareado, a variação relativa e o veredito (aumento ou redução significativos, ou inconclusivo), e o gráfico mostra as diferenças com as barras de IC.
+5. O usuário exporta o CSV ou salva a comparação no histórico.
+
+**Fluxos alternativos**
+- **Cenário instável (ρ ≥ 1, fila ilimitada):** não é simulado; sai destacado com o aviso. Nos modelos de capacidade finita não existe instabilidade.
+- **Cenário em risco (ρ ≥ 0,9):** é simulado, com o aviso de que o resultado de regime depende de T e do warm-up.
+- **Vários cenários:** os ICs são individuais, e a tela avisa. A correção de Bonferroni (opcional) divide α pelo número de cenários.
+- **Troca de modelo:** as métricas que o modelo escolhido não define aparecem como “—”. Ao trocar de M/G para um modelo markoviano, o serviço vira exponencial com a mesma média.
+- **Base instável, mais de 10 cenários, R acima de 100, comparação grande demais ou sobrescrita inválida (ex.: CV em modelo markoviano):** erro identificando o campo.
+- **Cancelamento:** fechar a conexão interrompe o que falta; o que já terminou fica na tela até a nova execução.
+
+
+---
+
 ## 5. Rastreabilidade
 
 | Caso de uso | Fase do roadmap | Componentes principais |
@@ -404,6 +437,7 @@ flowchart LR
 | UC-11 | Fase 9 — Serviço geral | Módulo de distribuições de serviço, M/G/1 analítico e simulado |
 | UC-12 | Fase 10 — Erlang-B e M/G/c | Erlang-B (recursão estável), dimensionamento, Allen–Cunneen, simulação reaproveitando o motor do M/M/c/K |
 | UC-13 | Fase 11 — Dimensionamento | Módulo de dimensionamento (Erlang C, M/M/c/K exato, cauda do M/G/c), rotas `/api/sizing`, aba Dimensionamento |
+| UC-14 | Fase 12 — Comparação de cenários | Módulo de cenários (números aleatórios comuns, IC t pareado, veredito), rota `/api/scenarios` em NDJSON, exportação CSV, aba Cenários |
 
 ---
 

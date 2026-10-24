@@ -54,17 +54,13 @@ export class ApiError extends Error {
 const BASE_URL: string = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
 
 export async function send<T>(path: string, init: RequestInit, signal?: AbortSignal): Promise<T> {
-  let response: Response;
-  try {
-    response = await fetch(`${BASE_URL}${path}`, { ...init, signal });
-  } catch (error) {
-    const aborted = signal?.aborted || (error instanceof DOMException && error.name === "AbortError");
-    if (aborted) throw new ApiError("aborted", "Execução cancelada.");
-    throw new ApiError("network", "Não foi possível conectar à API. Confira se o servidor está no ar.");
-  }
-
+  const response = await fetchApi(path, init, signal);
   if (response.ok) return (response.status === 204 ? undefined : await response.json()) as T;
+  throw await apiErrorFrom(response);
+}
 
+/** Converte uma resposta de erro da API (422, 413, 404, 409, 503...) em ApiError. */
+export async function apiErrorFrom(response: Response): Promise<ApiError> {
   let payload: Partial<ErrorResponse> | null = null;
   try {
     payload = (await response.json()) as Partial<ErrorResponse>;
@@ -78,16 +74,27 @@ export async function send<T>(path: string, init: RequestInit, signal?: AbortSig
     && (API_CODES.includes(code) || (RECORDS_CODES as string[]).includes(code))
     && typeof payload?.message === "string"
   ) {
-    throw new ApiError(code, payload.message, payload.fields ?? undefined);
+    return new ApiError(code, payload.message, payload.fields ?? undefined);
   }
   // Histórico: 404 (não existe), 409 (limite de registros) e 503 (sem banco) também trazem {code, message}.
   if (
     [404, 409, 503].includes(response.status) && code && (RECORDS_CODES as string[]).includes(code)
     && typeof payload?.message === "string"
   ) {
-    throw new ApiError(code, payload.message);
+    return new ApiError(code, payload.message);
   }
-  throw new ApiError("http", `A API respondeu com erro ${response.status}.`);
+  return new ApiError("http", `A API respondeu com erro ${response.status}.`);
+}
+
+/** fetch que traduz falha de rede e cancelamento em ApiError (usado também pelos envios que não são JSON). */
+export async function fetchApi(path: string, init: RequestInit, signal?: AbortSignal): Promise<Response> {
+  try {
+    return await fetch(`${BASE_URL}${path}`, { ...init, signal });
+  } catch (error) {
+    const aborted = signal?.aborted || (error instanceof DOMException && error.name === "AbortError");
+    if (aborted) throw new ApiError("aborted", "Execução cancelada.");
+    throw new ApiError("network", "Não foi possível conectar à API. Confira se o servidor está no ar.");
+  }
 }
 
 export const postJson = <T>(path: string, body: unknown, signal?: AbortSignal): Promise<T> =>

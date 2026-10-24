@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { fieldErrorsFromApi } from "./api/fieldErrors";
 import { ParametersPanel } from "./components/ParametersPanel";
 import { ResultsPanel } from "./components/ResultsPanel";
+import { ScenariosTab } from "./components/ScenariosTab";
 import { SizingTab } from "./components/SizingTab";
 import { ExperimentTab } from "./components/ExperimentTab";
 import { HistoryTab } from "./components/HistoryTab";
@@ -42,9 +43,10 @@ export default function App() {
   const [apiErrors, setApiErrors] = useState<FieldErrors>({});
   const [theme, setTheme] = useState<Theme>(initialTheme);
   
-  const [activeTab, setActiveTab] = useState<"laboratorio" | "experimentos" | "dimensionamento" | "dados" | "historico">("laboratorio");
+  const [activeTab, setActiveTab] = useState<"laboratorio" | "experimentos" | "cenarios" | "dimensionamento" | "dados" | "historico">("laboratorio");
   // Os experimentos só são montados na primeira visita; depois ficam montados para manter os resultados.
   const [experimentsOpened, setExperimentsOpened] = useState(false);
+  const [scenariosOpened, setScenariosOpened] = useState(false);
   const [sizingOpened, setSizingOpened] = useState(false);
   const [realDataOpened, setRealDataOpened] = useState(false);
 
@@ -150,6 +152,14 @@ export default function App() {
           <button
             type="button"
             className="nav-item"
+            aria-current={activeTab === "cenarios" ? "page" : undefined}
+            onClick={() => { setActiveTab("cenarios"); setScenariosOpened(true); }}
+          >
+            Cenários
+          </button>
+          <button
+            type="button"
+            className="nav-item"
             aria-current={activeTab === "dimensionamento" ? "page" : undefined}
             onClick={() => { setActiveTab("dimensionamento"); setSizingOpened(true); }}
           >
@@ -201,6 +211,12 @@ export default function App() {
       {experimentsOpened && (
         <main className="layout layout-wide" hidden={activeTab !== "experimentos"}>
           <ExperimentTab model={model} system={systems[model]} sim={sim} />
+        </main>
+      )}
+
+      {scenariosOpened && (
+        <main className="layout layout-wide" hidden={activeTab !== "cenarios"}>
+          <ScenariosTab model={model} system={systems[model]} sim={sim} active={activeTab === "cenarios"} />
         </main>
       )}
 

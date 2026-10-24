@@ -1,0 +1,10 @@
+{
+ "code": "invalid_parameter",
+ "message": "capacity é obrigatório para o modelo M/M/c/K (a base não tem capacidade).",
+ "fields": [
+  {
+   "field": "scenarios[0].capacity",
+   "message": "capacity é obrigatório para o modelo M/M/c/K (a base não tem capacidade)."
+  }
+ ]
+}

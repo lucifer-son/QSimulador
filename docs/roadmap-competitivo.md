@@ -23,7 +23,7 @@ Cada fase foi dimensionada para caber em **um chat de trabalho** (plano, impleme
 | 9 | Serviço geral: M/D/1 e M/G/1 ✅ | L-01, L-02 | M | M1 |
 | 10 | Erlang-B dedicado e M/G/c ✅ | L-03, L-04 | M | M1 |
 | 11 | Dimensionamento, nível de serviço e custo ✅| L-05, L-06 | M | M1 |
-| 12 | Comparação de cenários | L-07 | M | M2 |
+| 12 | Comparação de cenários ✅| L-07 | M | M2 |
 | 13 | Gráficos de distribuição e ajuste de amostras | L-08, L-09 | M | M2 |
 | 14 | Chegadas variáveis (NHPP) e warm-up | L-10, L-11 | M | M2 |
 | 15 | Prioridades e tipos de entidade | L-12 | G | M2 |
@@ -274,7 +274,8 @@ Custo com abandono (Fase 20); dimensionamento por turno (Fase 20).
 | Lacunas | L-07 |
 | Esforço / prioridade | M / Alta |
 | Depende de | Fase 11 (e do mecanismo de experimentos da Fase 6) |
-| Requisitos | RFC-17 a RFC-21 |
+| Status | ✅ Concluída em 23/10/2026 (QSimulador 1.9) |
+| Requisitos | RFC-17 a RFC-21 (oficiais: RF-64 a RF-71; caso de uso UC-14; história US-34) |
 | História | USC-12: como pesquisador, quero comparar configurações alternativas com intervalo de confiança, para saber se a diferença é estatisticamente real |
 
 ### Objetivo
@@ -291,7 +292,9 @@ Comparar cenários nomeados (por exemplo, "λ +20%", "mais 1 servidor") com rigo
 - Analítico ao lado do simulado; marcação de cenário instável (ρ ≥ 1) e em risco (ρ ≥ 0,9).
 - Limite de cenários e de réplicas (RNC-04).
 
-**API (propostas)**: `POST /api/scenarios/compare` (streaming), `GET /api/scenarios/export.csv`.
+**API**: `POST /api/scenarios/compare` (NDJSON, um evento por cenário concluído) e `POST /api/scenarios/export.csv`. A exportação é `POST` porque a lista de cenários não cabe numa requisição `GET`.
+
+**Decisões da implementação**: fluxos separados de chegada e serviço por réplica (serviço sorteado por número do cliente) só no caminho de comparação, sem mudar os resultados das fases anteriores; modelo como sobrescrita (os sete modelos, métricas inexistentes como “—”) e CV/k do serviço nos modelos M/G; correção de Bonferroni opcional (desligada); cenário instável não é simulado; teto de trabalho igual ao dos experimentos.
 
 **Interface**: aba "Cenários" com lista editável, botão de executar todos, tabela com ICs e cores de alerta, exportação em CSV e salvamento no histórico (Fase 8).
 

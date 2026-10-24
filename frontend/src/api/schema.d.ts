@@ -614,6 +614,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/scenarios/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compare Scenarios
+         * @description Compara a base com até 10 cenários, com IC pareado (números aleatórios comuns).
+         *
+         *     Cada réplica usa fluxos independentes de chegada e serviço, as mesmas sementes em todos os cenários.
+         *     A resposta é um NDJSON: `start`, `base`, um `scenario` por cenário concluído (com `completed` e
+         *     `total` para o progresso) e `done` com o resultado completo. Cenário instável (ρ ≥ 1) não é
+         *     simulado: sai com o alerta. Fechar a conexão cancela o que falta.
+         */
+        post: operations["compare_scenarios_api_scenarios_compare_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scenarios/export.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Export Scenarios Csv
+         * @description Refaz a comparação (mesmo corpo, mesma semente: resultado reproduzível) e devolve o CSV.
+         */
+        post: operations["export_scenarios_csv_api_scenarios_export_csv_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/realdata/analyze": {
         parameters: {
             query?: never;
@@ -2611,6 +2656,20 @@ export interface components {
             /** Think Time */
             think_time?: number | null;
         };
+        /** OverrideIn */
+        OverrideIn: {
+            /**
+             * Mode
+             * @description absolute: o valor é o novo valor. relative: λ, μ e CV em % da base (20 = +20%); servers, capacity e k em unidades (1 = um a mais).
+             * @enum {string}
+             */
+            mode: "absolute" | "relative";
+            /**
+             * Value
+             * @description Valor absoluto, ou variação relativa à base.
+             */
+            value: number;
+        };
         /** ParameterOut */
         ParameterOut: {
             /**
@@ -2985,6 +3044,352 @@ export interface components {
             media_type: string;
             /** Content */
             content: string;
+        };
+        /** ScenarioAlertOut */
+        ScenarioAlertOut: {
+            /**
+             * Code
+             * @enum {string}
+             */
+            code: "unstable" | "at_risk" | "approximation";
+            /**
+             * Level
+             * @enum {string}
+             */
+            level: "error" | "warning";
+            /** Message */
+            message: string;
+        };
+        /**
+         * ScenarioBaseIn
+         * @description A configuração do Laboratório (o mesmo que o /api/sizing recebe).
+         */
+        ScenarioBaseIn: {
+            /**
+             * Model
+             * @description Modelo da base.
+             * @enum {string}
+             */
+            model: "mm1" | "mmc" | "mm1k" | "mmck" | "mg1" | "erlangb" | "mgc";
+            /**
+             * Lambda
+             * @description Taxa de chegada λ.
+             */
+            lambda: number;
+            /**
+             * Mu
+             * @description Taxa de serviço μ. Obrigatória, exceto em mg1 e mgc (use `service`).
+             */
+            mu?: number | null;
+            /** @description Serviço do mg1 e do mgc. */
+            service?: components["schemas"]["ServiceSpec"] | null;
+            /**
+             * Servers
+             * @description c. Obrigatório em mmc, mmck, erlangb e mgc.
+             */
+            servers?: number | null;
+            /**
+             * Capacity
+             * @description K. Obrigatório em mm1k e mmck.
+             */
+            capacity?: number | null;
+        };
+        /** ScenarioChangeOut */
+        ScenarioChangeOut: {
+            /** Field */
+            field: string;
+            /** From Value */
+            from_value?: unknown | null;
+            /** To Value */
+            to_value?: unknown | null;
+        };
+        /**
+         * ScenarioEventOut
+         * @description Uma linha do NDJSON. start → base → scenario (um por cenário) → done; error encerra.
+         */
+        ScenarioEventOut: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "start" | "base" | "scenario" | "done" | "error";
+            /**
+             * Total
+             * @description Simulações do pedido (base + cenários), em start, base e scenario.
+             */
+            total?: number | null;
+            /**
+             * Completed
+             * @description Quantas já terminaram (para a barra de progresso).
+             */
+            completed?: number | null;
+            settings?: components["schemas"]["ScenarioSettingsOut"] | null;
+            multiple_comparison?: components["schemas"]["ScenarioMultipleComparisonOut"] | null;
+            scenario?: components["schemas"]["ScenarioRowOut"] | null;
+            /** @description Resultado completo, só em done. */
+            result?: components["schemas"]["ScenariosResultOut"] | null;
+            /** Code */
+            code?: string | null;
+            /** Message */
+            message?: string | null;
+            /** Field */
+            field?: string | null;
+        };
+        /**
+         * ScenarioIn
+         * @description Um cenário: a base com alguns valores trocados. O que não vier fica como na base.
+         */
+        ScenarioIn: {
+            /**
+             * Name
+             * @description Nome exibido (até 60 caracteres). Padrão: Cenário n.
+             */
+            name?: string | null;
+            /**
+             * Model
+             * @description Troca o modelo. M/M/1, M/M/1/K e M/G/1 ficam com c = 1; no Erlang-B, K = c.
+             */
+            model?: ("mm1" | "mmc" | "mm1k" | "mmck" | "mg1" | "erlangb" | "mgc") | null;
+            /** @description λ do cenário. */
+            lambda?: components["schemas"]["OverrideIn"] | null;
+            /** @description μ do cenário. Nos modelos M/G reescala o serviço preservando o CV. */
+            mu?: components["schemas"]["OverrideIn"] | null;
+            /** @description c do cenário (modelos com mais de um servidor). */
+            servers?: components["schemas"]["OverrideIn"] | null;
+            /** @description K do cenário (M/M/1/K e M/M/c/K). */
+            capacity?: components["schemas"]["OverrideIn"] | null;
+            /** @description CV do serviço, mantendo a média (M/G com lognormal ou Weibull). */
+            cv?: components["schemas"]["OverrideIn"] | null;
+            /** @description Etapas k do serviço Erlang-k, mantendo a média (M/G). */
+            k?: components["schemas"]["OverrideIn"] | null;
+            /** @description Troca o serviço inteiro (só M/G/1 e M/G/c). */
+            service?: components["schemas"]["ServiceSpec"] | null;
+        };
+        /** ScenarioMetricOut */
+        ScenarioMetricOut: {
+            /**
+             * Analytic
+             * @description Valor analítico; None se o modelo não o tem ou o cenário é instável.
+             */
+            analytic: number | null;
+            /** @description Média e IC t entre as réplicas. */
+            simulation: components["schemas"]["ScenarioSummaryOut"] | null;
+            /** @description Diferença pareada contra a base (média e IC t sobre as d_i). */
+            diff: components["schemas"]["ScenarioSummaryOut"] | null;
+            /**
+             * Relative Change
+             * @description Diferença média / média simulada da base.
+             */
+            relative_change: number | null;
+            /**
+             * Verdict
+             * @description higher/lower: o IC da diferença exclui 0. inconclusive: contém 0 (não significa igual).
+             */
+            verdict: ("higher" | "lower" | "inconclusive") | null;
+            /** Analytic Diff */
+            analytic_diff: number | null;
+            /** Analytic Relative Change */
+            analytic_relative_change: number | null;
+            /**
+             * Analytic Diff In Ci
+             * @description Se a diferença analítica está dentro do IC pareado.
+             */
+            analytic_diff_in_ci: boolean | null;
+        };
+        /** ScenarioMultipleComparisonOut */
+        ScenarioMultipleComparisonOut: {
+            /**
+             * Correction
+             * @enum {string}
+             */
+            correction: "none" | "bonferroni";
+            /** Comparisons */
+            comparisons: number;
+            /** Confidence Level */
+            confidence_level: number;
+            /**
+             * Individual Intervals
+             * @description True quando há mais de um cenário e os ICs não foram corrigidos.
+             */
+            individual_intervals: boolean;
+            /** Note */
+            note: string;
+        };
+        /** ScenarioParametersOut */
+        ScenarioParametersOut: {
+            /**
+             * Model
+             * @enum {string}
+             */
+            model: "mm1" | "mmc" | "mm1k" | "mmck" | "mg1" | "erlangb" | "mgc";
+            /** Lambda */
+            lambda: number;
+            /** Mu */
+            mu: number;
+            /** Servers */
+            servers: number;
+            /** Capacity */
+            capacity?: number | null;
+            service?: components["schemas"]["ServiceOut"] | null;
+        };
+        /** ScenarioRowOut */
+        ScenarioRowOut: {
+            /**
+             * Index
+             * @description 0 é a base; os cenários seguem a ordem do pedido (1, 2, ...).
+             */
+            index: number;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "base" | "scenario";
+            /** Name */
+            name: string;
+            /**
+             * Model
+             * @enum {string}
+             */
+            model: "mm1" | "mmc" | "mm1k" | "mmck" | "mg1" | "erlangb" | "mgc";
+            /** Model Label */
+            model_label: string;
+            /**
+             * Status
+             * @description unstable: não simulado. error: amostra insuficiente.
+             * @enum {string}
+             */
+            status: "ok" | "unstable" | "error";
+            /** Message */
+            message?: string | null;
+            /** @description Valores já resolvidos. */
+            parameters: components["schemas"]["ScenarioParametersOut"];
+            /** Changes */
+            changes: components["schemas"]["ScenarioChangeOut"][];
+            /** Alerts */
+            alerts: components["schemas"]["ScenarioAlertOut"][];
+            /** Offered Utilization */
+            offered_utilization: number;
+            /** Analytic Exact */
+            analytic_exact: boolean;
+            /** Metrics */
+            metrics: {
+                [key: string]: components["schemas"]["ScenarioMetricOut"];
+            };
+        };
+        /** ScenarioSettingsOut */
+        ScenarioSettingsOut: {
+            /** Simulation Time */
+            simulation_time: number;
+            /** Warmup Time */
+            warmup_time: number;
+            /** Replications */
+            replications: number;
+            /** Seed */
+            seed: number;
+            /** Confidence Level */
+            confidence_level: number;
+            /** Bonferroni */
+            bonferroni: boolean;
+            /** Diff Confidence Level */
+            diff_confidence_level: number;
+            /** Simulated Scenarios */
+            simulated_scenarios: number;
+            /** Expected Arrivals */
+            expected_arrivals: number;
+        };
+        /** ScenarioSummaryOut */
+        ScenarioSummaryOut: {
+            /** Mean */
+            mean: number;
+            /** Std */
+            std?: number | null;
+            /** Ci Low */
+            ci_low?: number | null;
+            /** Ci High */
+            ci_high?: number | null;
+            /** N */
+            n: number;
+        };
+        /**
+         * ScenariosRequest
+         * @example {
+         *       "base": {
+         *         "lambda": 8,
+         *         "model": "mmc",
+         *         "mu": 1,
+         *         "servers": 10
+         *       },
+         *       "replications": 10,
+         *       "scenarios": [
+         *         {
+         *           "lambda": {
+         *             "mode": "relative",
+         *             "value": 20
+         *           },
+         *           "name": "Pico (+20% de λ)"
+         *         },
+         *         {
+         *           "name": "Mais um servidor",
+         *           "servers": {
+         *             "mode": "relative",
+         *             "value": 1
+         *           }
+         *         }
+         *       ],
+         *       "seed": 2026,
+         *       "simulation_time": 2000,
+         *       "warmup_time": 100
+         *     }
+         */
+        ScenariosRequest: {
+            base: components["schemas"]["ScenarioBaseIn"];
+            /**
+             * Scenarios
+             * @description De 1 a 10 cenários, além da base.
+             */
+            scenarios: components["schemas"]["ScenarioIn"][];
+            /**
+             * Simulation Time
+             * @description Duração T de cada réplica (a mesma em todos os cenários).
+             */
+            simulation_time: number;
+            /**
+             * Replications
+             * @description Réplicas R por cenário (2 a 100), com as mesmas sementes.
+             * @default 10
+             */
+            replications: number;
+            /**
+             * Warmup Time
+             * @description Warm-up descartado no início de cada réplica.
+             * @default 0
+             */
+            warmup_time: number;
+            /**
+             * Seed
+             * @description Semente. Sem ela, uma é sorteada e devolvida (reproduz o resultado).
+             */
+            seed?: number | null;
+            /**
+             * Confidence Level
+             * @description Nível dos intervalos de confiança.
+             * @default 0.95
+             */
+            confidence_level: number;
+            /**
+             * Bonferroni
+             * @description Corrige os ICs das diferenças pelo número de cenários (α/m).
+             * @default false
+             */
+            bonferroni: boolean;
+        };
+        /** ScenariosResultOut */
+        ScenariosResultOut: {
+            settings: components["schemas"]["ScenarioSettingsOut"];
+            multiple_comparison: components["schemas"]["ScenarioMultipleComparisonOut"];
+            base: components["schemas"]["ScenarioRowOut"];
+            /** Scenarios */
+            scenarios: components["schemas"]["ScenarioRowOut"][];
         };
         /**
          * SensitivityRequest
@@ -5200,6 +5605,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SizingCostResponse"];
+                };
+            };
+            /** @description Parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    compare_scenarios_api_scenarios_compare_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScenariosRequest"];
+            };
+        };
+        responses: {
+            /** @description Uma linha JSON por evento (application/x-ndjson). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/x-ndjson": components["schemas"]["ScenarioEventOut"];
+                };
+            };
+            /** @description Parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/x-ndjson": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    export_scenarios_csv_api_scenarios_export_csv_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScenariosRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": unknown;
                 };
             };
             /** @description Parâmetros inválidos */

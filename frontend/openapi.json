@@ -1246,6 +1246,87 @@
         }
       }
     },
+    "/api/scenarios/compare": {
+      "post": {
+        "tags": [
+          "Cenários"
+        ],
+        "summary": "Compare Scenarios",
+        "description": "Compara a base com até 10 cenários, com IC pareado (números aleatórios comuns).\n\nCada réplica usa fluxos independentes de chegada e serviço, as mesmas sementes em todos os cenários.\nA resposta é um NDJSON: `start`, `base`, um `scenario` por cenário concluído (com `completed` e\n`total` para o progresso) e `done` com o resultado completo. Cenário instável (ρ ≥ 1) não é\nsimulado: sai com o alerta. Fechar a conexão cancela o que falta.",
+        "operationId": "compare_scenarios_api_scenarios_compare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScenariosRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Uma linha JSON por evento (application/x-ndjson).",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioEventOut",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scenarios/export.csv": {
+      "post": {
+        "tags": [
+          "Cenários"
+        ],
+        "summary": "Export Scenarios Csv",
+        "description": "Refaz a comparação (mesmo corpo, mesma semente: resultado reproduzível) e devolve o CSV.",
+        "operationId": "export_scenarios_csv_api_scenarios_export_csv_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScenariosRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/csv": {}
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/realdata/analyze": {
       "post": {
         "tags": [
@@ -5734,6 +5815,30 @@
         ],
         "title": "ModelPickOut"
       },
+      "OverrideIn": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "absolute",
+              "relative"
+            ],
+            "title": "Mode",
+            "description": "absolute: o valor é o novo valor. relative: λ, μ e CV em % da base (20 = +20%); servers, capacity e k em unidades (1 = um a mais)."
+          },
+          "value": {
+            "type": "number",
+            "title": "Value",
+            "description": "Valor absoluto, ou variação relativa à base."
+          }
+        },
+        "type": "object",
+        "required": [
+          "mode",
+          "value"
+        ],
+        "title": "OverrideIn"
+      },
       "ParameterOut": {
         "properties": {
           "name": {
@@ -6631,6 +6736,924 @@
           "content"
         ],
         "title": "ReportResponse"
+      },
+      "ScenarioAlertOut": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "unstable",
+              "at_risk",
+              "approximation"
+            ],
+            "title": "Code"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "error",
+              "warning"
+            ],
+            "title": "Level"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "level",
+          "message"
+        ],
+        "title": "ScenarioAlertOut"
+      },
+      "ScenarioBaseIn": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "enum": [
+              "mm1",
+              "mmc",
+              "mm1k",
+              "mmck",
+              "mg1",
+              "erlangb",
+              "mgc"
+            ],
+            "title": "Model",
+            "description": "Modelo da base."
+          },
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa de chegada λ."
+          },
+          "mu": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mu",
+            "description": "Taxa de serviço μ. Obrigatória, exceto em mg1 e mgc (use `service`)."
+          },
+          "service": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceSpec"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Serviço do mg1 e do mgc."
+          },
+          "servers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Servers",
+            "description": "c. Obrigatório em mmc, mmck, erlangb e mgc."
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity",
+            "description": "K. Obrigatório em mm1k e mmck."
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "lambda"
+        ],
+        "title": "ScenarioBaseIn",
+        "description": "A configuração do Laboratório (o mesmo que o /api/sizing recebe)."
+      },
+      "ScenarioChangeOut": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "from_value": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Value"
+          },
+          "to_value": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field"
+        ],
+        "title": "ScenarioChangeOut"
+      },
+      "ScenarioEventOut": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "start",
+              "base",
+              "scenario",
+              "done",
+              "error"
+            ],
+            "title": "Type"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total",
+            "description": "Simulações do pedido (base + cenários), em start, base e scenario."
+          },
+          "completed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed",
+            "description": "Quantas já terminaram (para a barra de progresso)."
+          },
+          "settings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioSettingsOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "multiple_comparison": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioMultipleComparisonOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scenario": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioRowOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenariosResultOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Resultado completo, só em done."
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "ScenarioEventOut",
+        "description": "Uma linha do NDJSON. start → base → scenario (um por cenário) → done; error encerra."
+      },
+      "ScenarioIn": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Nome exibido (até 60 caracteres). Padrão: Cenário n."
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "mm1",
+                  "mmc",
+                  "mm1k",
+                  "mmck",
+                  "mg1",
+                  "erlangb",
+                  "mgc"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Troca o modelo. M/M/1, M/M/1/K e M/G/1 ficam com c = 1; no Erlang-B, K = c."
+          },
+          "lambda": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OverrideIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "λ do cenário."
+          },
+          "mu": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OverrideIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "μ do cenário. Nos modelos M/G reescala o serviço preservando o CV."
+          },
+          "servers": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OverrideIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "c do cenário (modelos com mais de um servidor)."
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OverrideIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "K do cenário (M/M/1/K e M/M/c/K)."
+          },
+          "cv": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OverrideIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "CV do serviço, mantendo a média (M/G com lognormal ou Weibull)."
+          },
+          "k": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OverrideIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Etapas k do serviço Erlang-k, mantendo a média (M/G)."
+          },
+          "service": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceSpec"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Troca o serviço inteiro (só M/G/1 e M/G/c)."
+          }
+        },
+        "type": "object",
+        "title": "ScenarioIn",
+        "description": "Um cenário: a base com alguns valores trocados. O que não vier fica como na base."
+      },
+      "ScenarioMetricOut": {
+        "properties": {
+          "analytic": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analytic",
+            "description": "Valor analítico; None se o modelo não o tem ou o cenário é instável."
+          },
+          "simulation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioSummaryOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Média e IC t entre as réplicas."
+          },
+          "diff": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioSummaryOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Diferença pareada contra a base (média e IC t sobre as d_i)."
+          },
+          "relative_change": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relative Change",
+            "description": "Diferença média / média simulada da base."
+          },
+          "verdict": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "higher",
+                  "lower",
+                  "inconclusive"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdict",
+            "description": "higher/lower: o IC da diferença exclui 0. inconclusive: contém 0 (não significa igual)."
+          },
+          "analytic_diff": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analytic Diff"
+          },
+          "analytic_relative_change": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analytic Relative Change"
+          },
+          "analytic_diff_in_ci": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analytic Diff In Ci",
+            "description": "Se a diferença analítica está dentro do IC pareado."
+          }
+        },
+        "type": "object",
+        "required": [
+          "analytic",
+          "simulation",
+          "diff",
+          "relative_change",
+          "verdict",
+          "analytic_diff",
+          "analytic_relative_change",
+          "analytic_diff_in_ci"
+        ],
+        "title": "ScenarioMetricOut"
+      },
+      "ScenarioMultipleComparisonOut": {
+        "properties": {
+          "correction": {
+            "type": "string",
+            "enum": [
+              "none",
+              "bonferroni"
+            ],
+            "title": "Correction"
+          },
+          "comparisons": {
+            "type": "integer",
+            "title": "Comparisons"
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level"
+          },
+          "individual_intervals": {
+            "type": "boolean",
+            "title": "Individual Intervals",
+            "description": "True quando há mais de um cenário e os ICs não foram corrigidos."
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "correction",
+          "comparisons",
+          "confidence_level",
+          "individual_intervals",
+          "note"
+        ],
+        "title": "ScenarioMultipleComparisonOut"
+      },
+      "ScenarioParametersOut": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "enum": [
+              "mm1",
+              "mmc",
+              "mm1k",
+              "mmck",
+              "mg1",
+              "erlangb",
+              "mgc"
+            ],
+            "title": "Model"
+          },
+          "lambda": {
+            "type": "number",
+            "title": "Lambda"
+          },
+          "mu": {
+            "type": "number",
+            "title": "Mu"
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers"
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity"
+          },
+          "service": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "lambda",
+          "mu",
+          "servers"
+        ],
+        "title": "ScenarioParametersOut"
+      },
+      "ScenarioRowOut": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index",
+            "description": "0 é a base; os cenários seguem a ordem do pedido (1, 2, ...)."
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "base",
+              "scenario"
+            ],
+            "title": "Role"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "mm1",
+              "mmc",
+              "mm1k",
+              "mmck",
+              "mg1",
+              "erlangb",
+              "mgc"
+            ],
+            "title": "Model"
+          },
+          "model_label": {
+            "type": "string",
+            "title": "Model Label"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "unstable",
+              "error"
+            ],
+            "title": "Status",
+            "description": "unstable: não simulado. error: amostra insuficiente."
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/ScenarioParametersOut",
+            "description": "Valores já resolvidos."
+          },
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioChangeOut"
+            },
+            "type": "array",
+            "title": "Changes"
+          },
+          "alerts": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioAlertOut"
+            },
+            "type": "array",
+            "title": "Alerts"
+          },
+          "offered_utilization": {
+            "type": "number",
+            "title": "Offered Utilization"
+          },
+          "analytic_exact": {
+            "type": "boolean",
+            "title": "Analytic Exact"
+          },
+          "metrics": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ScenarioMetricOut"
+            },
+            "type": "object",
+            "title": "Metrics"
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "role",
+          "name",
+          "model",
+          "model_label",
+          "status",
+          "parameters",
+          "changes",
+          "alerts",
+          "offered_utilization",
+          "analytic_exact",
+          "metrics"
+        ],
+        "title": "ScenarioRowOut"
+      },
+      "ScenarioSettingsOut": {
+        "properties": {
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time"
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time"
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed"
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level"
+          },
+          "bonferroni": {
+            "type": "boolean",
+            "title": "Bonferroni"
+          },
+          "diff_confidence_level": {
+            "type": "number",
+            "title": "Diff Confidence Level"
+          },
+          "simulated_scenarios": {
+            "type": "integer",
+            "title": "Simulated Scenarios"
+          },
+          "expected_arrivals": {
+            "type": "number",
+            "title": "Expected Arrivals"
+          }
+        },
+        "type": "object",
+        "required": [
+          "simulation_time",
+          "warmup_time",
+          "replications",
+          "seed",
+          "confidence_level",
+          "bonferroni",
+          "diff_confidence_level",
+          "simulated_scenarios",
+          "expected_arrivals"
+        ],
+        "title": "ScenarioSettingsOut"
+      },
+      "ScenarioSummaryOut": {
+        "properties": {
+          "mean": {
+            "type": "number",
+            "title": "Mean"
+          },
+          "std": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Std"
+          },
+          "ci_low": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ci Low"
+          },
+          "ci_high": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ci High"
+          },
+          "n": {
+            "type": "integer",
+            "title": "N"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mean",
+          "n"
+        ],
+        "title": "ScenarioSummaryOut"
+      },
+      "ScenariosRequest": {
+        "properties": {
+          "base": {
+            "$ref": "#/components/schemas/ScenarioBaseIn"
+          },
+          "scenarios": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioIn"
+            },
+            "type": "array",
+            "title": "Scenarios",
+            "description": "De 1 a 10 cenários, além da base."
+          },
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time",
+            "description": "Duração T de cada réplica (a mesma em todos os cenários)."
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications",
+            "description": "Réplicas R por cenário (2 a 100), com as mesmas sementes.",
+            "default": 10
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time",
+            "description": "Warm-up descartado no início de cada réplica.",
+            "default": 0.0
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Semente. Sem ela, uma é sorteada e devolvida (reproduz o resultado)."
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level",
+            "description": "Nível dos intervalos de confiança.",
+            "default": 0.95
+          },
+          "bonferroni": {
+            "type": "boolean",
+            "title": "Bonferroni",
+            "description": "Corrige os ICs das diferenças pelo número de cenários (α/m).",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "base",
+          "scenarios",
+          "simulation_time"
+        ],
+        "title": "ScenariosRequest",
+        "examples": [
+          {
+            "base": {
+              "lambda": 8,
+              "model": "mmc",
+              "mu": 1,
+              "servers": 10
+            },
+            "replications": 10,
+            "scenarios": [
+              {
+                "lambda": {
+                  "mode": "relative",
+                  "value": 20
+                },
+                "name": "Pico (+20% de λ)"
+              },
+              {
+                "name": "Mais um servidor",
+                "servers": {
+                  "mode": "relative",
+                  "value": 1
+                }
+              }
+            ],
+            "seed": 2026,
+            "simulation_time": 2000,
+            "warmup_time": 100
+          }
+        ]
+      },
+      "ScenariosResultOut": {
+        "properties": {
+          "settings": {
+            "$ref": "#/components/schemas/ScenarioSettingsOut"
+          },
+          "multiple_comparison": {
+            "$ref": "#/components/schemas/ScenarioMultipleComparisonOut"
+          },
+          "base": {
+            "$ref": "#/components/schemas/ScenarioRowOut"
+          },
+          "scenarios": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioRowOut"
+            },
+            "type": "array",
+            "title": "Scenarios"
+          }
+        },
+        "type": "object",
+        "required": [
+          "settings",
+          "multiple_comparison",
+          "base",
+          "scenarios"
+        ],
+        "title": "ScenariosResultOut"
       },
       "SensitivityRequest": {
         "properties": {

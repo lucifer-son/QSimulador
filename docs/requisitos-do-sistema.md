@@ -4,7 +4,7 @@ Laboratório interativo de modelagem, simulação e análise de sistemas de fila
 
 Este documento especifica os **requisitos funcionais (RF)** e **não funcionais (RNF)** do sistema e os relaciona aos [Casos de Uso](casos-de-uso.md) e às [Histórias de Usuário](historias-de-usuario.md). Para instruções de execução, veja [`como-executar.md`](como-executar.md).
 
-**Versão:** 1.8 (Fase 11: Dimensionamento e experimentos em todos os modelos)
+**Versão:** 1.9 (Fase 12: Comparação de cenários)
 
 ---
 
@@ -21,6 +21,7 @@ Este documento especifica os **requisitos funcionais (RF)** e **não funcionais 
 | 1.6 | Fase 9 (serviço geral): incluídos RF-45 a RF-50 (M/D/1, M/G/1 por Pollaczek-Khinchine, oito distribuições de serviço, simulação, comparação com IC e validação com erro identificado), que correspondem aos RFC-01 a RFC-06 do [roadmap competitivo](roadmap-competitivo.md); incluída a seção 4.11; parâmetros do serviço na seção 6. As rotas seguem a convenção do repositório (`/calculate`, `/simulate`, `/compare`) e não os nomes provisórios do roadmap (`/analytic`). |
 | 1.7 | Fase 10: incluídos RF-51 a RF-56 (Erlang-B dedicado e dimensionamento por bloqueio alvo, M/G/c por Allen–Cunneen com marca de aproximação e avisos de faixa, e experimentos do M/G/1), que correspondem aos RFC-07 a RFC-11 do [roadmap competitivo](roadmap-competitivo.md) mais a extensão dos experimentos ao M/G/1; incluída a seção 4.12. Rotas na convenção do repositório. |
 | 1.8 | Fase 11: incluídos RF-57 a RF-63 (experimentos do Erlang-B e do M/G/c, que completam a cobertura dos sete modelos do Laboratório; tabela de dimensionamento por número de servidores, nível de serviço P(Wq ≤ t) e menor c para uma meta, custo total e c ótimo, dimensionamento dos modelos de um servidor pela família com c, e histórico do tipo `sizing`), que correspondem aos RFC-12 a RFC-16 do [roadmap competitivo](roadmap-competitivo.md) mais a extensão dos experimentos; incluída a seção 4.13. O M/G/c tem o nível de serviço aproximado (cauda exponencial) e rotulado como tal. |
+| 1.9 | Fase 12: incluídos RF-64 a RF-71 (comparação de cenários por sobrescrita de λ, μ, c, K, modelo e variabilidade do serviço, com números aleatórios comuns, IC da diferença pareada, veredito, streaming, alertas de instabilidade, exportação em CSV e histórico do tipo `scenarios`), que correspondem aos RFC-17 a RFC-21 do [roadmap competitivo](roadmap-competitivo.md); incluída a seção 4.14. A rota de exportação é `POST` (o `GET` proposto no roadmap não carrega a lista de cenários). |
 
 ---
 
@@ -220,6 +221,19 @@ As rotas são `POST /api/models/mg1/calculate`, `/simulate` e `/compare` e `GET 
 | RF-62 | O sistema deve dimensionar o M/M/1, o M/M/1/K e o M/G/1 pela família com c (M/M/c, M/M/c/K e M/G/c, com o mesmo λ, μ, K e serviço), limitando c a K no M/M/c/K. | S | T | UC-13 | US-32 | ✅ |
 | RF-63 | O sistema deve permitir salvar o resultado do dimensionamento no histórico como experimento do tipo `sizing`, sem alterar o esquema do banco, e reabri-lo. | S | T | UC-09, UC-13 | US-32 | ✅ |
 
+### 4.14 Comparação de cenários (Fase 12)
+
+| ID | Requisito | Prior. | Verif. | UC | US | Status |
+|----|-----------|--------|--------|----|----|--------|
+| RF-64 | O sistema deve permitir definir cenários nomeados como sobrescritas sobre a configuração base do Laboratório (λ, μ, c, K, modelo e, nos modelos M/G, o serviço, o CV ou o k), cada valor absoluto ou relativo à base (+20% em λ, μ e CV; +1 em c, K e k), devolvendo os valores já resolvidos e o que mudou em relação à base. | M | T | UC-14 | US-34 | ✅ |
+| RF-65 | O sistema deve simular R réplicas por cenário com a mesma semente em todos os cenários e a base sempre simulada junto, com fluxos independentes de chegadas e de serviços em cada réplica e o serviço sorteado por número do cliente (números aleatórios comuns), de modo que dois cenários idênticos tenham diferença exatamente zero e o resultado seja reproduzível pela semente. | M | T | UC-14 | US-34 | ✅ |
+| RF-66 | O sistema deve devolver a comparação em streaming (NDJSON, um evento por cenário concluído, com o progresso) e interromper o trabalho que falta quando o cliente fecha a conexão. | M | T | UC-14 | US-34 | ✅ |
+| RF-67 | O sistema deve calcular o IC por cenário (t de Student, R − 1 graus de liberdade) e, por métrica, o IC da diferença pareada contra a base, a variação relativa e o veredito (diferença significativa com o sentido ↑ ou ↓ quando o IC exclui 0; inconclusiva quando o contém, o que não significa igual), com correção de Bonferroni opcional (desligada por padrão) e o aviso de ICs individuais quando não aplicada. | M | T | UC-14 | US-34 | ✅ |
+| RF-68 | O sistema deve exibir o analítico ao lado do simulado, com a diferença analítica contra a base e se ela cai dentro do IC pareado; marcar o cenário instável (ρ ≥ 1 com fila ilimitada), que não é simulado e sai só com o aviso, e o cenário em risco (ρ ≥ 0,9); e avisar quando a aproximação do M/G/c está fora da faixa. Métricas que o modelo não define aparecem como “—”. | M | T | UC-14 | US-34 | ✅ |
+| RF-69 | O sistema deve limitar a comparação a 1 a 10 cenários além da base, R até 100 e um teto de trabalho total (a soma de λ·T·R entre a base e os cenários simulados, o mesmo teto dos experimentos) calculado antes de rodar, e rejeitar a base instável e valores inválidos com erro 422 que identifica o campo (ex.: `scenarios[2].cv`). | M | T | UC-14 | US-34 | ✅ |
+| RF-70 | O sistema deve exportar a comparação em CSV por `POST /api/scenarios/export.csv`, que recebe o mesmo corpo e refaz a comparação (reprodutível com a semente fixa), com uma linha por cenário e métrica. | S | T | UC-14 | US-34 | ✅ |
+| RF-71 | O sistema deve permitir salvar a comparação no histórico como experimento do tipo `scenarios`, sem alterar o esquema do banco, e reabri-la. | S | T | UC-09, UC-14 | US-34 | ✅ |
+
 As rotas são `POST /api/models/erlangb/calculate`, `/simulate`, `/compare` e `/size`, `POST /api/models/mgc/calculate`, `/simulate` e `/compare`, e, nos experimentos, `POST /api/experiments/sweep` e `/sensitivity` com `model: "mg1"` e o objeto `service`, mais `POST /api/experiments/services`. O Erlang-B delega a simulação ao motor do M/M/c/K com K = c. O M/G/c não define P₀ nem P(n). Os experimentos continuam, para os demais modelos de Fase 10 (Erlang-B e M/G/c), fora de escopo.
 
 ### 4.10 API
@@ -391,6 +405,7 @@ Restrições de validação por parâmetro. Valores marcados como **(proposto)**
 | 9 | Serviço geral (M/D/1 e M/G/1) | RF-45 a RF-50 |
 | 10 | Erlang-B dedicado, M/G/c e experimentos do M/G/1 | RF-51 a RF-56 |
 | 11 | Dimensionamento e experimentos em todos os modelos | RF-57 a RF-63 |
+| 12 | Comparação de cenários | RF-64 a RF-71 |
 | Transversal | Qualidade, desempenho, segurança, observabilidade | RNF-05, RNF-06, RNF-08 a RNF-12, RNF-14, RNF-16, RNF-18, RNF-19, RNF-21 a RNF-23, RNF-27 a RNF-32 |
 
 ---
@@ -407,11 +422,12 @@ Restrições de validação por parâmetro. Valores marcados como **(proposto)**
 | UC-06 | RF-18 a RF-20, RF-35, RF-37 |
 | UC-07 | RF-21, RF-22, RF-38, RF-56 a RF-58 |
 | UC-08 | RF-23, RF-24 |
-| UC-09 | RF-25, RF-26, RF-63 |
+| UC-09 | RF-25, RF-26, RF-63, RF-71 |
 | UC-10 | RF-04 |
 | UC-11 | RF-45 a RF-50, RF-56, RF-58 |
 | UC-12 | RF-51 a RF-55, RF-57, RF-58 |
 | UC-13 | RF-59 a RF-63 |
+| UC-14 | RF-64 a RF-71 |
 
 ---
 

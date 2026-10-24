@@ -5,6 +5,7 @@
  * são conferidos antes de usar: um registro salvo por outra versão do app não pode
  * derrubar a tela.
  */
+import type { ScenariosResult } from "../api/scenarios";
 import type { SizingResponse } from "../api/sizing";
 import type { CostUnit, SizingAction } from "./sizing";
 import type { NewRecord, RecordDetail, RecordKind } from "../api/records";
@@ -69,14 +70,15 @@ export function parseLabRecord(record: RecordDetail): LabSnapshot | null {
 
 // ---------- Experimentos ----------
 
-export type ExperimentType = "sweep" | "servers" | "services" | "sensitivity" | "sizing";
+export type ExperimentType = "sweep" | "servers" | "services" | "sensitivity" | "sizing" | "scenarios";
 
 export type ExperimentSnapshot =
   | { type: "sweep"; model: ExperimentModelKey; result: SweepResponse }
   | { type: "servers"; model: ExperimentModelKey; result: ServerComparisonResponse }
   | { type: "services"; model: "mg1" | "mgc"; result: ServicesComparisonResponse }
   | { type: "sensitivity"; model: ExperimentModelKey; result: SensitivityResponse }
-  | { type: "sizing"; model: ExperimentModelKey; action: SizingAction; costUnit: CostUnit; result: SizingResponse };
+  | { type: "sizing"; model: ExperimentModelKey; action: SizingAction; costUnit: CostUnit; result: SizingResponse }
+  | { type: "scenarios"; model: ExperimentModelKey; result: ScenariosResult };
 
 export function experimentTitle(type: ExperimentType, model: ExperimentModelKey, result: { variable?: string }): string {
   const label = MODELS[model].label;
@@ -86,6 +88,7 @@ export function experimentTitle(type: ExperimentType, model: ExperimentModelKey,
   }
   if (type === "services") return `Comparação de distribuições · ${label}`;
   if (type === "sizing") return `Dimensionamento · ${label}`;
+  if (type === "scenarios") return `Cenários · ${label}`;
   return type === "servers" ? `Comparação de servidores · ${label}` : `Sensibilidade · ${label}`;
 }
 
@@ -96,7 +99,8 @@ export function experimentRecord(
   return {
     kind: "experiment",
     title,
-    // O dimensionamento é um experimento do tipo "sizing" (kind continua "experiment": o esquema do banco não muda).
+    // O dimensionamento e a comparação de cenários são experimentos dos tipos "sizing" e "scenarios"
+    // (kind continua "experiment": o esquema do banco não muda).
     params: { origin: "experiment", experiment: type, model, request: request ?? null, ...extra },
     result: result as Record<string, unknown>,
   };
@@ -124,6 +128,9 @@ export function parseExperimentRecord(record: RecordDetail): ExperimentSnapshot 
       const costUnit: CostUnit = params.cost_unit === "s" || params.cost_unit === "min" ? params.cost_unit : "h";
       return { type: "sizing", model, action, costUnit, result: result as unknown as SizingResponse };
     }
+    case "scenarios":
+      return isObject(result.base) && Array.isArray(result.scenarios) && isObject(result.settings)
+        ? { type: "scenarios", model, result: result as unknown as ScenariosResult } : null;
     default:
       return null;
   }

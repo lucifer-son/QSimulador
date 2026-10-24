@@ -10,12 +10,13 @@ import { fetchRuns, runAction } from "../api/actions";
 import { ApiError } from "../api/client";
 import { createRecord, deleteRecord, getRecord, getRecordsStatus, listRecords, renameRecord } from "../api/records";
 import { runSensitivity, runServerComparison, runServicesComparison, runSweep } from "../api/experiments";
+import { exportScenariosCsv, streamScenarios, type ScenarioEvent } from "../api/scenarios";
 import { runSizingCost, runSizingSla, runSizingTable } from "../api/sizing";
 import { fieldErrorsFromApi } from "../api/fieldErrors";
 import { buildReport, compareSimulated, type LevelsImport } from "../api/realdataExtra";
 import { MODEL_ORDER, MODELS } from "../domain/models";
 import type { Action, MarkovModelKey, Params } from "../domain/types";
-import { fixtures } from "./helpers";
+import { fixtures, readBlobArrayBuffer, readBlobText } from "./helpers";
 
 const live = Boolean(import.meta.env.VITE_API_BASE_URL);
 
@@ -405,4 +406,38 @@ describe.skipIf(!live)("contrato do histórico (/api/records)", () => {
 // Evita um aviso de "arquivo sem testes" quando o contrato está desligado.
 it("contrato desligado sem VITE_API_BASE_URL", () => {
   expect(MODELS.mm1.label).toBe("M/M/1");
+});
+
+describe.skipIf(!live)("contrato: comparação de cenários", () => {
+  const body = {
+    base: { model: "mmc", lambda: 8, mu: 1, servers: 10 },
+    scenarios: [
+      { name: "+20% de λ", lambda: { mode: "relative", value: 20 } },
+      { name: "Sobrecarga", lambda: { mode: "relative", value: 50 } },
+    ],
+    simulation_time: 200, replications: 3, warmup_time: 20, seed: 7, bonferroni: false,
+  };
+
+  it("o fluxo NDJSON chega na ordem e com o formato que a tela espera", async () => {
+    const events: ScenarioEvent[] = [];
+    await streamScenarios(body, (e) => events.push(e));
+    expect(events.map((e) => e.type)).toEqual(["start", "base", "scenario", "scenario", "done"]);
+    const result = events.at(-1)!.result!;
+    expect(result.settings.seed).toBe(7);
+    expect(result.scenarios[0].metrics.Wq.diff?.n).toBe(3);
+    expect(result.scenarios[1].status).toBe("unstable");
+  });
+
+  it("erro 422 traz o campo do cenário", async () => {
+    const bad = { ...body, scenarios: [{ model: "mmck" }] };
+    await expect(streamScenarios(bad, () => undefined)).rejects.toMatchObject({
+      code: "invalid_parameter", fields: [{ field: "scenarios[0].capacity" }],
+    });
+  });
+
+  it("o CSV sai com BOM e cabeçalho", async () => {
+    const blob = await exportScenariosCsv(body);
+    expect(new Uint8Array(await readBlobArrayBuffer(blob)).slice(0, 3)).toEqual(new Uint8Array([0xef, 0xbb, 0xbf]));
+    expect((await readBlobText(blob)).startsWith("cenario,papel,modelo")).toBe(true);
+  });
 });
