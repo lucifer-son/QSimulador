@@ -161,3 +161,29 @@ def test_ranking_decompoe_a_decisao_por_criterio():
     assert all(c["passed"] for c in escolhido["criteria"])
     descartado = next(x for x in r.ranking if x["key"] == "mm1")
     assert any(not c["passed"] and c["id"] == "estrutura" for c in descartado["criteria"])
+
+
+# ---------- Fase 13: sugestão M/M/c, M/D/c ou M/G/c pelo CV (aditiva: não muda o ranking) ----------
+
+def test_service_hint_exponencial_sugere_mmc():
+    # M/M/1 com ρ = 0,2: o tempo de resposta é exponencial (CV = 1), qualquer que seja a carga.
+    r = rodar(to_csv(open_rows(2, 10, 1, None, 600, 3)), **ABERTO)
+    hint = r.as_dict()["service_hint"]
+    assert hint["model"] == "M/M/c" and hint["lab_model"] == "mmc" and hint["kind"] == "service"
+    assert 0.8 <= hint["cv"] <= 1.2
+    assert "serviço + espera" in hint["basis"]
+
+
+def test_service_hint_resposta_constante_sugere_mdc():
+    from helpers_realdata import jmeter_csv, regular_rows
+    r = rodar(jmeter_csv(regular_rows(n=200, gap_ms=100, elapsed_ms=50)), system_type="open", servers=1)
+    hint = r.as_dict()["service_hint"]
+    assert hint["model"] == "M/D/c" and hint["distribution"] == "deterministic" and hint["cv"] == pytest.approx(0.0, abs=1e-9)
+
+
+def test_service_hint_nao_altera_a_recomendacao():
+    csv = to_csv(open_rows(6, 10, 1, None, 300, 5))
+    a = rodar(csv, **ABERTO).as_dict()
+    assert a["service_hint"] is not None
+    del a["service_hint"]                       # o resto é exatamente o que o recomendador já devolvia
+    assert a["recommended"]["key"] == "mm1" and a["status"] == "recommended"

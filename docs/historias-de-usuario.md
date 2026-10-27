@@ -44,6 +44,7 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 | E11 — Perda e vários servidores | US-30, US-31 | Fase 10 |
 | E12 — Dimensionamento e cobertura dos experimentos | US-32, US-33 | Fase 11 |
 | E13 — Comparação de cenários | US-34 | Fase 12 |
+| E14 — Distribuições e ajuste de amostras | US-35 | Fase 13 |
 
 ---
 
@@ -332,6 +333,19 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 - **Dado** uma comparação concluída, **quando** exporto o CSV ou salvo no histórico, **então** o CSV traz uma linha por cenário e métrica, e o registro pode ser reaberto depois.
 
 
+### E14 — Distribuições e ajuste de amostras
+
+#### US-35 — Ver as distribuições e descobrir se meus dados seguem uma distribuição conhecida ✅ · M · UC-15
+> Como **estudante**, quero ver a distribuição do número de clientes e do tempo de espera, e descobrir se meus dados seguem uma distribuição conhecida, para escolher o modelo certo.
+
+**Critérios de aceitação**
+- **Dado** um M/M/1 com λ = 8 e μ = 10, **quando** abro a aba Distribuições, **então** vejo P(n) com P(0) = 0,2 (= 1 − ρ), P(Wq > 0) = 0,8 e a curva Wq × λ com o ponto atual (Wq = 0,4 s) marcado.
+- **Dado** um M/M/c/K ou um M/G/c, **quando** abro a aba, **então** a curva P(Wq > t) vem do histograma da simulação com o IC; no M/G/c a tela explica que não há P(n) fechada.
+- **Dado** uma amostra exponencial, **quando** a ajusto, **então** o CV fica perto de 1 e o modelo sugerido é M/M/c; **dado** uma amostra constante, **então** a sugestão é M/D/c e não há tabela de candidatas.
+- **Dado** uma amostra que não segue nenhuma das cinco distribuições, **quando** ajusto, **então** a tela diz que nenhuma candidata é adequada.
+- **Dado** uma amostra lognormal, **quando** ajusto com a semente 7, **então** a lognormal tem o menor AIC, não é rejeitada e a exponencial é rejeitada; o p-valor aparece com o erro de Monte Carlo.
+- **Dado** o resultado do ajuste, **quando** salvo no histórico, **então** ele reabre sem a amostra original.
+
 ---
 
 ## 4. Rastreabilidade com os casos de uso
@@ -352,6 +366,7 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 | UC-12 — Erlang-B e M/G/c | US-30 |
 | UC-13 — Dimensionamento | US-32 |
 | UC-14 — Comparação de cenários | US-34 |
+| UC-15 — Distribuições e ajuste de amostras | US-35 |
 | Transversais (API, qualidade, Docker) | US-25, US-26, US-27, US-28 |
 
 ---

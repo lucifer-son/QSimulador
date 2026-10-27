@@ -254,3 +254,17 @@ export function ComparisonTable({ comparison }: { comparison: SimulatedLevelComp
     </div>
   );
 }
+
+/** Sugestão M/M/c, M/D/c ou M/G/c pelo CV dos tempos de resposta (Fase 13). Indicação: não entra no ranking. */
+export function ServiceHintNote({ result }: { result: AnalysisResponse }) {
+  const hint = result.service_hint;
+  if (!hint) return null;
+  return (
+    <div className="callout" role="note" data-testid="service-hint">
+      <strong>Sugestão pelo CV: {hint.model ?? "fora do catálogo"}.</strong> {hint.text}
+      <div className="sub">
+        {hint.basis} Não altera o ranking acima. Para decidir a distribuição, use a aba “Ajustar distribuição” com a amostra dos tempos de serviço.
+      </div>
+    </div>
+  );
+}

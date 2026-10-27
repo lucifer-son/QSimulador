@@ -51,6 +51,15 @@ import errorScenariosCapacity from "./fixtures/error-scenarios-capacity.json";
 import scenariosCompareMmc from "./fixtures/scenarios-compare-mmc.json";
 import scenariosCompareMmcBonferroni from "./fixtures/scenarios-compare-mmc-bonferroni.json";
 import scenariosExportMmc from "./fixtures/scenarios-export-mmc.json";
+import analysisDistributionMmc from "./fixtures/analysis-distribution-mmc.json";
+import analysisDistributionMmck from "./fixtures/analysis-distribution-mmck.json";
+import analysisDistributionMgc from "./fixtures/analysis-distribution-mgc.json";
+import analysisSensitivityMm1 from "./fixtures/analysis-sensitivity-mm1.json";
+import errorAnalysisErlangb from "./fixtures/error-analysis-erlangb.json";
+import analysisFitLognormal from "./fixtures/analysis-fit-lognormal.json";
+import analysisFitConstant from "./fixtures/analysis-fit-constant.json";
+import errorAnalysisFitSample from "./fixtures/error-analysis-fit-sample.json";
+import realdataAnalyzeHint from "./fixtures/realdata-analyze-hint.json";
 import type { ThemeColors } from "../hooks/useThemeColors";
 
 /** Respostas reais da API, gravadas em arquivos (ver src/test/fixtures). */
@@ -69,6 +78,7 @@ export const fixtures = {
   experimentServersErlangb, experimentSweepErlangb, experimentSweepMgc,
   sizingCostMmc, sizingSlaErlangb, sizingSlaMmc, sizingTableMgc, sizingTableMmc,
   errorScenariosCapacity, scenariosCompareMmc, scenariosCompareMmcBonferroni, scenariosExportMmc,
+  analysisDistributionMmc, analysisDistributionMmck, analysisDistributionMgc, analysisSensitivityMm1, errorAnalysisErlangb, analysisFitLognormal, analysisFitConstant, errorAnalysisFitSample, realdataAnalyzeHint,
 };
 
 export const colors: ThemeColors = {
@@ -82,6 +92,8 @@ export function clone<T>(value: T): T {
 }
 
 export function readBlobText(blob: Blob): Promise<string> {
+  // O Blob do fetch (undici, Node 22) não passa pelo FileReader do jsdom; o jsdom antigo não tem Blob.text().
+  if (typeof blob.text === "function") return blob.text();
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -94,6 +106,7 @@ export function readBlobText(blob: Blob): Promise<string> {
 }
 
 export function readBlobArrayBuffer(blob: Blob): Promise<ArrayBuffer> {
+  if (typeof blob.arrayBuffer === "function") return blob.arrayBuffer();
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {

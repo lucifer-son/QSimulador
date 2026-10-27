@@ -4,7 +4,7 @@ Laboratório interativo de modelagem, simulação e análise de sistemas de fila
 
 Este documento especifica os **requisitos funcionais (RF)** e **não funcionais (RNF)** do sistema e os relaciona aos [Casos de Uso](casos-de-uso.md) e às [Histórias de Usuário](historias-de-usuario.md). Para instruções de execução, veja [`como-executar.md`](como-executar.md).
 
-**Versão:** 1.9 (Fase 12: Comparação de cenários)
+**Versão:** 2.0 (Fase 13: Gráficos de distribuição e ajuste de amostras)
 
 ---
 
@@ -22,6 +22,7 @@ Este documento especifica os **requisitos funcionais (RF)** e **não funcionais 
 | 1.7 | Fase 10: incluídos RF-51 a RF-56 (Erlang-B dedicado e dimensionamento por bloqueio alvo, M/G/c por Allen–Cunneen com marca de aproximação e avisos de faixa, e experimentos do M/G/1), que correspondem aos RFC-07 a RFC-11 do [roadmap competitivo](roadmap-competitivo.md) mais a extensão dos experimentos ao M/G/1; incluída a seção 4.12. Rotas na convenção do repositório. |
 | 1.8 | Fase 11: incluídos RF-57 a RF-63 (experimentos do Erlang-B e do M/G/c, que completam a cobertura dos sete modelos do Laboratório; tabela de dimensionamento por número de servidores, nível de serviço P(Wq ≤ t) e menor c para uma meta, custo total e c ótimo, dimensionamento dos modelos de um servidor pela família com c, e histórico do tipo `sizing`), que correspondem aos RFC-12 a RFC-16 do [roadmap competitivo](roadmap-competitivo.md) mais a extensão dos experimentos; incluída a seção 4.13. O M/G/c tem o nível de serviço aproximado (cauda exponencial) e rotulado como tal. |
 | 1.9 | Fase 12: incluídos RF-64 a RF-71 (comparação de cenários por sobrescrita de λ, μ, c, K, modelo e variabilidade do serviço, com números aleatórios comuns, IC da diferença pareada, veredito, streaming, alertas de instabilidade, exportação em CSV e histórico do tipo `scenarios`), que correspondem aos RFC-17 a RFC-21 do [roadmap competitivo](roadmap-competitivo.md); incluída a seção 4.14. A rota de exportação é `POST` (o `GET` proposto no roadmap não carrega a lista de cenários). |
+| 1.10 | Fase 13: incluídos RF-72 a RF-82 (P(n) analítica; P(Wq > t) por fórmula fechada no M/M/c e por histograma de simulação nos demais modelos; sensibilidade Wq × λ; ajuste por máxima verossimilhança de cinco distribuições com AIC e p-valor de aderência por Monte Carlo, decisão D-02; sugestão de modelo pelo CV integrada à aba Dados reais; API, interface e histórico do tipo `fit`), que correspondem aos RFC-22 a RFC-26 do [roadmap competitivo](roadmap-competitivo.md); incluída a seção 4.15 e o UC-15. O histograma de espera usa um simulador FIFO próprio (os motores SimPy só guardam a média), e a sensibilidade reaproveita a varredura de λ da Fase 6. |
 
 ---
 
@@ -236,6 +237,22 @@ As rotas são `POST /api/models/mg1/calculate`, `/simulate` e `/compare` e `GET 
 
 As rotas são `POST /api/models/erlangb/calculate`, `/simulate`, `/compare` e `/size`, `POST /api/models/mgc/calculate`, `/simulate` e `/compare`, e, nos experimentos, `POST /api/experiments/sweep` e `/sensitivity` com `model: "mg1"` e o objeto `service`, mais `POST /api/experiments/services`. O Erlang-B delega a simulação ao motor do M/M/c/K com K = c. O M/G/c não define P₀ nem P(n). Os experimentos continuam, para os demais modelos de Fase 10 (Erlang-B e M/G/c), fora de escopo.
 
+### 4.15 Distribuições e ajuste de amostras (Fase 13)
+
+| ID | Requisito | Prior. | Verif. | UC | US | Status |
+|----|-----------|--------|--------|----|----|--------|
+| RF-72 | O sistema deve calcular a distribuição estacionária P(n) do número de clientes para M/M/1, M/M/c, M/M/1/K e M/M/c/K, somando 1 (P(0) = 1 − ρ no M/M/1). Na fila ilimitada, mostra os estados até a massa restante cair abaixo de 10⁻⁶ (no máximo 500 estados) e informa a massa omitida, que é exata (a cauda é geométrica). O serviço geral (M/G/1 e M/G/c) não tem P(n) fechada e o Erlang-B não tem fila: a resposta diz isso em vez de aproximar. | M | T | UC-15 | US-35 | ✅ |
+| RF-73 | O sistema deve calcular P(Wq > t): no M/M/1 e no M/M/c, pela fórmula fechada C·exp(−(c·μ − λ)·t) (C = Erlang C), com os percentis p50, p90, p95 e p99; no M/M/1/K, M/M/c/K, M/G/1 e M/G/c, pelo histograma de uma simulação FIFO com IC entre réplicas (t de Student). Nos modelos com fórmula fechada, a simulação é opcional, para conferir. | M | T | UC-15 | US-35 | ✅ |
+| RF-74 | O sistema deve calcular a sensibilidade Wq × λ (e W, Lq) ao redor da configuração atual, de λ·(1 − span) a λ·(1 + span), reaproveitando a varredura da Fase 6, marcando o ponto do Laboratório (que cai exatamente na grade) e parando em ρ = 0,99 na fila ilimitada. | M | T | UC-15 | US-35 | ✅ |
+| RF-75 | O sistema deve ajustar a uma amostra de tempos positivos, por máxima verossimilhança, as distribuições exponencial, Erlang-k, lognormal, Weibull e uniforme, devolvendo parâmetros, log-verossimilhança, AIC, ΔAIC, pesos de Akaike, CV do modelo e CV da amostra com IC de 95%. | M | T | UC-15 | US-35 | ✅ |
+| RF-76 | O sistema deve calcular o p-valor de aderência de cada candidata por Monte Carlo (bootstrap paramétrico com reestimação de todos os parâmetros em cada réplica, estatística de Kolmogorov-Smirnov), e não pelo KS simples com parâmetros estimados da própria amostra (decisão D-02). B é 200 por padrão, configurável de 20 a 2.000 (0 desliga o p-valor), e o erro de Monte Carlo do p-valor é devolvido. Um teto de trabalho (n·B ≤ 8.000.000) é conferido antes de rodar. | M | T | UC-15 | US-35 | ✅ |
+| RF-77 | O sistema deve manter a uniforme na tabela com o aviso de que o AIC dela não é diretamente comparável (o suporte depende da amostra), sem usá-la no ΔAIC, nos pesos de Akaike nem na escolha do melhor AIC. | M | T | UC-15 | US-35 | ✅ |
+| RF-78 | O sistema deve informar claramente quando nenhuma candidata é adequada (todos os p-valores abaixo de α) e quando o p-valor não foi calculado, e deve tratar a amostra constante (CV = 0) sem ajuste, sugerindo M/D/c. | M | T | UC-15 | US-35 | ✅ |
+| RF-79 | O sistema deve sugerir o modelo pelo CV: M/M/c para 0,7 ≤ CV ≤ 1,3 (os limiares do diagnóstico V6), M/D/c para CV ≤ 0,1 e M/G/c nos demais casos, com a especificação do serviço (a candidata de menor AIC entre as adequadas) no formato do Laboratório. Para tempos entre chegadas, só confirma ou não a hipótese de Poisson. | M | T | UC-15 | US-35 | ✅ |
+| RF-80 | O sistema deve incluir, na análise de Dados reais, o campo `service_hint` com a sugestão pelo CV dos tempos de resposta do menor nível de carga (aproxima o CV do serviço com carga baixa), sem alterar o ranking, os escores nem a recomendação do recomendador de modelo. | M | T | UC-08, UC-15 | US-35 | ✅ |
+| RF-81 | O sistema deve expor `POST /api/analysis/distribution`, `/sensitivity` e `/fit`; o ajuste responde em NDJSON (`start`, uma `candidate` por candidata, `done`) e para o trabalho quando o cliente fecha a conexão. O limite da amostra é o do envio de CSV da Fase 7 (10 MiB: corpo maior dá 413 `file_too_large`, e no máximo metade desse número de bytes em valores). Erros de validação saem como 422 com o campo, antes do primeiro byte do fluxo. | M | T | UC-15 | US-35 | ✅ |
+| RF-82 | O sistema deve mostrar, no Laboratório, a aba Distribuições (P(n), P(Wq > t) e Wq × λ com o ponto atual) nos modelos aplicáveis, o painel Ajustar distribuição (colar ou importar a amostra, histograma com as curvas ajustadas e tabela de candidatas) e a sugestão por CV na aba Dados reais; e permitir salvar o ajuste no histórico como experimento do tipo `fit`, sem alterar o esquema do banco e sem guardar a amostra. | S | T | UC-09, UC-15 | US-35 | ✅ |
+
 ### 4.10 API
 
 | ID | Requisito | Prior. | Verif. | UC | US | Status |
@@ -360,6 +377,10 @@ Restrições de validação por parâmetro. Valores marcados como **(proposto)**
 | ρ = λ·E[S]/c (M/G/c) | Real | Menor que 1 | — | — |
 | Bloqueio alvo (`target_blocking`, Erlang-B) | Real | Maior que 0 e menor que 1 | — | c até 1.000 |
 | Distribuições comparadas (`services`) | Lista | De 2 a 8 | — | 8 |
+| Amostra do ajuste (`sample`) | Lista de reais | De 10 valores, todos positivos e finitos | — | 5.242.880 valores e corpo de 10 MiB (o limite do envio de CSV) |
+| Réplicas do p-valor (`bootstrap`) | Inteiro | 0 (sem p-valor) ou de 20 a 2.000 | 200, ou o que o teto permitir | n·B ≤ 8.000.000 |
+| `span` e `points` (sensibilidade) | Real e inteiro | span de 0 (exclusivo) a 0,95; points de 3 a 200 | 0,5 e 41 | — |
+| `points` (P(Wq > t)) | Inteiro | De 2 a 200 | 60 | — |
 
 ---
 
@@ -406,6 +427,7 @@ Restrições de validação por parâmetro. Valores marcados como **(proposto)**
 | 10 | Erlang-B dedicado, M/G/c e experimentos do M/G/1 | RF-51 a RF-56 |
 | 11 | Dimensionamento e experimentos em todos os modelos | RF-57 a RF-63 |
 | 12 | Comparação de cenários | RF-64 a RF-71 |
+| 13 | Distribuições e ajuste de amostras | RF-72 a RF-82 |
 | Transversal | Qualidade, desempenho, segurança, observabilidade | RNF-05, RNF-06, RNF-08 a RNF-12, RNF-14, RNF-16, RNF-18, RNF-19, RNF-21 a RNF-23, RNF-27 a RNF-32 |
 
 ---
@@ -421,13 +443,14 @@ Restrições de validação por parâmetro. Valores marcados como **(proposto)**
 | UC-05 | RF-14 a RF-17, RF-34, RF-36 |
 | UC-06 | RF-18 a RF-20, RF-35, RF-37 |
 | UC-07 | RF-21, RF-22, RF-38, RF-56 a RF-58 |
-| UC-08 | RF-23, RF-24 |
-| UC-09 | RF-25, RF-26, RF-63, RF-71 |
+| UC-08 | RF-23, RF-24, RF-80 |
+| UC-09 | RF-25, RF-26, RF-63, RF-71, RF-82 |
 | UC-10 | RF-04 |
 | UC-11 | RF-45 a RF-50, RF-56, RF-58 |
 | UC-12 | RF-51 a RF-55, RF-57, RF-58 |
 | UC-13 | RF-59 a RF-63 |
 | UC-14 | RF-64 a RF-71 |
+| UC-15 | RF-72 a RF-82 |
 
 ---
 

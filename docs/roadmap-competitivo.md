@@ -24,7 +24,7 @@ Cada fase foi dimensionada para caber em **um chat de trabalho** (plano, impleme
 | 10 | Erlang-B dedicado e M/G/c ✅ | L-03, L-04 | M | M1 |
 | 11 | Dimensionamento, nível de serviço e custo ✅| L-05, L-06 | M | M1 |
 | 12 | Comparação de cenários ✅| L-07 | M | M2 |
-| 13 | Gráficos de distribuição e ajuste de amostras | L-08, L-09 | M | M2 |
+| 13 | Gráficos de distribuição e ajuste de amostras ✅ | L-08, L-09 | M | M2 |
 | 14 | Chegadas variáveis (NHPP) e warm-up | L-10, L-11 | M | M2 |
 | 15 | Prioridades e tipos de entidade | L-12 | G | M2 |
 | 16 | Didática: cenários prontos, tutorial e guia | L-13, L-14 | M | M3 |
@@ -322,7 +322,8 @@ Otimização automática; cenários com mais de um modelo ao mesmo tempo além d
 | Lacunas | L-08, L-09 |
 | Esforço / prioridade | M / Média |
 | Depende de | Fase 9 |
-| Requisitos | RFC-22 a RFC-26 |
+| Status | ✅ Concluída em 26/10/2026 (QSimulador 2.0) |
+| Requisitos | RFC-22 a RFC-26 (oficiais: RF-72 a RF-82; caso de uso UC-15; história US-35) |
 | História | USC-13: como estudante, quero ver a distribuição do número de clientes e do tempo de espera, e descobrir se meus dados seguem uma distribuição conhecida, para escolher o modelo certo |
 
 ### Objetivo
@@ -356,6 +357,20 @@ Mistura de distribuições; ajuste de processos de chegada não Poisson.
 
 - Os três gráficos aparecem para os modelos aplicáveis.
 - O ajuste informa claramente quando **nenhuma** candidata é adequada.
+
+### Resultado e medições (26/10/2026)
+
+O escopo foi entregue inteiro, em duas etapas no mesmo pacote (motor estatístico e depois API, interface, histórico e documentação). O que mudou em relação ao plano, e os números medidos:
+
+- **P(Wq > t) por simulação:** os motores SimPy só guardam a média das esperas, então a cauda sai de um simulador FIFO próprio (`app/analysis/wait_simulation.py`), validado contra a fórmula fechada do M/M/c (a fórmula cai dentro do IC em 100% dos pontos; erro máximo da média entre 20 sementes: 0,010 no M/M/1, 0,008 no M/M/2 e 0,017 no M/M/5 com ρ = 0,9) e contra os valores analíticos do M/M/c/K e do M/G/1. Os motores existentes não foram alterados.
+- **Sensibilidade Wq × λ:** reaproveita `run_sweep` e `run_general_sweep` (Fase 6). `run_sensitivity` (±Δ%) é outra análise e não serve para a curva.
+- **Calibração do p-valor (D-02):** com a distribuição verdadeira, a taxa de rejeição a 5% ficou entre 4,0% e 5,2% (n = 50, B = 200, 400 amostras por família) e entre 3,3% e 6,0% (n = 200, 300 amostras); a 10%, entre 8,7% e 11,5% e entre 7,7% e 12,7%. O KS simples com parâmetros estimados rejeitou só de 0% a 0,3% nas quatro famílias de suporte infinito (4% na uniforme), e o p-valor médio dele foi 0,685 contra 0,493 do Monte Carlo (n = 100, 60 amostras): ele aceita demais. O teste lento (`--runslow`) exige taxa entre 1% e 10%.
+- **Recuperação de parâmetros:** erro relativo máximo entre 30 sementes (n = 2.000): exponencial 0,049; lognormal 0,081 (μ) e 0,042 (σ); Weibull 0,044 e 0,028; uniforme 0,004; o k do Erlang é recuperado exatamente. As tolerâncias dos testes são cerca de 1,7 a 2 vezes o pior caso medido.
+- **Custo do p-valor:** cerca de 0,8 a 1,0 µs por unidade de n·B (as cinco candidatas somadas). O teto ficou em n·B ≤ 8.000.000 (~7 s, compatível com uma função na Vercel); sem B informado, o sistema usa 200, ou o que o teto permite, ou nenhum p-valor (com aviso) em amostras enormes. Com 2 milhões de valores, MLE e AIC levam ~2,4 s.
+- **Limite da amostra:** o do envio de CSV da Fase 7 (`MAX_UPLOAD_BYTES`, 10 MiB). Como o corpo é lido pelo servidor antes da checagem, o 413 evita só o trabalho estatístico, não a leitura.
+- **Sugestão por CV:** o limiar de "CV ≈ 0" (0,1) é uma proposta nossa (`CV_DETERMINISTIC`); os de "CV ≈ 1" (0,7 a 1,3) são os do diagnóstico V6. Na aba Dados reais a sugestão usa o CV dos tempos de resposta do menor nível de carga, que só aproxima o CV do serviço quando a carga é baixa; por isso é uma indicação, e o ajuste da amostra de serviço é quem decide. O recomendador não mudou (ranking, escores e recomendação intactos).
+- **Suítes ao fim da fase:** backend com 1.368 testes passando e 54 ignorados (48 de PostgreSQL e 6 lentos, que passam com `--runslow`); frontend com 601 passando. Na partida (Fase 12) o frontend tinha 568 passando e 1 falha de ambiente: o helper de teste lia o `Blob` do `fetch` do Node 22 pelo `FileReader` do jsdom. Corrigido em `src/test/helpers.ts` (usa `Blob.text()` e `arrayBuffer()` quando existem).
+- **Fora do que foi medido:** o ajuste não testa misturas nem chegadas não Poisson (fora de escopo). A uniforme fica na tabela sem entrar no ΔAIC (o suporte depende da amostra).
 
 ---
 

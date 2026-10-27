@@ -18,7 +18,7 @@ import { ResultArea, RunButtons } from "./ExperimentParts";
 import { PlotlyChart } from "./PlotlyChart";
 import { LevelsTab, ReportButtons, SimulationOptions, SIMULATION_NOTE } from "./RealDataExtras";
 import {
-  ComparisonTable, CriteriaTable, DiagnosticList, EstimatesList, LevelsTable, RecommendationBanner, WarningList,
+  ComparisonTable, CriteriaTable, DiagnosticList, EstimatesList, LevelsTable, RecommendationBanner, ServiceHintNote, WarningList,
 } from "./RealDataParts";
 import { SaveButton } from "./SaveButton";
 import { TextField } from "./TextField";
@@ -75,6 +75,7 @@ export function RealDataResults({ result }: { result: AnalysisResponse }) {
   return (
     <>
       <RecommendationBanner result={result} />
+      <ServiceHintNote result={result} />
       <p className="note">
         {rows.toLocaleString("pt-BR")} amostras analisadas
         {result.dataset.rows !== rows ? ` (de ${result.dataset.rows.toLocaleString("pt-BR")} no arquivo)` : ""};

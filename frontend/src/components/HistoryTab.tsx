@@ -1,5 +1,6 @@
 import { IconHistory } from "@tabler/icons-react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import type { FitResult } from "../api/analysis";
 import type { AnalysisResponse } from "../api/realdata";
 import { ApiError } from "../api/client";
 import {
@@ -7,10 +8,11 @@ import {
   type RecordDetail, type RecordKind, type RecordSummary,
 } from "../api/records";
 import {
-  KIND_LABELS, KIND_ORDER, parseExperimentRecord, parseLabRecord, parseRealDataRecord,
+  KIND_LABELS, KIND_ORDER, parseExperimentRecord, parseFitRecord, parseLabRecord, parseRealDataRecord,
   type ExperimentSnapshot, type LabSnapshot,
 } from "../domain/records";
 import { useRecords } from "../hooks/RecordsContext";
+import { FitResultView } from "./FitResultView";
 import { SensitivityResult } from "./SensitivityPanel";
 import { ServersResult } from "./ServersPanel";
 import { ServicesResult } from "./ServicesPanel";
@@ -39,11 +41,14 @@ type Viewer =
   | { kind: "lab"; record: RecordDetail; snapshot: LabSnapshot }
   | { kind: "experiment"; record: RecordDetail; snapshot: ExperimentSnapshot }
   | { kind: "realdata"; record: RecordDetail; analysis: AnalysisResponse }
+  | { kind: "fit"; record: RecordDetail; fit: FitResult }
   | { kind: "unknown"; record: RecordDetail };
 
 function toViewer(record: RecordDetail): Viewer {
   const lab = parseLabRecord(record);
   if (lab) return { kind: "lab", record, snapshot: lab };
+  const fit = parseFitRecord(record);
+  if (fit) return { kind: "fit", record, fit };
   const experiment = parseExperimentRecord(record);
   if (experiment) return { kind: "experiment", record, snapshot: experiment };
   const analysis = parseRealDataRecord(record);
@@ -238,6 +243,7 @@ export function HistoryTab({ onReopenLab }: Props) {
               </div>
             )}
             {viewer.kind === "experiment" && <ExperimentView snapshot={viewer.snapshot} />}
+            {viewer.kind === "fit" && <FitResultView result={viewer.fit} />}
             {viewer.kind === "realdata" && <RealDataResults result={viewer.analysis} />}
             {viewer.kind === "unknown" && (
               <p className="field-error" role="alert">

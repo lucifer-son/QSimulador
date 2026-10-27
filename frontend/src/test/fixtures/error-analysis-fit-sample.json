@@ -1,0 +1,10 @@
+{
+ "code": "invalid_parameter",
+ "message": "sample precisa de pelo menos 10 valores (recebeu 5).",
+ "fields": [
+  {
+   "field": "sample",
+   "message": "sample precisa de pelo menos 10 valores (recebeu 5)."
+  }
+ ]
+}

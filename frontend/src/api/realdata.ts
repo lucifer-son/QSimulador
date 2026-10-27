@@ -59,6 +59,8 @@ export interface AnalysisResponse {
   system_type: "open" | "closed"; estimates: Estimates;
   overall: EmpiricalMetrics; levels: Level[]; comparison: LevelComparison[];
   dataset: { rows: number; rows_analyzed: number; labels: string[]; start: number; end: number };
+  /** Fase 13: sugestão M/M/c, M/D/c ou M/G/c pelo CV (indicação; não altera o ranking). */
+  service_hint?: import("./analysis").ModelSuggestion & { basis: string } | null;
 }
 
 export interface CompareBody {

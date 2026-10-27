@@ -3,6 +3,7 @@ import os
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.analysis import router as analysis_router
 from app.api.errors import register_exception_handlers
 from app.api.experiments import router as experiments_router
 from app.api.mg1 import distributions_router, router as mg1_router
@@ -75,6 +76,7 @@ def create_app(
     application.include_router(experiments_router)
     application.include_router(sizing_router)
     application.include_router(scenarios_router)
+    application.include_router(analysis_router)
     application.include_router(realdata_router)
     application.include_router(realdata_extra_router)
     application.include_router(finite_population_router)

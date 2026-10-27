@@ -9,6 +9,7 @@ REJECTION_RELEVANT = 0.005       # p̂_block a partir do qual há rejeição rel
 PLATEAU_GAIN_RATIO = 0.15        # platô: (ganho relativo de vazão) / (ganho relativo de usuários) entre os dois maiores patamares
 PLATEAU_MIN_USERS_RATIO = 1.2    # os patamares precisam diferir ao menos 20 % em usuários
 CV_LOW, CV_HIGH = 0.7, 1.3       # faixa em que o CV é "compatível com exponencial"
+CV_DETERMINISTIC = 0.1          # abaixo disso o CV é "≈ 0": serviço praticamente constante (Fase 13, sugestão M/D/c)
 TREND_CRITICAL = 0.5             # crescimento significativo (p < 0,01) de +50 % do tempo de resposta ao longo da janela
 TREND_WARNING = 0.2
 TIE_PP = 5.0                     # diferença (pontos percentuais) abaixo da qual se prefere o mais simples

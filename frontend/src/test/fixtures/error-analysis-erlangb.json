@@ -1,0 +1,10 @@
+{
+ "code": "invalid_parameter",
+ "message": "O Erlang-B é um sistema de perda: não há fila, então não há distribuição de espera nem P(n) por aqui.",
+ "fields": [
+  {
+   "field": "model",
+   "message": "O Erlang-B é um sistema de perda: não há fila, então não há distribuição de espera nem P(n) por aqui."
+  }
+ ]
+}

@@ -10,6 +10,7 @@ import { fetchRuns, runAction } from "../api/actions";
 import { ApiError } from "../api/client";
 import { createRecord, deleteRecord, getRecord, getRecordsStatus, listRecords, renameRecord } from "../api/records";
 import { runSensitivity, runServerComparison, runServicesComparison, runSweep } from "../api/experiments";
+import { fetchDistribution, fetchSensitivityCurve, streamFit, type FitEvent } from "../api/analysis";
 import { exportScenariosCsv, streamScenarios, type ScenarioEvent } from "../api/scenarios";
 import { runSizingCost, runSizingSla, runSizingTable } from "../api/sizing";
 import { fieldErrorsFromApi } from "../api/fieldErrors";
@@ -439,5 +440,57 @@ describe.skipIf(!live)("contrato: comparação de cenários", () => {
     const blob = await exportScenariosCsv(body);
     expect(new Uint8Array(await readBlobArrayBuffer(blob)).slice(0, 3)).toEqual(new Uint8Array([0xef, 0xbb, 0xbf]));
     expect((await readBlobText(blob)).startsWith("cenario,papel,modelo")).toBe(true);
+  });
+});
+
+describe.skipIf(!live)("contrato: distribuições, sensibilidade e ajuste (Fase 13)", () => {
+  const sim = { seed: 7, replications: 3, simulation_time: 100 };
+
+  it("distribution: P(n) soma 1 e a fórmula fechada do M/M/c coincide com a gravada", async () => {
+    const body = await fetchDistribution({ model: "mmc", lambda: 8, mu: 1, servers: 10, simulate: true, simulation: sim, points: 30 });
+    expect(body.states!.p.reduce((a, b) => a + b, 0) + body.states!.omitted_mass).toBeCloseTo(1, 10);
+    expect(keys(body)).toEqual(keys(fixtures.analysisDistributionMmc));
+    expect(keys(body.wait_simulation)).toEqual(keys(fixtures.analysisDistributionMmc.wait_simulation));
+    expect(body.wait_closed_form!.p_wait).toBeCloseTo(fixtures.analysisDistributionMmc.wait_closed_form!.p_wait, 12);
+    expect(body.wait_simulation!.seed).toBe(7);
+  });
+
+  it("distribution: serviço geral não tem P(n); capacidade finita simula", async () => {
+    const mgc = await fetchDistribution({
+      model: "mgc", lambda: 15, servers: 2, service: { distribution: "lognormal", mean: 0.1, cv: 1.5 }, simulation: sim, points: 30,
+    });
+    expect(mgc.states).toBeNull();
+    expect(keys(mgc)).toEqual(keys(fixtures.analysisDistributionMgc));
+    const mmck = await fetchDistribution({ model: "mmck", lambda: 25, mu: 10, servers: 3, capacity: 6, simulation: sim, points: 30 });
+    expect(mmck.states!.states).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    expect(mmck.wait_closed_form).toBeNull();
+  });
+
+  it("sensitivity: o ponto atual está na grade", async () => {
+    const curve = await fetchSensitivityCurve({ model: "mm1", lambda: 40, mu: 50, points: 21 });
+    expect(curve).toEqual(fixtures.analysisSensitivityMm1);
+  });
+
+  it("erros: Erlang-B (422 com o campo) e amostra curta", async () => {
+    await expect(fetchDistribution({ model: "erlangb", lambda: 5, mu: 10, servers: 2 })).rejects.toMatchObject({
+      code: "invalid_parameter", fields: [{ field: "model" }],
+    });
+    await expect(streamFit({ sample: [1, 2, 3] }, () => undefined)).rejects.toMatchObject({ fields: [{ field: "sample" }] });
+  });
+
+  it("fit: o fluxo NDJSON chega na ordem e reproduz a fixture com a mesma semente", async () => {
+    const start = fixtures.analysisFitLognormal[0] as FitEvent;
+    expect(start.seed).toBe(7);
+    const sample = (await import("./fixtures/analysis-fit-sample.json")).default as number[];
+    const events: FitEvent[] = [];
+    await streamFit({ sample, bootstrap: 40, seed: 7 }, (e) => events.push(e));
+    expect(events.map((e) => e.type)).toEqual(["start", "candidate", "candidate", "candidate", "candidate", "candidate", "done"]);
+    expect(events).toEqual(fixtures.analysisFitLognormal);
+  });
+
+  it("fit: amostra constante sugere M/D/c", async () => {
+    const events: FitEvent[] = [];
+    await streamFit({ sample: Array(20).fill(2.5) }, (e) => events.push(e));
+    expect(events.at(-1)!.result!.suggestion.model).toBe("M/D/c");
   });
 });

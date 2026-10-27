@@ -4,6 +4,7 @@ import type { ApiError } from "../api/client";
 import type { RunnerState } from "../hooks/useRunner";
 import { ChartsTab } from "./ChartsTab";
 import { DetailsTab } from "./DetailsTab";
+import { DistributionsTab } from "./DistributionsTab";
 import { DeviationChart } from "./DeviationChart";
 import { HeadlineCards } from "./HeadlineCards";
 import { labRecord, labTitle } from "../domain/records";
@@ -12,10 +13,11 @@ import { ReplicationsTab } from "./ReplicationsTab";
 import { SaveButton } from "./SaveButton";
 import { ApproximationNote, VerdictBanner } from "./VerdictBanner";
 
-type TabKey = "results" | "charts" | "replications" | "details";
+type TabKey = "results" | "charts" | "distributions" | "replications" | "details";
 const TABS: { key: TabKey; label: string }[] = [
   { key: "results", label: "Resultados" },
   { key: "charts", label: "Gráficos" },
+  { key: "distributions", label: "Distribuições" },
   { key: "replications", label: "Réplicas" },
   { key: "details", label: "Detalhes" },
 ];
@@ -134,6 +136,7 @@ export function ResultsPanel({ state, estimate, onLoadRuns }: Props) {
           </>
         )}
         {tab === "charts" && <ChartsTab result={result} runsStatus={runs} onLoadRuns={onLoadRuns} />}
+        {tab === "distributions" && <DistributionsTab result={result} />}
         {tab === "replications" && <ReplicationsTab result={result} runsStatus={runs} onLoadRuns={onLoadRuns} />}
         {tab === "details" && <DetailsTab result={result} />}
       

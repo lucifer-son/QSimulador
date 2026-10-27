@@ -54,7 +54,7 @@ Quando o ambiente virtual está ativo, o prompt começa com `(.venv)`. **Todos o
 python -m pytest
 ```
 
-Todos os testes devem passar (1.233 no backend na Fase 12, mais 1 teste lento de cobertura estatística que só roda com `python -m pytest --runslow`, em cerca de 1 minuto; os que dependem de um PostgreSQL real são ignorados quando `QSIMULADOR_TEST_POSTGRES_URL` não está definida). Um aviso de depreciação do Starlette sobre o `httpx` pode aparecer e é inofensivo.
+Todos os testes devem passar (1.368 no backend na Fase 13, mais 6 testes lentos de cobertura e de calibração estatística que só rodam com `python -m pytest --runslow`, em cerca de 2 minutos; os que dependem de um PostgreSQL real são ignorados quando `QSIMULADOR_TEST_POSTGRES_URL` não está definida). Um aviso de depreciação do Starlette sobre o `httpx` pode aparecer e é inofensivo.
 
 ---
 
@@ -425,6 +425,41 @@ curl.exe -N -X POST http://127.0.0.1:8000/api/scenarios/compare `
 ```
 
 Na interface, a aba **Cenários** usa o modelo, os valores e a simulação do Laboratório como base. Em cada campo digite o valor (`12`) ou a variação (`+20%` em λ, μ e CV; `+1` ou `−1` em c, K e k). Ao executar, as linhas aparecem conforme cada cenário termina; o botão Cancelar interrompe o que falta.
+
+### Distribuições e ajuste de amostras (Fase 13)
+
+Três rotas em `/api/analysis`. Elas respondem a: "como é a distribuição, e não só a média?", "como Wq reage a λ?" e "meus dados seguem uma distribuição conhecida?".
+
+- **`POST /api/analysis/distribution`:** recebe o mesmo sistema das rotas dos modelos (`model`, `lambda`, `mu` ou `service`, `servers`, `capacity`). Devolve P(n) (M/M/1, M/M/c, M/M/1/K e M/M/c/K; soma 1, com a massa omitida informada) e P(Wq > t): no M/M/1 e no M/M/c é a fórmula fechada, com os percentis; nos demais é o histograma de uma simulação FIFO (`simulation`: `simulation_time`, `replications`, `warmup_time`, `seed`; por padrão 20.000 chegadas por réplica e 10 réplicas), com IC entre réplicas. `"simulate": true` simula também no M/M/c, para conferir a fórmula. O serviço geral não tem P(n) fechada, e o Erlang-B (sem fila) é recusado.
+- **`POST /api/analysis/sensitivity`:** curva de Wq (e W, Lq) em λ, de λ·(1 − `span`) a λ·(1 + `span`) (padrão 0,5 e 41 pontos). O λ atual cai exatamente em um ponto (`current_index`). Na fila ilimitada a curva para em ρ = 0,99.
+- **`POST /api/analysis/fit`:** recebe `sample` (tempos positivos, de 10 valores até 10 MiB de corpo, o limite do envio de CSV), `kind` (`service` ou `interarrival`), `bootstrap` (B; 200 por padrão, de 20 a 2.000, ou 0 para não calcular o p-valor), `alpha` e `seed`. A resposta é `application/x-ndjson`: `start`, uma `candidate` por candidata e `done` com o resultado completo (CV com IC, histograma, curvas, sugestão de modelo). Erros de validação saem como 422 antes do fluxo; corpo acima de 10 MiB dá 413.
+
+Como ler o ajuste:
+
+- **p-valor:** é de aderência por Monte Carlo (bootstrap paramétrico: sorteia B amostras da distribuição ajustada, reestima tudo em cada uma e compara a distância de Kolmogorov-Smirnov). Não é o KS simples, que com parâmetros estimados da própria amostra quase nunca rejeita. O `p_value_se` é o erro de Monte Carlo (√(p(1 − p)/B)); com B = 200 e p ≈ 0,05 ele é ≈ 0,015.
+- **AIC:** compara as candidatas entre si (menor é melhor; `delta_aic` e `akaike_weight`). Não prova que alguma serve: veja `adequate` e `none_adequate`. A **uniforme** fica na tabela, mas o AIC dela não é comparável (o suporte [mín, máx] depende da amostra) e ela não entra no melhor AIC.
+- **Sugestão pelo CV:** 0,7 a 1,3 sugere M/M/c; até 0,1 sugere M/D/c; fora disso, M/G/c, com o serviço da melhor candidata adequada em `service_suggestion`. Amostra constante (CV = 0) não tem ajuste e sugere M/D/c.
+- **Tempo e limite de trabalho:** o custo é ≈ 1 µs por n·B (n = 40.000 e B = 200 levam ~6 s). O teto é n·B ≤ 8.000.000: sem `bootstrap`, o sistema reduz B (ou desliga o p-valor, com aviso); um B pedido que passe do teto é rejeitado com o máximo permitido.
+- **Dados reais:** a análise do JMeter (`/api/realdata/analyze`) traz `service_hint`, a sugestão pelo CV dos tempos de resposta do menor nível de carga. Com carga baixa ele aproxima o CV do serviço; é uma indicação e não altera o ranking.
+
+```powershell
+# M/M/2 (λ = 15, μ = 10): P(n) e P(Wq > t) pela fórmula fechada, conferida com a simulação
+curl.exe -X POST http://127.0.0.1:8000/api/analysis/distribution `
+  -H "Content-Type: application/json" `
+  -d '{\"model\":\"mmc\",\"lambda\":15,\"mu\":10,\"servers\":2,\"simulate\":true,\"simulation\":{\"seed\":7}}'
+
+# Wq x lambda ao redor de λ = 8 (M/M/1, μ = 10)
+curl.exe -X POST http://127.0.0.1:8000/api/analysis/sensitivity `
+  -H "Content-Type: application/json" `
+  -d '{\"model\":\"mm1\",\"lambda\":8,\"mu\":10}'
+
+# Ajuste (NDJSON; -N mostra cada candidata conforme termina)
+curl.exe -N -X POST http://127.0.0.1:8000/api/analysis/fit `
+  -H "Content-Type: application/json" `
+  -d '{\"sample\":[0.8,1.2,0.5,2.1,0.9,1.4,0.7,1.1,3.0,0.6,1.0,1.3],\"bootstrap\":200,\"seed\":7}'
+```
+
+Na interface: no Laboratório, depois de calcular, a aba **Distribuições** mostra os três gráficos (o losango é a configuração atual; há escala logarítmica e a opção "Conferir com a simulação"). O menu **Ajustar distribuição** recebe a amostra colada (um valor por linha, vírgula decimal aceita) ou importada de um CSV ou TXT (primeira coluna; cabeçalho ignorado), mostra o histograma com as curvas das candidatas, a tabela (menor AIC marcado, p-valor ± erro de Monte Carlo) e a sugestão de modelo, e salva o ajuste no histórico (tipo `fit`; a amostra não é guardada, e a semente reproduz o p-valor).
 
 ### Erros da API
 

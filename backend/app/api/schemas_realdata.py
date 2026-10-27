@@ -120,6 +120,18 @@ class DatasetOut(BaseModel):
     end: float
 
 
+class AnalysisServiceHintOut(BaseModel):
+    """Sugestão de modelo pelo CV (Fase 13). Indicação, não parte do ranking."""
+
+    model: Literal["M/M/c", "M/D/c", "M/G/c"] | None = Field(description="Modelo sugerido pelo CV; None se não há (chegadas).")
+    lab_model: Literal["mmc", "mgc"] | None = Field(description="Modelo do Laboratório para c ≥ 2.")
+    distribution: str | None = Field(description="\"deterministic\" no M/D/c; nos demais, quem escolhe é o ajuste.")
+    cv: float
+    kind: Literal["service", "interarrival"]
+    text: str
+    basis: str = Field(description="De onde veio o CV (nível de carga e ressalva).")
+
+
 class AnalysisResponse(BaseModel):
     status: Literal["recommended", "no_good_fit"]
     confidence: Literal["alta", "media", "baixa"]
@@ -135,6 +147,8 @@ class AnalysisResponse(BaseModel):
     levels: list[LevelModel]
     comparison: list[LevelComparisonOut]
     dataset: DatasetOut
+    service_hint: AnalysisServiceHintOut | None = Field(
+        default=None, description="Sugestão M/M/c, M/D/c ou M/G/c pelo CV do menor nível de carga (não altera o ranking).")
 
 
 class CompareRequest(BaseModel):

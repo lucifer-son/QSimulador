@@ -2,8 +2,8 @@
 
 | Campo | Valor |
 |---|---|
-| Versão | 1.0 |
-| Data | 16/10/2026 |
+| Versão | 1.1 |
+| Data | 26/10/2026 |
 | Uso | Casos de teste com **resposta exata** para as Fases 9 a 20 (ver [roadmap-competitivo.md](roadmap-competitivo.md)) |
 | Origem | Calculados em Python (dupla precisão) e arredondados; **conferidos por um segundo método independente** (cadeia de nascimento e morte, sem fórmulas fechadas) |
 
@@ -97,6 +97,31 @@ Dimensionamento por nível de serviço **80/20** (80% atendidos em até 20 s): o
 
 Número ótimo de servidores: **12**.
 
+## 9. Distribuições e ajuste (Fase 13)
+
+Distribuições analíticas (conferidas pelo teste de soma 1, pela média L e pela cauda geométrica exata):
+
+| Caso | Resultado |
+|---|---|
+| M/M/1, λ = 8, μ = 10 | P(n) = 0,2 · 0,8ⁿ; P(0) = 0,2; L = 4; P(Wq > 0) = 0,8; P(Wq > t) = 0,8·e^(−2t) |
+| M/M/2, λ = 15, μ = 10 | P₀ = 0,142857; Erlang C = P(esperar) = 0,642857; Wq = 0,128571; percentis da espera p50 = 0,0503, p90 = 0,3722, p95 = 0,5108, p99 = 0,8327 |
+| M/M/2/6, λ = 15, μ = 10 | P(bloqueio) = P(6) = 0,060005 |
+| M/M/1/1, λ = 3, μ = 1 | P(0) = 0,25; P(1) = 0,75 |
+
+Simulação de esperas (M/M/c, 10 réplicas, ~50.000 chegadas cada): a diferença máxima entre a média simulada de P(Wq > t) e a fórmula, em 20 sementes, foi 0,0098 (M/M/1, ρ = 0,8), 0,0079 (M/M/2, ρ = 0,75) e 0,0173 (M/M/5, ρ = 0,9); tolerância do teste: 0,03.
+
+Calibração do p-valor por Monte Carlo (D-02), taxa de rejeição com a distribuição verdadeira (B = 200):
+
+| Amostras | Nominal 5% | Nominal 10% |
+|---|---|---|
+| n = 50, 400 por família | de 4,0% (exponencial e Weibull) a 5,2% (lognormal) | de 8,7% a 11,5% |
+| n = 200, 300 por família | de 3,3% (Weibull) a 6,0% (exponencial) | de 7,7% a 12,7% |
+| KS simples, parâmetros estimados (n = 50) | de 0% a 0,3% nas quatro famílias de suporte infinito; 4% na uniforme | — |
+
+Teste lento (`--runslow`): taxa de rejeição a 5% entre 1% e 10% (300 amostras de n = 50; erro-padrão ≈ 1,3 ponto). Erro relativo máximo dos parâmetros entre 30 sementes (n = 2.000): exponencial 0,049; lognormal 0,081 e 0,042; Weibull 0,044 e 0,028; uniforme 0,004; Erlang com k exato.
+
+Custo: ~0,8 a 1,0 µs por unidade de n·B (n = 40.000 com B = 200: ~6 s). Teto de trabalho: n·B ≤ 8.000.000.
+
 ## 8. Propriedades que valem como teste (sem número fixo)
 
 | Propriedade | Aplicação |
@@ -110,6 +135,9 @@ Número ótimo de servidores: **12**.
 | Cenários com a mesma semente e parâmetros idênticos geram diferença zero | Fase 12 |
 | Com a semente comum (fluxos separados de chegada e serviço), a variância da diferença pareada é menor que com sementes independentes: razão de ≈ 0,5 a 0,7 ao mudar c ou μ (M/M/5, λ = 4, T = 400, 100 réplicas); o ganho é menor ao mudar λ (≈ 0,7), porque as chegadas se descolam ao longo do tempo | Fase 12 |
 | O IC pareado de 95% cobre a diferença analítica em 94% a 96% de 300 repetições com sementes distintas (M/M/2, λ de 1,0 para 1,4, μ = 1, 10 réplicas, T = 600, warm-up 100); com T = 300 a cobertura cai para 87% a 93%, o viés de regime | Fase 12 |
+| P(n) soma 1 (com a massa omitida) e P(0) = 1 − ρ no M/M/1; a cauda omitida da fila ilimitada é P(esperar)·ρ^(m+1−c), exata | Fase 13 |
+| O histograma de espera da simulação reproduz a fórmula fechada do M/M/c dentro do IC | Fase 13 |
+| Erlang-k com k = 1 tem a mesma verossimilhança da exponencial; a amostra exponencial dá CV ≈ 1 e a constante dá CV = 0 | Fase 13 |
 | Lei de conservação de Kleinrock para prioridades não preemptivas: Σ ρₖ·Wq,ₖ é invariante (igual ao caso FIFO quando os tempos de serviço são iguais) | Fase 15 |
 | Erlang-A tende ao Erlang-C quando a taxa de abandono tende a zero | Fase 20 |
 | Equações de tráfego de Jackson: λ = (I − Rᵀ)⁻¹ Λ; cada nó M/M/c com o λ resultante | Fase 19 |

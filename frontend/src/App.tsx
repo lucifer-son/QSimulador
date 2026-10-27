@@ -5,6 +5,7 @@ import { ParametersPanel } from "./components/ParametersPanel";
 import { ResultsPanel } from "./components/ResultsPanel";
 import { ScenariosTab } from "./components/ScenariosTab";
 import { SizingTab } from "./components/SizingTab";
+import { FitTab } from "./components/FitTab";
 import { ExperimentTab } from "./components/ExperimentTab";
 import { HistoryTab } from "./components/HistoryTab";
 import { RealDataTab } from "./components/RealDataTab";
@@ -43,11 +44,12 @@ export default function App() {
   const [apiErrors, setApiErrors] = useState<FieldErrors>({});
   const [theme, setTheme] = useState<Theme>(initialTheme);
   
-  const [activeTab, setActiveTab] = useState<"laboratorio" | "experimentos" | "cenarios" | "dimensionamento" | "dados" | "historico">("laboratorio");
+  const [activeTab, setActiveTab] = useState<"laboratorio" | "experimentos" | "cenarios" | "dimensionamento" | "ajuste" | "dados" | "historico">("laboratorio");
   // Os experimentos só são montados na primeira visita; depois ficam montados para manter os resultados.
   const [experimentsOpened, setExperimentsOpened] = useState(false);
   const [scenariosOpened, setScenariosOpened] = useState(false);
   const [sizingOpened, setSizingOpened] = useState(false);
+  const [fitOpened, setFitOpened] = useState(false);
   const [realDataOpened, setRealDataOpened] = useState(false);
 
   const { state, run, cancel, loadRuns, restore } = useRunner();
@@ -168,6 +170,14 @@ export default function App() {
           <button
             type="button"
             className="nav-item"
+            aria-current={activeTab === "ajuste" ? "page" : undefined}
+            onClick={() => { setActiveTab("ajuste"); setFitOpened(true); }}
+          >
+            Ajustar distribuição
+          </button>
+          <button
+            type="button"
+            className="nav-item"
             aria-current={activeTab === "dados" ? "page" : undefined}
             onClick={() => { setActiveTab("dados"); setRealDataOpened(true); }}
           >
@@ -223,6 +233,12 @@ export default function App() {
       {sizingOpened && (
         <main className="layout layout-wide" hidden={activeTab !== "dimensionamento"}>
           <SizingTab model={model} system={systems[model]} active={activeTab === "dimensionamento"} />
+        </main>
+      )}
+
+      {fitOpened && (
+        <main className="layout layout-wide" hidden={activeTab !== "ajuste"}>
+          <FitTab />
         </main>
       )}
 

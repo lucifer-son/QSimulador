@@ -139,6 +139,11 @@ span.nav-item { cursor: default; }
 .field-hint { font-size: 0.78rem; color: var(--text-muted); }
 .field.inline { flex-direction: row; align-items: center; gap: 10px; max-width: 420px; }
 .field.inline label { white-space: nowrap; }
+.fit-curves { flex-wrap: wrap; max-width: none; gap: 8px 16px; }
+.fit-curves label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.fit-curves input[type="checkbox"] {
+  flex: 0 0 16px; width: 16px; height: 16px; margin: 0; padding: 0; accent-color: var(--accent);
+}
 
 .estimate {
   display: flex; align-items: center; gap: 6px; margin: 16px 0 12px;

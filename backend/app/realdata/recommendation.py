@@ -16,6 +16,7 @@ import numpy as np
 from scipy.optimize import brentq
 
 from app.analysis.comparison import relative_error_pct
+from app.analysis.suggestion import SERVICE, suggest_from_cv
 from app.analytical.finite_population import finite_population_metrics
 from app.analytical.mmck import queue_metrics
 from app.domain.metrics.queue_metrics import QueueModelMetrics
@@ -245,6 +246,7 @@ class AnalysisResult:
     levels: list[dict]
     comparison: list[dict]
     dataset: dict
+    service_hint: dict | None = None   # Fase 13: sugestão M/M/c, M/D/c ou M/G/c pelo CV (não altera o ranking)
 
     def as_dict(self) -> dict:
         data = _jsonable(asdict(self))
@@ -450,7 +452,28 @@ def analyze(ds: JMeterDataset, ctx: AnalysisContext | None = None) -> AnalysisRe
         levels=[{"users": lv.users, "metrics": asdict(lv.metrics)} for lv in levels], comparison=comparison,
         dataset={"rows": total_rows, "rows_analyzed": len(ds), "labels": sorted({str(x) for x in ds.label})[:50],
                  "start": float(ds.start[0]), "end": float(ds.end.max())},
+        service_hint=service_hint(levels),
     )
+
+
+def service_hint(levels: list[LoadLevel]) -> dict | None:
+    """Sugestão de modelo pelo CV dos tempos de resposta do **menor nível de carga** (Fase 13, RFC-26).
+
+    O JMeter só registra o tempo de resposta (serviço + espera na fila). Com carga baixa a espera é
+    pequena e o CV da resposta se aproxima do CV do serviço; com carga alta ele mistura os dois. Por isso é
+    uma indicação, e o ajuste da aba "Ajustar distribuição" (com a amostra dos tempos de serviço) é quem decide.
+    Não entra no ranking nem nos escores do recomendador.
+    """
+    cv = levels[0].metrics.response_cv
+    if cv is None:
+        return None
+    suggestion = suggest_from_cv(cv, SERVICE).as_dict()
+    users = levels[0].users
+    suggestion["basis"] = (
+        "CV dos tempos de resposta" + (f" no nível de {users} usuários" if users else " da janela analisada")
+        + " (serviço + espera): aproxima o CV do serviço quando a carga é baixa."
+    )
+    return suggestion
 
 
 def compare_chosen(

@@ -659,6 +659,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/analysis/distribution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Distribution
+         * @description P(n) analítica e P(Wq > t) (fórmula fechada no M/M/c; histograma da simulação nos demais).
+         *
+         *     P(n) existe para M/M/1, M/M/c, M/M/1/K e M/M/c/K (soma 1; P(0) = 1 − ρ no M/M/1). O serviço geral não
+         *     tem P(n) fechada. Rota síncrona de propósito: a simulação é CPU-bound e roda numa thread.
+         */
+        post: operations["distribution_api_analysis_distribution_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analysis/sensitivity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sensitivity
+         * @description Curva de Wq (e W, Lq) em função de λ, ao redor da configuração atual, com o ponto do Laboratório marcado.
+         *
+         *     Reaproveita a varredura de λ da Fase 6. Na fila ilimitada a curva para em ρ = 0,99.
+         */
+        post: operations["sensitivity_api_analysis_sensitivity_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/analysis/fit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fit
+         * @description Ajusta exponencial, Erlang-k, lognormal, Weibull e uniforme por máxima verossimilhança.
+         *
+         *     Para cada candidata: parâmetros, AIC, CV e **p-valor de aderência por Monte Carlo** (bootstrap paramétrico,
+         *     com os parâmetros reestimados em cada réplica; não é o KS simples). A resposta é um NDJSON: `start`, uma
+         *     `candidate` por candidata e `done` com o resultado completo (histograma, curvas, sugestão de modelo).
+         */
+        post: operations["fit_api_analysis_fit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/realdata/analyze": {
         parameters: {
             query?: never;
@@ -895,6 +964,351 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AnalysisCurvePointOut */
+        AnalysisCurvePointOut: {
+            /**
+             * Value
+             * @description λ.
+             */
+            value: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "unstable" | "invalid";
+            /** Message */
+            message: string | null;
+            /**
+             * Rho
+             * @description Utilização oferecida λ/(c·μ).
+             */
+            rho: number;
+            /** Wq */
+            wq: number | null;
+            /** W */
+            w: number | null;
+            /** Lq */
+            lq: number | null;
+        };
+        /** AnalysisCurvesOut */
+        AnalysisCurvesOut: {
+            /** T */
+            t: number[];
+            /**
+             * Pdf
+             * @description Densidade de cada candidata nos pontos t.
+             */
+            pdf: {
+                [key: string]: number[];
+            };
+        };
+        /**
+         * AnalysisDistributionRequest
+         * @example {
+         *       "lambda": 15,
+         *       "model": "mmc",
+         *       "mu": 10,
+         *       "servers": 2
+         *     }
+         */
+        AnalysisDistributionRequest: {
+            /**
+             * Model
+             * @description Modelo. O Erlang-B não tem fila e é recusado.
+             * @enum {string}
+             */
+            model: "mm1" | "mmc" | "mm1k" | "mmck" | "mg1" | "erlangb" | "mgc";
+            /**
+             * Lambda
+             * @description Taxa de chegada λ.
+             */
+            lambda: number;
+            /**
+             * Mu
+             * @description Taxa de serviço μ. Obrigatória, exceto em mg1 e mgc (use `service`).
+             */
+            mu?: number | null;
+            /** @description Serviço do mg1 e do mgc. */
+            service?: components["schemas"]["ServiceSpec"] | null;
+            /**
+             * Servers
+             * @description c. Obrigatório em mmc, mmck e mgc.
+             */
+            servers?: number | null;
+            /**
+             * Capacity
+             * @description K. Obrigatório em mm1k e mmck.
+             */
+            capacity?: number | null;
+            /**
+             * Points
+             * @description Pontos da curva P(Wq > t) (2 a 200).
+             * @default 60
+             */
+            points: number;
+            /**
+             * T Max
+             * @description Fim do eixo t da fórmula fechada. Padrão: até a cauda cair a 1e-4.
+             */
+            t_max?: number | null;
+            /**
+             * Simulate
+             * @description Simula também nos modelos com fórmula fechada (mm1 e mmc), para conferir. Nos demais é sempre simulado.
+             * @default false
+             */
+            simulate: boolean;
+            simulation?: components["schemas"]["AnalysisSimulationIn"];
+        };
+        /** AnalysisDistributionResponse */
+        AnalysisDistributionResponse: {
+            /** Model */
+            model: string;
+            /** @description P(n) analítica; None no serviço geral (a aproximação só define as médias). */
+            states: components["schemas"]["AnalysisStatesOut"] | null;
+            /** States Note */
+            states_note: string | null;
+            /** @description Só no M/M/1 e M/M/c. */
+            wait_closed_form: components["schemas"]["AnalysisWaitTailOut"] | null;
+            /** @description Histograma da simulação (sempre, exceto no M/M/1 e M/M/c sem `simulate`). */
+            wait_simulation: components["schemas"]["AnalysisWaitSimulationOut"] | null;
+            /** Wait Note */
+            wait_note: string | null;
+        };
+        /** AnalysisFitCandidateOut */
+        AnalysisFitCandidateOut: {
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "exponential" | "erlang" | "lognormal" | "weibull" | "uniform";
+            /** Label */
+            label: string;
+            /** Parameters */
+            parameters: {
+                [key: string]: number;
+            };
+            /** N Params */
+            n_params: number;
+            /** Loglik */
+            loglik: number;
+            /** Aic */
+            aic: number;
+            /**
+             * Delta Aic
+             * @description AIC − menor AIC entre as comparáveis (None na uniforme).
+             */
+            delta_aic: number | null;
+            /** Akaike Weight */
+            akaike_weight: number | null;
+            /**
+             * Comparable Aic
+             * @description False na uniforme: o suporte depende da amostra.
+             */
+            comparable_aic: boolean;
+            /** Mean */
+            mean: number;
+            /** Cv */
+            cv: number;
+            /** Ks Statistic */
+            ks_statistic: number;
+            /**
+             * P Value
+             * @description Aderência por Monte Carlo (bootstrap paramétrico); None sem bootstrap.
+             */
+            p_value: number | null;
+            /**
+             * P Value Se
+             * @description Erro de Monte Carlo do p-valor.
+             */
+            p_value_se: number | null;
+            /**
+             * Adequate
+             * @description p ≥ α; None sem bootstrap.
+             */
+            adequate: boolean | null;
+            /**
+             * Service
+             * @description Serviço equivalente no M/G/c.
+             */
+            service: {
+                [key: string]: number | string;
+            } | null;
+            /** Notes */
+            notes: string[];
+        };
+        /**
+         * AnalysisFitEventOut
+         * @description Uma linha do NDJSON. start → candidate (uma por candidata) → done; error encerra.
+         */
+        AnalysisFitEventOut: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "start" | "candidate" | "done" | "error";
+            /** N */
+            n?: number | null;
+            /** Bootstrap */
+            bootstrap?: number | null;
+            /** Seed */
+            seed?: number | null;
+            /**
+             * Total
+             * @description Candidatas (para a barra de progresso).
+             */
+            total?: number | null;
+            /** Completed */
+            completed?: number | null;
+            candidate?: components["schemas"]["AnalysisFitCandidateOut"] | null;
+            /** @description Resultado completo, só em done. */
+            result?: components["schemas"]["AnalysisFitResultOut"] | null;
+            /** Code */
+            code?: string | null;
+            /** Message */
+            message?: string | null;
+            /** Field */
+            field?: string | null;
+        };
+        /**
+         * AnalysisFitRequest
+         * @example {
+         *       "kind": "service",
+         *       "sample": [
+         *         0.8,
+         *         1.2,
+         *         0.5,
+         *         2.1,
+         *         0.9,
+         *         1.4,
+         *         0.7,
+         *         1.1,
+         *         3,
+         *         0.6
+         *       ]
+         *     }
+         */
+        AnalysisFitRequest: {
+            /**
+             * Sample
+             * @description Tempos positivos (serviço ou entre chegadas), de 10 até metade dos bytes do limite do envio de CSV.
+             */
+            sample: number[];
+            /**
+             * Kind
+             * @description O que a amostra representa (muda a sugestão de modelo).
+             * @default service
+             * @enum {string}
+             */
+            kind: "service" | "interarrival";
+            /**
+             * Bootstrap
+             * @description Réplicas do p-valor por Monte Carlo (20 a 2000) ou 0 para não calcular. Sem valor: 200, ou o que o teto de trabalho permite.
+             */
+            bootstrap?: number | null;
+            /**
+             * Alpha
+             * @description Nível de significância da aderência.
+             * @default 0.05
+             */
+            alpha: number;
+            /**
+             * Seed
+             * @description Semente (reproduz o resultado). Sem ela, uma é sorteada e devolvida.
+             */
+            seed?: number | null;
+        };
+        /** AnalysisFitResultOut */
+        AnalysisFitResultOut: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "service" | "interarrival";
+            /** N */
+            n: number;
+            /** Mean */
+            mean: number;
+            /** Std */
+            std: number;
+            /** Cv */
+            cv: number;
+            /**
+             * Cv Ci
+             * @description IC de 95 % do CV (bootstrap não paramétrico).
+             */
+            cv_ci: number[] | null;
+            /** Minimum */
+            minimum: number;
+            /** Maximum */
+            maximum: number;
+            /**
+             * Degenerate
+             * @description Amostra constante: não há ajuste, só a sugestão M/D/c.
+             */
+            degenerate: boolean;
+            /** Bootstrap */
+            bootstrap: number;
+            /** Alpha */
+            alpha: number;
+            /** Seed */
+            seed: number;
+            /** Candidates */
+            candidates: components["schemas"]["AnalysisFitCandidateOut"][];
+            /**
+             * Best
+             * @description Menor AIC entre as comparáveis (a uniforme não entra).
+             */
+            best: string | null;
+            /**
+             * Adequate
+             * @description Candidatas com p ≥ α.
+             */
+            adequate: string[];
+            /**
+             * None Adequate
+             * @description True quando há p-valor e nenhuma candidata é adequada.
+             */
+            none_adequate: boolean | null;
+            suggestion: components["schemas"]["AnalysisModelSuggestionOut"];
+            /**
+             * Service Suggestion
+             * @description Serviço do M/M/c, M/D/c ou M/G/c sugerido, no formato do Laboratório.
+             */
+            service_suggestion: {
+                [key: string]: number | string;
+            } | null;
+            histogram: components["schemas"]["AnalysisHistogramOut"];
+            curves: components["schemas"]["AnalysisCurvesOut"];
+            /** Warnings */
+            warnings: string[];
+        };
+        /** AnalysisHistogramOut */
+        AnalysisHistogramOut: {
+            /** Edges */
+            edges: number[];
+            /** Counts */
+            counts: number[];
+            /** Density */
+            density: number[];
+        };
+        /** AnalysisModelSuggestionOut */
+        AnalysisModelSuggestionOut: {
+            /** Model */
+            model: ("M/M/c" | "M/D/c" | "M/G/c") | null;
+            /** Lab Model */
+            lab_model: ("mmc" | "mgc") | null;
+            /** Distribution */
+            distribution: string | null;
+            /** Cv */
+            cv: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "service" | "interarrival";
+            /** Text */
+            text: string;
+        };
         /** AnalysisResponse */
         "AnalysisResponse-Input": {
             /**
@@ -929,6 +1343,8 @@ export interface components {
             /** Comparison */
             comparison: components["schemas"]["LevelComparisonOut-Input"][];
             dataset: components["schemas"]["DatasetOut"];
+            /** @description Sugestão M/M/c, M/D/c ou M/G/c pelo CV do menor nível de carga (não altera o ranking). */
+            service_hint?: components["schemas"]["AnalysisServiceHintOut"] | null;
         };
         /** AnalysisResponse */
         "AnalysisResponse-Output": {
@@ -964,6 +1380,254 @@ export interface components {
             /** Comparison */
             comparison: components["schemas"]["LevelComparisonOut-Output"][];
             dataset: components["schemas"]["DatasetOut"];
+            /** @description Sugestão M/M/c, M/D/c ou M/G/c pelo CV do menor nível de carga (não altera o ranking). */
+            service_hint?: components["schemas"]["AnalysisServiceHintOut"] | null;
+        };
+        /**
+         * AnalysisSensitivityRequest
+         * @example {
+         *       "lambda": 8,
+         *       "model": "mm1",
+         *       "mu": 10
+         *     }
+         */
+        AnalysisSensitivityRequest: {
+            /**
+             * Model
+             * @description Modelo. O Erlang-B não tem fila e é recusado.
+             * @enum {string}
+             */
+            model: "mm1" | "mmc" | "mm1k" | "mmck" | "mg1" | "erlangb" | "mgc";
+            /**
+             * Lambda
+             * @description Taxa de chegada λ.
+             */
+            lambda: number;
+            /**
+             * Mu
+             * @description Taxa de serviço μ. Obrigatória, exceto em mg1 e mgc (use `service`).
+             */
+            mu?: number | null;
+            /** @description Serviço do mg1 e do mgc. */
+            service?: components["schemas"]["ServiceSpec"] | null;
+            /**
+             * Servers
+             * @description c. Obrigatório em mmc, mmck e mgc.
+             */
+            servers?: number | null;
+            /**
+             * Capacity
+             * @description K. Obrigatório em mm1k e mmck.
+             */
+            capacity?: number | null;
+            /**
+             * Span
+             * @description Fração de λ para cada lado (0 a 0,95): a faixa vai de λ·(1 − span) a λ·(1 + span).
+             * @default 0.5
+             */
+            span: number;
+            /**
+             * Points
+             * @description Pontos da curva (3 a 200; a grade tem sempre um número ímpar).
+             * @default 41
+             */
+            points: number;
+        };
+        /** AnalysisSensitivityResponse */
+        AnalysisSensitivityResponse: {
+            /** Model */
+            model: string;
+            /** Points */
+            points: components["schemas"]["AnalysisCurvePointOut"][];
+            /**
+             * Current Index
+             * @description Posição do λ atual em `points`.
+             */
+            current_index: number;
+            /** @description O ponto do Laboratório, calculado direto. */
+            current: components["schemas"]["AnalysisCurvePointOut"];
+            /** Span */
+            span: number;
+            /**
+             * Stability Limit
+             * @description λ máximo mostrado por estabilidade (None com capacidade finita).
+             */
+            stability_limit: number | null;
+            service?: components["schemas"]["ServiceOut"] | null;
+        };
+        /**
+         * AnalysisServiceHintOut
+         * @description Sugestão de modelo pelo CV (Fase 13). Indicação, não parte do ranking.
+         */
+        AnalysisServiceHintOut: {
+            /**
+             * Model
+             * @description Modelo sugerido pelo CV; None se não há (chegadas).
+             */
+            model: ("M/M/c" | "M/D/c" | "M/G/c") | null;
+            /**
+             * Lab Model
+             * @description Modelo do Laboratório para c ≥ 2.
+             */
+            lab_model: ("mmc" | "mgc") | null;
+            /**
+             * Distribution
+             * @description "deterministic" no M/D/c; nos demais, quem escolhe é o ajuste.
+             */
+            distribution: string | null;
+            /** Cv */
+            cv: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "service" | "interarrival";
+            /** Text */
+            text: string;
+            /**
+             * Basis
+             * @description De onde veio o CV (nível de carga e ressalva).
+             */
+            basis: string;
+        };
+        /** AnalysisSimulationIn */
+        AnalysisSimulationIn: {
+            /**
+             * Simulation Time
+             * @description T por réplica. Padrão: 20.000 chegadas esperadas (20.000/λ).
+             */
+            simulation_time?: number | null;
+            /**
+             * Replications
+             * @description Réplicas (2 a 100).
+             * @default 10
+             */
+            replications: number;
+            /**
+             * Warmup Time
+             * @description Aquecimento descartado. Padrão: 10 % de T.
+             */
+            warmup_time?: number | null;
+            /**
+             * Seed
+             * @description Semente (reproduz o resultado). Sem ela, uma é sorteada e devolvida.
+             */
+            seed?: number | null;
+            /**
+             * Confidence Level
+             * @default 0.95
+             */
+            confidence_level: number;
+        };
+        /** AnalysisStatesOut */
+        AnalysisStatesOut: {
+            /** Model */
+            model: string;
+            /** Servers */
+            servers: number;
+            /** Capacity */
+            capacity: number | null;
+            /**
+             * States
+             * @description Estados n mostrados, em ordem crescente.
+             */
+            states: number[];
+            /**
+             * P
+             * @description P(N = n).
+             */
+            p: number[];
+            /**
+             * Cumulative
+             * @description P(N ≤ n) acumulado sobre os estados mostrados.
+             */
+            cumulative: number[];
+            /**
+             * Omitted Mass
+             * @description Massa fora dos estados mostrados (cauda da fila ilimitada ou trechos cortados).
+             */
+            omitted_mass: number;
+            /** P0 */
+            p0: number;
+            /**
+             * Mean
+             * @description L = E[N], exato.
+             */
+            mean: number;
+            /** Rho */
+            rho: number;
+            /** P Wait */
+            p_wait: number;
+            /** P Block */
+            p_block: number;
+        };
+        /** AnalysisWaitSimulationOut */
+        AnalysisWaitSimulationOut: {
+            /** Model */
+            model: string;
+            /** Servers */
+            servers: number;
+            /** Capacity */
+            capacity: number | null;
+            /** T */
+            t: number[];
+            /**
+             * Survival
+             * @description P(Wq > t) em cada t: média entre réplicas e IC.
+             */
+            survival: components["schemas"]["MetricSummaryOut"][];
+            p_wait: components["schemas"]["MetricSummaryOut"];
+            mean_wait: components["schemas"]["MetricSummaryOut"];
+            p_block: components["schemas"]["MetricSummaryOut"];
+            /** Percentiles */
+            percentiles: {
+                [key: string]: components["schemas"]["MetricSummaryOut"];
+            };
+            /** Customers Per Replication */
+            customers_per_replication: number;
+            /** Simulation Time */
+            simulation_time: number;
+            /** Warmup Time */
+            warmup_time: number;
+            /** Replications */
+            replications: number;
+            /** Seed */
+            seed: number;
+            /** Confidence Level */
+            confidence_level: number;
+        };
+        /** AnalysisWaitTailOut */
+        AnalysisWaitTailOut: {
+            /** Model */
+            model: string;
+            /** Servers */
+            servers: number;
+            /** T */
+            t: number[];
+            /**
+             * Survival
+             * @description P(Wq > t), fórmula fechada do M/M/c.
+             */
+            survival: number[];
+            /**
+             * P Wait
+             * @description P(Wq > 0) = Erlang C.
+             */
+            p_wait: number;
+            /**
+             * Decay Rate
+             * @description c·μ − λ: a cauda cai como exp(−taxa·t).
+             */
+            decay_rate: number;
+            /** Mean Wait */
+            mean_wait: number;
+            /**
+             * Percentiles
+             * @description p50, p90, p95 e p99 do tempo de espera.
+             */
+            percentiles: {
+                [key: string]: number;
+            };
         };
         /** Body_analyze_csv_api_realdata_analyze_post */
         Body_analyze_csv_api_realdata_analyze_post: {
@@ -5680,6 +6344,114 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    distribution_api_analysis_distribution_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalysisDistributionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisDistributionResponse"];
+                };
+            };
+            /** @description Parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    sensitivity_api_analysis_sensitivity_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalysisSensitivityRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisSensitivityResponse"];
+                };
+            };
+            /** @description Parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fit_api_analysis_fit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalysisFitRequest"];
+            };
+        };
+        responses: {
+            /** @description Uma linha JSON por evento (application/x-ndjson). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/x-ndjson": components["schemas"]["AnalysisFitEventOut"];
+                };
+            };
+            /** @description Corpo maior que o limite do envio de CSV */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/x-ndjson": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Parâmetros inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/x-ndjson": components["schemas"]["ErrorResponse"];
                 };
             };
         };

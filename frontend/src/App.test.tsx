@@ -269,10 +269,10 @@ describe("abas", () => {
     return ctx;
   };
 
-  it("expõe as quatro abas com Resultados selecionada", async () => {
+  it("expõe as cinco abas com Resultados selecionada", async () => {
     await compared();
     const tabs = screen.getAllByRole("tab");
-    expect(tabs.map((t) => t.textContent)).toEqual(["Resultados", "Gráficos", "Réplicas", "Detalhes"]);
+    expect(tabs.map((t) => t.textContent)).toEqual(["Resultados", "Gráficos", "Distribuições", "Réplicas", "Detalhes"]);
     expect(screen.getByRole("tab", { name: "Resultados" })).toHaveAttribute("aria-selected", "true");
   });
 

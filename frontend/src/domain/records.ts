@@ -10,6 +10,7 @@ import type { SizingResponse } from "../api/sizing";
 import type { CostUnit, SizingAction } from "./sizing";
 import type { NewRecord, RecordDetail, RecordKind } from "../api/records";
 import type { AnalysisResponse } from "../api/realdata";
+import type { FitResult } from "../api/analysis";
 import type {
   ServerComparisonResponse, SensitivityResponse, ServicesComparisonResponse, SweepResponse,
 } from "../api/experiments";
@@ -134,6 +135,32 @@ export function parseExperimentRecord(record: RecordDetail): ExperimentSnapshot 
     default:
       return null;
   }
+}
+
+// ---------- Ajuste de distribuição (Fase 13) ----------
+
+/** O ajuste é um experimento do tipo "fit" (kind continua "experiment": o esquema do banco não muda). */
+export function fitTitle(result: FitResult): string {
+  const best = result.candidates.find((c) => c.key === result.best);
+  return `Ajuste de distribuição · n = ${result.n.toLocaleString("pt-BR")}${best ? ` (melhor AIC: ${best.label})` : ""}`;
+}
+
+export function fitRecord(request: Record<string, unknown>, result: FitResult, title: string = fitTitle(result)): NewRecord {
+  // A amostra inteira vai em `result`? Não: só o resumo, para o registro caber no limite. A semente reproduz o p-valor.
+  const { sample: _sample, ...settings } = request;
+  return {
+    kind: "experiment",
+    title,
+    params: { origin: "experiment", experiment: "fit", request: { ...settings, n: result.n, seed: result.seed } },
+    result: result as unknown as Record<string, unknown>,
+  };
+}
+
+export function parseFitRecord(record: RecordDetail): FitResult | null {
+  const { params, result } = record;
+  if (params.origin !== "experiment" || params.experiment !== "fit") return null;
+  return Array.isArray(result.candidates) && isObject(result.histogram) && isObject(result.suggestion)
+    ? (result as unknown as FitResult) : null;
 }
 
 // ---------- Dados reais ----------

@@ -1,0 +1,64 @@
+[
+ {
+  "type": "start",
+  "n": 20,
+  "bootstrap": 200,
+  "seed": 918806789,
+  "total": 5
+ },
+ {
+  "type": "done",
+  "result": {
+   "kind": "service",
+   "n": 20,
+   "mean": 2.5,
+   "std": 0.0,
+   "cv": 0.0,
+   "cv_ci": [
+    0.0,
+    0.0
+   ],
+   "minimum": 2.5,
+   "maximum": 2.5,
+   "degenerate": true,
+   "bootstrap": 200,
+   "alpha": 0.05,
+   "seed": 918806789,
+   "candidates": [],
+   "best": null,
+   "adequate": [],
+   "none_adequate": null,
+   "suggestion": {
+    "model": "M/D/c",
+    "lab_model": "mgc",
+    "distribution": "deterministic",
+    "cv": 0.0,
+    "kind": "service",
+    "text": "CV do serviço = 0,00, praticamente zero: serviço quase constante (M/D/c, o M/G/c com serviço determinístico)."
+   },
+   "service_suggestion": {
+    "distribution": "deterministic",
+    "mean": 2.5
+   },
+   "histogram": {
+    "edges": [
+     2.475,
+     2.525
+    ],
+    "counts": [
+     20
+    ],
+    "density": [
+     20.0
+    ]
+   },
+   "curves": {
+    "t": [],
+    "pdf": {}
+   },
+   "warnings": [
+    "A amostra é constante: não há distribuição a ajustar (todas as candidatas degeneram). Com CV = 0 o modelo adequado é o de serviço determinístico (M/D/c)."
+   ]
+  }
+ }
+]

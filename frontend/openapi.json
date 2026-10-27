@@ -1327,6 +1327,143 @@
         }
       }
     },
+    "/api/analysis/distribution": {
+      "post": {
+        "tags": [
+          "Análise de distribuições"
+        ],
+        "summary": "Distribution",
+        "description": "P(n) analítica e P(Wq > t) (fórmula fechada no M/M/c; histograma da simulação nos demais).\n\nP(n) existe para M/M/1, M/M/c, M/M/1/K e M/M/c/K (soma 1; P(0) = 1 − ρ no M/M/1). O serviço geral não\ntem P(n) fechada. Rota síncrona de propósito: a simulação é CPU-bound e roda numa thread.",
+        "operationId": "distribution_api_analysis_distribution_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalysisDistributionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisDistributionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analysis/sensitivity": {
+      "post": {
+        "tags": [
+          "Análise de distribuições"
+        ],
+        "summary": "Sensitivity",
+        "description": "Curva de Wq (e W, Lq) em função de λ, ao redor da configuração atual, com o ponto do Laboratório marcado.\n\nReaproveita a varredura de λ da Fase 6. Na fila ilimitada a curva para em ρ = 0,99.",
+        "operationId": "sensitivity_api_analysis_sensitivity_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalysisSensitivityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisSensitivityResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analysis/fit": {
+      "post": {
+        "tags": [
+          "Análise de distribuições"
+        ],
+        "summary": "Fit",
+        "description": "Ajusta exponencial, Erlang-k, lognormal, Weibull e uniforme por máxima verossimilhança.\n\nPara cada candidata: parâmetros, AIC, CV e **p-valor de aderência por Monte Carlo** (bootstrap paramétrico,\ncom os parâmetros reestimados em cada réplica; não é o KS simples). A resposta é um NDJSON: `start`, uma\n`candidate` por candidata e `done` com o resultado completo (histograma, curvas, sugestão de modelo).",
+        "operationId": "fit_api_analysis_fit_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalysisFitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Uma linha JSON por evento (application/x-ndjson).",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisFitEventOut",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Corpo maior que o limite do envio de CSV",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros inválidos",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/realdata/analyze": {
       "post": {
         "tags": [
@@ -2167,6 +2304,938 @@
   },
   "components": {
     "schemas": {
+      "AnalysisCurvePointOut": {
+        "properties": {
+          "value": {
+            "type": "number",
+            "title": "Value",
+            "description": "λ."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "unstable",
+              "invalid"
+            ],
+            "title": "Status"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "rho": {
+            "type": "number",
+            "title": "Rho",
+            "description": "Utilização oferecida λ/(c·μ)."
+          },
+          "wq": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wq"
+          },
+          "w": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "W"
+          },
+          "lq": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lq"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value",
+          "status",
+          "message",
+          "rho",
+          "wq",
+          "w",
+          "lq"
+        ],
+        "title": "AnalysisCurvePointOut"
+      },
+      "AnalysisCurvesOut": {
+        "properties": {
+          "t": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "T"
+          },
+          "pdf": {
+            "additionalProperties": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Pdf",
+            "description": "Densidade de cada candidata nos pontos t."
+          }
+        },
+        "type": "object",
+        "required": [
+          "t",
+          "pdf"
+        ],
+        "title": "AnalysisCurvesOut"
+      },
+      "AnalysisDistributionRequest": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "enum": [
+              "mm1",
+              "mmc",
+              "mm1k",
+              "mmck",
+              "mg1",
+              "erlangb",
+              "mgc"
+            ],
+            "title": "Model",
+            "description": "Modelo. O Erlang-B não tem fila e é recusado."
+          },
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa de chegada λ."
+          },
+          "mu": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mu",
+            "description": "Taxa de serviço μ. Obrigatória, exceto em mg1 e mgc (use `service`)."
+          },
+          "service": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceSpec"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Serviço do mg1 e do mgc."
+          },
+          "servers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Servers",
+            "description": "c. Obrigatório em mmc, mmck e mgc."
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity",
+            "description": "K. Obrigatório em mm1k e mmck."
+          },
+          "points": {
+            "type": "integer",
+            "title": "Points",
+            "description": "Pontos da curva P(Wq > t) (2 a 200).",
+            "default": 60
+          },
+          "t_max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "T Max",
+            "description": "Fim do eixo t da fórmula fechada. Padrão: até a cauda cair a 1e-4."
+          },
+          "simulate": {
+            "type": "boolean",
+            "title": "Simulate",
+            "description": "Simula também nos modelos com fórmula fechada (mm1 e mmc), para conferir. Nos demais é sempre simulado.",
+            "default": false
+          },
+          "simulation": {
+            "$ref": "#/components/schemas/AnalysisSimulationIn"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "lambda"
+        ],
+        "title": "AnalysisDistributionRequest",
+        "examples": [
+          {
+            "lambda": 15,
+            "model": "mmc",
+            "mu": 10,
+            "servers": 2
+          }
+        ]
+      },
+      "AnalysisDistributionResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "states": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnalysisStatesOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "P(n) analítica; None no serviço geral (a aproximação só define as médias)."
+          },
+          "states_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "States Note"
+          },
+          "wait_closed_form": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnalysisWaitTailOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Só no M/M/1 e M/M/c."
+          },
+          "wait_simulation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnalysisWaitSimulationOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Histograma da simulação (sempre, exceto no M/M/1 e M/M/c sem `simulate`)."
+          },
+          "wait_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wait Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "states",
+          "states_note",
+          "wait_closed_form",
+          "wait_simulation",
+          "wait_note"
+        ],
+        "title": "AnalysisDistributionResponse"
+      },
+      "AnalysisFitCandidateOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "enum": [
+              "exponential",
+              "erlang",
+              "lognormal",
+              "weibull",
+              "uniform"
+            ],
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "parameters": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Parameters"
+          },
+          "n_params": {
+            "type": "integer",
+            "title": "N Params"
+          },
+          "loglik": {
+            "type": "number",
+            "title": "Loglik"
+          },
+          "aic": {
+            "type": "number",
+            "title": "Aic"
+          },
+          "delta_aic": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta Aic",
+            "description": "AIC − menor AIC entre as comparáveis (None na uniforme)."
+          },
+          "akaike_weight": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Akaike Weight"
+          },
+          "comparable_aic": {
+            "type": "boolean",
+            "title": "Comparable Aic",
+            "description": "False na uniforme: o suporte depende da amostra."
+          },
+          "mean": {
+            "type": "number",
+            "title": "Mean"
+          },
+          "cv": {
+            "type": "number",
+            "title": "Cv"
+          },
+          "ks_statistic": {
+            "type": "number",
+            "title": "Ks Statistic"
+          },
+          "p_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P Value",
+            "description": "Aderência por Monte Carlo (bootstrap paramétrico); None sem bootstrap."
+          },
+          "p_value_se": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P Value Se",
+            "description": "Erro de Monte Carlo do p-valor."
+          },
+          "adequate": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Adequate",
+            "description": "p ≥ α; None sem bootstrap."
+          },
+          "service": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service",
+            "description": "Serviço equivalente no M/G/c."
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "parameters",
+          "n_params",
+          "loglik",
+          "aic",
+          "delta_aic",
+          "akaike_weight",
+          "comparable_aic",
+          "mean",
+          "cv",
+          "ks_statistic",
+          "p_value",
+          "p_value_se",
+          "adequate",
+          "service",
+          "notes"
+        ],
+        "title": "AnalysisFitCandidateOut"
+      },
+      "AnalysisFitEventOut": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "start",
+              "candidate",
+              "done",
+              "error"
+            ],
+            "title": "Type"
+          },
+          "n": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N"
+          },
+          "bootstrap": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bootstrap"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total",
+            "description": "Candidatas (para a barra de progresso)."
+          },
+          "completed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed"
+          },
+          "candidate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnalysisFitCandidateOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnalysisFitResultOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Resultado completo, só em done."
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "AnalysisFitEventOut",
+        "description": "Uma linha do NDJSON. start → candidate (uma por candidata) → done; error encerra."
+      },
+      "AnalysisFitRequest": {
+        "properties": {
+          "sample": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Sample",
+            "description": "Tempos positivos (serviço ou entre chegadas), de 10 até metade dos bytes do limite do envio de CSV."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "service",
+              "interarrival"
+            ],
+            "title": "Kind",
+            "description": "O que a amostra representa (muda a sugestão de modelo).",
+            "default": "service"
+          },
+          "bootstrap": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bootstrap",
+            "description": "Réplicas do p-valor por Monte Carlo (20 a 2000) ou 0 para não calcular. Sem valor: 200, ou o que o teto de trabalho permite."
+          },
+          "alpha": {
+            "type": "number",
+            "title": "Alpha",
+            "description": "Nível de significância da aderência.",
+            "default": 0.05
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Semente (reproduz o resultado). Sem ela, uma é sorteada e devolvida."
+          }
+        },
+        "type": "object",
+        "required": [
+          "sample"
+        ],
+        "title": "AnalysisFitRequest",
+        "examples": [
+          {
+            "kind": "service",
+            "sample": [
+              0.8,
+              1.2,
+              0.5,
+              2.1,
+              0.9,
+              1.4,
+              0.7,
+              1.1,
+              3.0,
+              0.6
+            ]
+          }
+        ]
+      },
+      "AnalysisFitResultOut": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "service",
+              "interarrival"
+            ],
+            "title": "Kind"
+          },
+          "n": {
+            "type": "integer",
+            "title": "N"
+          },
+          "mean": {
+            "type": "number",
+            "title": "Mean"
+          },
+          "std": {
+            "type": "number",
+            "title": "Std"
+          },
+          "cv": {
+            "type": "number",
+            "title": "Cv"
+          },
+          "cv_ci": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cv Ci",
+            "description": "IC de 95 % do CV (bootstrap não paramétrico)."
+          },
+          "minimum": {
+            "type": "number",
+            "title": "Minimum"
+          },
+          "maximum": {
+            "type": "number",
+            "title": "Maximum"
+          },
+          "degenerate": {
+            "type": "boolean",
+            "title": "Degenerate",
+            "description": "Amostra constante: não há ajuste, só a sugestão M/D/c."
+          },
+          "bootstrap": {
+            "type": "integer",
+            "title": "Bootstrap"
+          },
+          "alpha": {
+            "type": "number",
+            "title": "Alpha"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed"
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/AnalysisFitCandidateOut"
+            },
+            "type": "array",
+            "title": "Candidates"
+          },
+          "best": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best",
+            "description": "Menor AIC entre as comparáveis (a uniforme não entra)."
+          },
+          "adequate": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Adequate",
+            "description": "Candidatas com p ≥ α."
+          },
+          "none_adequate": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "None Adequate",
+            "description": "True quando há p-valor e nenhuma candidata é adequada."
+          },
+          "suggestion": {
+            "$ref": "#/components/schemas/AnalysisModelSuggestionOut"
+          },
+          "service_suggestion": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Suggestion",
+            "description": "Serviço do M/M/c, M/D/c ou M/G/c sugerido, no formato do Laboratório."
+          },
+          "histogram": {
+            "$ref": "#/components/schemas/AnalysisHistogramOut"
+          },
+          "curves": {
+            "$ref": "#/components/schemas/AnalysisCurvesOut"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "n",
+          "mean",
+          "std",
+          "cv",
+          "cv_ci",
+          "minimum",
+          "maximum",
+          "degenerate",
+          "bootstrap",
+          "alpha",
+          "seed",
+          "candidates",
+          "best",
+          "adequate",
+          "none_adequate",
+          "suggestion",
+          "service_suggestion",
+          "histogram",
+          "curves",
+          "warnings"
+        ],
+        "title": "AnalysisFitResultOut"
+      },
+      "AnalysisHistogramOut": {
+        "properties": {
+          "edges": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Edges"
+          },
+          "counts": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Counts"
+          },
+          "density": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Density"
+          }
+        },
+        "type": "object",
+        "required": [
+          "edges",
+          "counts",
+          "density"
+        ],
+        "title": "AnalysisHistogramOut"
+      },
+      "AnalysisModelSuggestionOut": {
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "M/M/c",
+                  "M/D/c",
+                  "M/G/c"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "lab_model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "mmc",
+                  "mgc"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lab Model"
+          },
+          "distribution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Distribution"
+          },
+          "cv": {
+            "type": "number",
+            "title": "Cv"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "service",
+              "interarrival"
+            ],
+            "title": "Kind"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "lab_model",
+          "distribution",
+          "cv",
+          "kind",
+          "text"
+        ],
+        "title": "AnalysisModelSuggestionOut"
+      },
       "AnalysisResponse-Input": {
         "properties": {
           "status": {
@@ -2261,6 +3330,17 @@
           },
           "dataset": {
             "$ref": "#/components/schemas/DatasetOut"
+          },
+          "service_hint": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnalysisServiceHintOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Sugestão M/M/c, M/D/c ou M/G/c pelo CV do menor nível de carga (não altera o ranking)."
           }
         },
         "type": "object",
@@ -2376,6 +3456,17 @@
           },
           "dataset": {
             "$ref": "#/components/schemas/DatasetOut"
+          },
+          "service_hint": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnalysisServiceHintOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Sugestão M/M/c, M/D/c ou M/G/c pelo CV do menor nível de carga (não altera o ranking)."
           }
         },
         "type": "object",
@@ -2396,6 +3487,543 @@
           "dataset"
         ],
         "title": "AnalysisResponse"
+      },
+      "AnalysisSensitivityRequest": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "enum": [
+              "mm1",
+              "mmc",
+              "mm1k",
+              "mmck",
+              "mg1",
+              "erlangb",
+              "mgc"
+            ],
+            "title": "Model",
+            "description": "Modelo. O Erlang-B não tem fila e é recusado."
+          },
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa de chegada λ."
+          },
+          "mu": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mu",
+            "description": "Taxa de serviço μ. Obrigatória, exceto em mg1 e mgc (use `service`)."
+          },
+          "service": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceSpec"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Serviço do mg1 e do mgc."
+          },
+          "servers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Servers",
+            "description": "c. Obrigatório em mmc, mmck e mgc."
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity",
+            "description": "K. Obrigatório em mm1k e mmck."
+          },
+          "span": {
+            "type": "number",
+            "title": "Span",
+            "description": "Fração de λ para cada lado (0 a 0,95): a faixa vai de λ·(1 − span) a λ·(1 + span).",
+            "default": 0.5
+          },
+          "points": {
+            "type": "integer",
+            "title": "Points",
+            "description": "Pontos da curva (3 a 200; a grade tem sempre um número ímpar).",
+            "default": 41
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "lambda"
+        ],
+        "title": "AnalysisSensitivityRequest",
+        "examples": [
+          {
+            "lambda": 8,
+            "model": "mm1",
+            "mu": 10
+          }
+        ]
+      },
+      "AnalysisSensitivityResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/AnalysisCurvePointOut"
+            },
+            "type": "array",
+            "title": "Points"
+          },
+          "current_index": {
+            "type": "integer",
+            "title": "Current Index",
+            "description": "Posição do λ atual em `points`."
+          },
+          "current": {
+            "$ref": "#/components/schemas/AnalysisCurvePointOut",
+            "description": "O ponto do Laboratório, calculado direto."
+          },
+          "span": {
+            "type": "number",
+            "title": "Span"
+          },
+          "stability_limit": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stability Limit",
+            "description": "λ máximo mostrado por estabilidade (None com capacidade finita)."
+          },
+          "service": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "points",
+          "current_index",
+          "current",
+          "span",
+          "stability_limit"
+        ],
+        "title": "AnalysisSensitivityResponse"
+      },
+      "AnalysisServiceHintOut": {
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "M/M/c",
+                  "M/D/c",
+                  "M/G/c"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Modelo sugerido pelo CV; None se não há (chegadas)."
+          },
+          "lab_model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "mmc",
+                  "mgc"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lab Model",
+            "description": "Modelo do Laboratório para c ≥ 2."
+          },
+          "distribution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Distribution",
+            "description": "\"deterministic\" no M/D/c; nos demais, quem escolhe é o ajuste."
+          },
+          "cv": {
+            "type": "number",
+            "title": "Cv"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "service",
+              "interarrival"
+            ],
+            "title": "Kind"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "basis": {
+            "type": "string",
+            "title": "Basis",
+            "description": "De onde veio o CV (nível de carga e ressalva)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "lab_model",
+          "distribution",
+          "cv",
+          "kind",
+          "text",
+          "basis"
+        ],
+        "title": "AnalysisServiceHintOut",
+        "description": "Sugestão de modelo pelo CV (Fase 13). Indicação, não parte do ranking."
+      },
+      "AnalysisSimulationIn": {
+        "properties": {
+          "simulation_time": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Simulation Time",
+            "description": "T por réplica. Padrão: 20.000 chegadas esperadas (20.000/λ)."
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications",
+            "description": "Réplicas (2 a 100).",
+            "default": 10
+          },
+          "warmup_time": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warmup Time",
+            "description": "Aquecimento descartado. Padrão: 10 % de T."
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Semente (reproduz o resultado). Sem ela, uma é sorteada e devolvida."
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level",
+            "default": 0.95
+          }
+        },
+        "type": "object",
+        "title": "AnalysisSimulationIn"
+      },
+      "AnalysisStatesOut": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers"
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity"
+          },
+          "states": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "States",
+            "description": "Estados n mostrados, em ordem crescente."
+          },
+          "p": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "P",
+            "description": "P(N = n)."
+          },
+          "cumulative": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Cumulative",
+            "description": "P(N ≤ n) acumulado sobre os estados mostrados."
+          },
+          "omitted_mass": {
+            "type": "number",
+            "title": "Omitted Mass",
+            "description": "Massa fora dos estados mostrados (cauda da fila ilimitada ou trechos cortados)."
+          },
+          "p0": {
+            "type": "number",
+            "title": "P0"
+          },
+          "mean": {
+            "type": "number",
+            "title": "Mean",
+            "description": "L = E[N], exato."
+          },
+          "rho": {
+            "type": "number",
+            "title": "Rho"
+          },
+          "p_wait": {
+            "type": "number",
+            "title": "P Wait"
+          },
+          "p_block": {
+            "type": "number",
+            "title": "P Block"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "servers",
+          "capacity",
+          "states",
+          "p",
+          "cumulative",
+          "omitted_mass",
+          "p0",
+          "mean",
+          "rho",
+          "p_wait",
+          "p_block"
+        ],
+        "title": "AnalysisStatesOut"
+      },
+      "AnalysisWaitSimulationOut": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers"
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity"
+          },
+          "t": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "T"
+          },
+          "survival": {
+            "items": {
+              "$ref": "#/components/schemas/MetricSummaryOut"
+            },
+            "type": "array",
+            "title": "Survival",
+            "description": "P(Wq > t) em cada t: média entre réplicas e IC."
+          },
+          "p_wait": {
+            "$ref": "#/components/schemas/MetricSummaryOut"
+          },
+          "mean_wait": {
+            "$ref": "#/components/schemas/MetricSummaryOut"
+          },
+          "p_block": {
+            "$ref": "#/components/schemas/MetricSummaryOut"
+          },
+          "percentiles": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MetricSummaryOut"
+            },
+            "type": "object",
+            "title": "Percentiles"
+          },
+          "customers_per_replication": {
+            "type": "number",
+            "title": "Customers Per Replication"
+          },
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time"
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time"
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed"
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "servers",
+          "capacity",
+          "t",
+          "survival",
+          "p_wait",
+          "mean_wait",
+          "p_block",
+          "percentiles",
+          "customers_per_replication",
+          "simulation_time",
+          "warmup_time",
+          "replications",
+          "seed",
+          "confidence_level"
+        ],
+        "title": "AnalysisWaitSimulationOut"
+      },
+      "AnalysisWaitTailOut": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "servers": {
+            "type": "integer",
+            "title": "Servers"
+          },
+          "t": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "T"
+          },
+          "survival": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Survival",
+            "description": "P(Wq > t), fórmula fechada do M/M/c."
+          },
+          "p_wait": {
+            "type": "number",
+            "title": "P Wait",
+            "description": "P(Wq > 0) = Erlang C."
+          },
+          "decay_rate": {
+            "type": "number",
+            "title": "Decay Rate",
+            "description": "c·μ − λ: a cauda cai como exp(−taxa·t)."
+          },
+          "mean_wait": {
+            "type": "number",
+            "title": "Mean Wait"
+          },
+          "percentiles": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Percentiles",
+            "description": "p50, p90, p95 e p99 do tempo de espera."
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "servers",
+          "t",
+          "survival",
+          "p_wait",
+          "decay_rate",
+          "mean_wait",
+          "percentiles"
+        ],
+        "title": "AnalysisWaitTailOut"
       },
       "Body_analyze_csv_api_realdata_analyze_post": {
         "properties": {

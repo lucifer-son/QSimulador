@@ -50,6 +50,7 @@ flowchart LR
         UC12[UC-12 Dimensionar perda e M/G/c]
         UC13[UC-13 Dimensionar por nível de serviço e custo]
         UC14[UC-14 Comparar cenários com IC pareado]
+        UC15[UC-15 Ver distribuições e ajustar uma amostra]
     end
 
     U --> UC01
@@ -65,6 +66,9 @@ flowchart LR
     A --> UC13
     U --> UC14
     A --> UC14
+    U --> UC15
+    A --> UC15
+    UC15 -. inclui .-> UC10
     UC14 -. inclui .-> UC03
     UC14 -. inclui .-> UC10
     U --> UC11
@@ -98,6 +102,7 @@ flowchart LR
 | UC-12 | Dimensionar sistema de perda (Erlang-B) e modelar M/G/c | Usuário, Cliente de API | ✅ |
 | UC-13 | Dimensionar por nível de serviço e custo | Usuário, Cliente de API | ✅ |
 | UC-14 | Comparar cenários com intervalo de confiança pareado | Usuário, Cliente de API | ✅ |
+| UC-15 | Ver distribuições e ajustar uma amostra | Usuário, Cliente de API | ✅ |
 
 > **Conferência de 08/10/2026:** os casos de uso implementados (UC-01 a UC-06 e UC-10) foram verificados executando o sistema. As divergências encontradas na auditoria em UC-02 (P0 não retornado), UC-03 (a simulação aceitava 1 réplica) e UC-04 (P0 simulado) foram fechadas. Os detalhes estão na seção 11 de [`requisitos-do-sistema.md`](requisitos-do-sistema.md).
 
@@ -420,6 +425,32 @@ flowchart LR
 - **Cancelamento:** fechar a conexão interrompe o que falta; o que já terminou fica na tela até a nova execução.
 
 
+### UC-15 — Ver distribuições e ajustar uma amostra ✅
+
+| Campo | Descrição |
+|-------|-----------|
+| **Ator principal** | Usuário, Cliente de API |
+| **Objetivo** | Enxergar a distribuição do número de clientes e do tempo de espera (e não só as médias), ver como Wq reage a λ e descobrir se os tempos medidos seguem uma distribuição conhecida, para escolher o modelo certo. |
+| **Pré-condições** | Para os gráficos: um modelo estável no Laboratório (exceto o Erlang-B, que não tem fila). Para o ajuste: uma amostra de pelo menos 10 tempos positivos, colada ou importada (CSV ou TXT, até 10 MiB). |
+| **Pós-condições** | Gráficos P(n), P(Wq > t) e Wq × λ com o ponto atual; para o ajuste, a tabela de candidatas (parâmetros, AIC, p-valor ± erro de Monte Carlo), o histograma com as curvas, o CV com IC e a sugestão de modelo; o ajuste pode ser salvo no histórico como experimento do tipo `fit`. |
+
+**Fluxo principal**
+1. O usuário calcula um modelo no Laboratório e abre a aba Distribuições, que mostra P(n), P(Wq > t) e a curva Wq × λ com a configuração atual marcada.
+2. Para ajustar uma amostra, abre Ajustar distribuição, cola ou importa os tempos e informa se são de serviço ou entre chegadas.
+3. Executa o ajuste; o progresso aparece candidata a candidata (NDJSON).
+4. O sistema mostra o histograma com as curvas ajustadas, a tabela de candidatas (menor AIC marcado), o CV com IC de 95% e o modelo sugerido (M/M/c, M/D/c ou M/G/c, com o serviço a usar no Laboratório).
+5. O usuário salva o ajuste no histórico.
+
+**Fluxos alternativos**
+- **Modelo sem P(n) fechada (M/G/1 e M/G/c):** a tela explica e mostra só P(Wq > t) e Wq × λ; a curva de espera vem da simulação, com IC entre réplicas.
+- **Modelo com fórmula fechada (M/M/1 e M/M/c):** a opção “Conferir com a simulação” sobrepõe a simulação à fórmula.
+- **Erlang-B:** não há fila; a aba explica.
+- **Nenhuma candidata adequada:** todas com p-valor abaixo de α; a tela avisa que o AIC só compara e não prova adequação.
+- **Amostra constante (CV = 0):** não há ajuste; a sugestão é M/D/c.
+- **Amostra grande:** o número de réplicas do p-valor é reduzido pelo teto de trabalho (ou o p-valor não é calculado), com aviso; um número de réplicas pedido que passe do teto é rejeitado com a sugestão do máximo.
+- **Menos de 10 valores, valor não positivo, arquivo ou corpo acima de 10 MiB:** erro identificando o campo (413 para o tamanho).
+- **Dados reais:** a análise do JMeter traz a sugestão pelo CV dos tempos de resposta do menor nível de carga, sem alterar o ranking.
+
 ---
 
 ## 5. Rastreabilidade
@@ -438,6 +469,7 @@ flowchart LR
 | UC-12 | Fase 10 — Erlang-B e M/G/c | Erlang-B (recursão estável), dimensionamento, Allen–Cunneen, simulação reaproveitando o motor do M/M/c/K |
 | UC-13 | Fase 11 — Dimensionamento | Módulo de dimensionamento (Erlang C, M/M/c/K exato, cauda do M/G/c), rotas `/api/sizing`, aba Dimensionamento |
 | UC-14 | Fase 12 — Comparação de cenários | Módulo de cenários (números aleatórios comuns, IC t pareado, veredito), rota `/api/scenarios` em NDJSON, exportação CSV, aba Cenários |
+| UC-15 | Fase 13 — Distribuições e ajuste | Módulo de distribuições (P(n) e cauda da espera), simulador FIFO de esperas, curva Wq × λ sobre a varredura da Fase 6, ajuste por máxima verossimilhança com bootstrap paramétrico, rotas `/api/analysis` (ajuste em NDJSON), aba Distribuições e painel Ajustar distribuição |
 
 ---
 
