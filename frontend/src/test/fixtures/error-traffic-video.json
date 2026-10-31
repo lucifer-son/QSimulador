@@ -1,0 +1,10 @@
+{
+ "code": "invalid_dataset",
+ "message": "signal_events: faltam as colunas timestamp, approach_id, signal_state. Encontradas: a, b",
+ "fields": [
+  {
+   "field": "signal_events",
+   "message": "signal_events: faltam as colunas timestamp, approach_id, signal_state. Encontradas: a, b"
+  }
+ ]
+}

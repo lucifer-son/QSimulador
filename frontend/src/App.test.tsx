@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
@@ -17,10 +17,11 @@ const happyPath: FakeHandler = (url) => {
   return { body: fx.mmckCalculate };
 };
 
-const setup = (handler: FakeHandler = happyPath) => {
+const setup = (handler: FakeHandler = happyPath, model: string | null = "mmck") => {
   const fetchMock = mockFetch(handler);
   const user = userEvent.setup();
   render(<App />);
+  if (model) fireEvent.change(modelSelect(), { target: { value: model } });
   return { user, fetchMock };
 };
 const button = (name: string) => screen.getByRole("button", { name });
@@ -35,14 +36,14 @@ describe("estrutura da página", () => {
 });
 
 describe("formulário", () => {
-  it("começa no M/M/c/K com os exemplos da documentação e a estimativa de custo", () => {
-    setup();
-    expect(modelSelect()).toHaveValue("mmck");
-    expect(lambda()).toHaveValue("25");
-    expect(screen.getByLabelText("Servidores c")).toHaveValue("3");
-    expect(screen.getByLabelText("Capacidade K")).toHaveValue("6");
+  it("começa no M/M/1 com os valores de exemplo", () => {
+    setup(happyPath, null);
+    expect(modelSelect()).toHaveValue("mm1");
+    expect(lambda()).toHaveValue("40");
+    expect(screen.queryByLabelText("Servidores c")).toBeNull();
+    expect(screen.queryByLabelText("Capacidade K")).toBeNull();
     expect(screen.getByLabelText("Semente")).toHaveValue("2026");
-    expect(screen.getByText(/500\smil chegadas, cerca de 6 s/)).toBeInTheDocument();
+    expect(screen.getByText(/800\smil chegadas/)).toBeInTheDocument();
     expect(screen.getByText("Compare o analítico com a simulação")).toBeInTheDocument();
   });
 
@@ -251,6 +252,7 @@ describe("execução em andamento", () => {
     mockPendingFetch();
     const user = userEvent.setup();
     render(<App />);
+    await user.selectOptions(modelSelect(), "mmck");
     await user.click(button("Comparar"));
     const status = await screen.findByRole("status");
     expect(within(status).getByText("Comparando…")).toBeInTheDocument();

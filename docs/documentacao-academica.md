@@ -81,6 +81,18 @@ O estado do sistema muda apenas em eventos (chegada, início e término de atend
 
 O M/M/1 é um modelo **aberto**: as chegadas independem do estado do sistema. Um teste de carga com $N$ usuários simultâneos é **fechado**, porque cada usuário só envia a próxima requisição depois da resposta (e, opcionalmente, de um tempo de reflexão $Z$). Por isso o projeto classifica o teste do JMeter como aberto ou fechado e oferece M/M/1//N e M/M/c//N. Ver Harchol-Balter (2013) e Jain (1991) para a análise de sistemas fechados.
 
+### 3.7 Cruzamento semaforizado (Fase 13.1)
+
+O cruzamento semaforizado não é um sistema de filas em regime estacionário: o servidor fica indisponível durante o vermelho e a fila cresce e se dissipa a cada ciclo. O QSimulador o trata com uma simulação de eventos discretos em que cada aproximação é uma fila FIFO atendida só durante o seu verde. Como o ciclo é fixo e a fila é FIFO, o instante em que cada veículo cruza a linha de retenção vem de uma recursão por veículo,
+
+    pronto_k = max(chegada_k, saída_(k−1) + h_(k−1)),
+
+em que h é o intervalo que cada veículo mantém a linha ocupada (o "tempo de serviço" do M/G/1) e, se `pronto_k` cai fora da janela de descarga do ciclo, o veículo cruza no início da descarga do verde seguinte (início do verde + ℓ, com ℓ o tempo até o 1º veículo da fila cruzar). É exata para a regra adotada e permite usar números aleatórios comuns (Seção 3.5). As duas aproximações só se acoplam pelo ciclo.
+
+Duas medidas merecem cuidado. O **atraso** de um veículo é o tempo entre chegar à fila e cruzar a linha de retenção. Quem ainda espera no fim da simulação é uma observação censurada: o atraso "com pendentes" conta esses veículos só até T, e por isso é um limite inferior do atraso verdadeiro; ignorar os pendentes faz uma fila que cresce parecer melhor do que é. O **grau de saturação** x é a razão entre a chegada média e a capacidade do verde (verde efetivo / ciclo × 1/h̄); para x ≥ 1 não há regime estacionário e as médias dependem do tempo simulado.
+
+Como referência, usam-se aproximações clássicas de engenharia de tráfego: o atraso uniforme, a fórmula de Webster (1958) para x < 1, o modelo fluido para x ≥ 1 e o ciclo ótimo de Webster. São **aproximações**, rotuladas assim no sistema, e servem para conferir a ordem de grandeza e explicar o efeito do semáforo, não para substituir a simulação. As fórmulas e os valores medidos estão em [valores de referência](valores-de-referencia.md).
+
 ## 4. Metodologia
 
 O projeto segue as etapas clássicas de um estudo de simulação:
@@ -139,7 +151,7 @@ A estrutura de pastas e a lista de rotas estão no [`README`](../README.md) e em
 | --- | --- |
 | PostgreSQL **opcional** | O núcleo (análise, simulação, comparação) deve funcionar sem banco (RNF-18); sem `QSIMULADOR_DATABASE_URL`, o histórico fica desativado e as rotas respondem 503 |
 | **Uma tabela** (`saved_records`) com `params` e `result` em JSONB | Guarda o que a API devolveu, sem duplicar o esquema de cada modelo, e recupera os mesmos valores (RF-26). A ordem das chaves do objeto pode mudar (JSONB), sem alterar o significado |
-| Tipos de registro: `model`, `simulation`, `comparison`, `experiment`, `realdata` | Cobrem os resultados do Laboratório, dos experimentos e da análise do JMeter |
+| Tipos de registro: `model`, `simulation`, `comparison`, `experiment`, `realdata`, `traffic` (Fase 13.1) | Cobrem os resultados do Laboratório, dos experimentos e da análise do JMeter |
 | **Identificador anônimo por navegador**, sem login | Mantém o sistema simples e público; organiza o histórico por navegador, mas **não é autenticação**: não salve dados sigilosos |
 | Limites de tamanho do registro (2 MB) e de registros por navegador (200) | Evitam abuso em um site público; configuráveis por variável de ambiente |
 | Migrações com Alembic, aplicadas manualmente | Em serverless, cada instância nova rodaria a migração; manual é previsível |
@@ -178,6 +190,14 @@ A análise do CSV do JMeter verifica os dados, classifica o teste (aberto ou fec
 - **Backend:** rotas do histórico (salvar, listar, filtrar, paginar, reabrir, renomear, excluir), isolamento entre navegadores, validação, limites, banco desativado, banco fora do ar, migração esquecida e CORS. Os mesmos testes rodam em SQLite e em **PostgreSQL 16 real**, e a migração é aplicada (subida e descida) no teste de PostgreSQL. Os dados voltam iguais ao que foi gravado, inclusive números de ponto flutuante.
 - **Frontend:** fluxos completos de salvar, listar, reabrir, renomear e excluir, com os dois estados do histórico (ativo e desativado), erros do servidor e registros de formato desconhecido. O teste de contrato roda o mesmo cliente contra a API real com banco.
 
+### 7.4 Verificação e validação do cruzamento (Fase 13.1)
+
+**Verificação.** O motor é conferido de três formas: casos de resposta exata calculados à mão (fila formada no vermelho, veículo sem fila, amarelo utilizável, janela que estoura, fila inicial); um simulador SimPy independente, escrito só para os testes, que reproduz o semáforo como um processo de estados e coincide com o motor (tolerância de 1e-9 s) em 9 combinações de semente e de parâmetros; e limites analíticos (fluxo baixo, lei de Little, Webster para x < 1, fluido para x ≥ 1).
+
+**Validação.** A validação compara o modelo com o que foi observado em vídeo. O plano observado é simulado com o **número** de chegadas de cada intervalo igual ao observado (só o instante dentro do intervalo é sorteado) e a fila e as saídas simuladas são confrontadas com as observadas, intervalo a intervalo, por viés, erro médio absoluto, RMSE e cobertura da faixa simulada (percentis entre réplicas). Não há teste de hipótese nem limite de aprovação: os números dizem o quanto o modelo reproduz a observação e a decisão é de quem analisa. Os parâmetros do modelo (ℓ, h, amarelo utilizável) vêm de uma reta de descarga ajustada nos primeiros veículos de cada verde saturado; os critérios do método (`max_headway`, `min_run`, `core`) não são dados medidos e voltam em cada resultado.
+
+Na etapa de desenvolvimento, a validação com dados sintéticos revelou um erro de método que a verificação não mostrava: usar a contagem de cada minuto como taxa de um novo processo de Poisson sorteia as chegadas duas vezes, dobra a variância das contagens por minuto e infla o atraso (cerca de 10 s no exemplo). A correção foi condicionar as chegadas às contagens observadas. Os dados sintéticos são gerados pelo próprio simulador e provam que a estimação recupera o que se usou para gerá-los; **não provam que o modelo representa um cruzamento real**. Isso só se mostra com dados medidos.
+
 ## 8. Como reproduzir os resultados
 
 ```bash
@@ -206,6 +226,7 @@ Para fixar uma simulação, use a mesma **semente**: o resultado é idêntico. O
 - **Desempenho.** As réplicas ainda não rodam em paralelo (RNF-11).
 - **Histórico.** Sem autenticação; o identificador anônimo não protege contra quem o conhecer. A importação por níveis de carga (CSV agregado) ainda não é salva. O histórico foi testado em SQLite e em PostgreSQL 16 local; a combinação específica Vercel + provedor de banco deve ser conferida após a configuração.
 - **Itens abertos de qualidade:** ver a seção 11.3 de [`requisitos-do-sistema.md`](requisitos-do-sistema.md) (por exemplo, versões fixas das dependências, linter e logs).
+- **Cruzamento semaforizado (Fase 13.1):** ciclo fixo de duas fases, com movimentos protegidos; sem conversões, pedestres, ônibus, bloqueio do cruzamento por fila que invade a outra aproximação, semáforo atuado ou coordenação entre cruzamentos. As faixas de cada aproximação são agregadas e o intervalo entre veículos é tratado como independente e identicamente distribuído depois do 1º veículo. A taxa de chegada é constante por blocos, sem tendência dentro do bloco. Para x ≥ 1 as médias dependem do tempo simulado. A estimação de ℓ e h depende de critérios do método (intervalo máximo, veículos mínimos por verde) e, com fluxo alto, chegadas sem fila podem contaminar a descarga. A validação com dados reais depende da qualidade da contagem em vídeo (filas fora do campo de visão, veículos acompanhados só até o fim).
 
 ## 10. Trabalhos futuros
 
@@ -222,6 +243,8 @@ Conferir o formato exigido pela disciplina (por exemplo, ABNT) e os dados das ed
 - KLEINROCK, L. **Queueing Systems, Volume I: Theory**. New York: Wiley, 1975.
 - LAW, A. M. **Simulation Modeling and Analysis**. 5. ed. New York: McGraw-Hill, 2015.
 - LITTLE, J. D. C. A proof for the queuing formula: L = λW. **Operations Research**, v. 9, n. 3, p. 383–387, 1961.
+- TRANSPORTATION RESEARCH BOARD. **Highway Capacity Manual**. Washington, D.C.: TRB (conferir a edição e os dados de publicação antes de citar).
+- WEBSTER, F. V. **Traffic signal settings**. London: HMSO, 1958. (Road Research Technical Paper, n. 39; conferir os dados de publicação antes de citar).
 
 ## 12. Pendências do documento
 

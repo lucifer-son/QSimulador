@@ -4,6 +4,7 @@ import { fieldErrorsFromApi } from "./api/fieldErrors";
 import { ParametersPanel } from "./components/ParametersPanel";
 import { ResultsPanel } from "./components/ResultsPanel";
 import { ScenariosTab } from "./components/ScenariosTab";
+import { TrafficTab } from "./components/TrafficTab";
 import { SizingTab } from "./components/SizingTab";
 import { FitTab } from "./components/FitTab";
 import { ExperimentTab } from "./components/ExperimentTab";
@@ -37,20 +38,21 @@ function initialSystems(): Record<ModelKey, SystemValues> {
 }
 
 export default function App() {
-  const [model, setModel] = useState<ModelKey>("mmck");
+  const [model, setModel] = useState<ModelKey>("mm1");
   const [systems, setSystems] = useState(initialSystems);
   const [sim, setSim] = useState<SimValues>(INITIAL_SIM);
   const [localErrors, setLocalErrors] = useState<FieldErrors>({});
   const [apiErrors, setApiErrors] = useState<FieldErrors>({});
   const [theme, setTheme] = useState<Theme>(initialTheme);
   
-  const [activeTab, setActiveTab] = useState<"laboratorio" | "experimentos" | "cenarios" | "dimensionamento" | "ajuste" | "dados" | "historico">("laboratorio");
+  const [activeTab, setActiveTab] = useState<"laboratorio" | "experimentos" | "cenarios" | "dimensionamento" | "ajuste" | "dados" | "cruzamento" | "historico">("laboratorio");
   // Os experimentos só são montados na primeira visita; depois ficam montados para manter os resultados.
   const [experimentsOpened, setExperimentsOpened] = useState(false);
   const [scenariosOpened, setScenariosOpened] = useState(false);
   const [sizingOpened, setSizingOpened] = useState(false);
   const [fitOpened, setFitOpened] = useState(false);
   const [realDataOpened, setRealDataOpened] = useState(false);
+  const [trafficOpened, setTrafficOpened] = useState(false);
 
   const { state, run, cancel, loadRuns, restore } = useRunner();
 
@@ -186,6 +188,14 @@ export default function App() {
           <button
             type="button"
             className="nav-item"
+            aria-current={activeTab === "cruzamento" ? "page" : undefined}
+            onClick={() => { setActiveTab("cruzamento"); setTrafficOpened(true); }}
+          >
+            Cruzamento
+          </button>
+          <button
+            type="button"
+            className="nav-item"
             aria-current={activeTab === "historico" ? "page" : undefined}
             onClick={() => setActiveTab("historico")}
           >
@@ -245,6 +255,12 @@ export default function App() {
       {realDataOpened && (
         <main className="layout layout-wide" hidden={activeTab !== "dados"}>
           <RealDataTab />
+        </main>
+      )}
+
+      {trafficOpened && (
+        <main className="layout layout-wide" hidden={activeTab !== "cruzamento"}>
+          <TrafficTab active={activeTab === "cruzamento"} />
         </main>
       )}
 

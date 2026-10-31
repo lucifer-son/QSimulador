@@ -3,7 +3,7 @@
 > Laboratório interativo de modelagem, simulação e análise de sistemas de filas.
 
 ![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)
-![Versão](https://img.shields.io/badge/vers%C3%A3o-1.10-6F42C1)
+![Versão](https://img.shields.io/badge/vers%C3%A3o-1.11-6F42C1)
 ![Python](https://img.shields.io/badge/backend-Python%20%7C%20FastAPI-3776AB)
 ![SimPy](https://img.shields.io/badge/simula%C3%A7%C3%A3o-SimPy-2E8B57)
 ![Licença](https://img.shields.io/badge/licen%C3%A7a-uso%20acad%C3%AAmico%20(n%C3%A3o%20comercial)-blue)
@@ -33,6 +33,7 @@ O projeto está em desenvolvimento. Os modelos **M/M/1**, **M/M/c**, **M/M/1/K**
 | Dimensionamento: tabela por número de servidores, nível de serviço P(Wq ≤ t) e menor c para uma meta, custo total e c ótimo (`/api/sizing`, aba Dimensionamento) | ✅ Implementado (Fase 11) |
 | Comparação de cenários: a base do Laboratório contra até 10 cenários (λ, μ, c, K, modelo, CV/k do serviço; valores absolutos ou relativos), com números aleatórios comuns, IC da diferença pareada, veredito, streaming, exportação em CSV e histórico (`/api/scenarios`, aba Cenários) | ✅ Implementado (Fase 12) |
 | Distribuições e ajuste de amostras: P(n), P(Wq > t) (fórmula fechada no M/M/c e histograma de simulação nos demais) e sensibilidade Wq × λ; ajuste por máxima verossimilhança de exponencial, Erlang-k, lognormal, Weibull e uniforme com AIC e p-valor de aderência por Monte Carlo; sugestão de modelo pelo CV, também na aba Dados reais (`/api/analysis`, aba Distribuições do Laboratório e painel Ajustar distribuição) | ✅ Implementado (Fase 13) |
+| Cruzamento semaforizado: duas aproximações com ciclo compartilhado (ciclo fixo, fila FIFO por aproximação, chegadas por blocos), atraso com e sem os pendentes, fila ao longo do tempo, referência de Webster rotulada como aproximação, comparação de planos com IC pareado, varredura da divisão do verde, leitura e estimação das planilhas do vídeo e validação simulado × observado (`/api/traffic`, aba Cruzamento) | ✅ Implementado (Fase 13.1) |
 
 ---
 
@@ -356,6 +357,7 @@ qsimulador/
     │   │   ├── service/           # distribuições de serviço (média, variância, CV, amostrador)
     │   │   └── validation/        # validação de parâmetros e erros de domínio
     │   ├── experiments/           # varredura, comparação de servidores e sensibilidade (todos os modelos; general.py: M/G/1 e M/G/c)
+    │   ├── traffic/               # cruzamento semaforizado (Fase 13.1): plano, motor, métricas, referência, planos e varredura, vídeo
     │   ├── analysis/
     │   │   ├── comparison.py      # comparação analítico × simulação
     │   │   ├── comparison_mg1.py  # comparação do M/G/1
@@ -590,6 +592,19 @@ O sistema é estável quando ρ = λ·E[S] < 1; senão a API devolve `unstable_s
 
 O p-valor não é o do KS simples (que erra quando os parâmetros saem da própria amostra): é um bootstrap paramétrico que reestima os parâmetros em cada réplica (B = 200 por padrão, de 20 a 2.000). A uniforme fica na tabela, mas o AIC dela não é comparável com o das outras. Detalhes e exemplos em [`docs/como-executar.md`](docs/como-executar.md).
 
+### Cruzamento semaforizado (Fase 13.1)
+
+| Rota | O que faz |
+| --- | --- |
+| `POST /api/traffic/simulate` | Simula o cruzamento (duas aproximações, ciclo fixo compartilhado): atraso com e sem os pendentes, fila, vazão, ciclos com fila, série da fila e referência de Webster (aproximação), tudo com IC |
+| `POST /api/traffic/compare` | Compara de 1 a 10 planos com a referência (números aleatórios comuns, IC pareado, veredito); NDJSON |
+| `POST /api/traffic/sweep` | Varre a divisão do verde mantendo o ciclo; NDJSON; marca o ponto de menor atraso e os que não se distinguem dele |
+| `POST /api/traffic/export.csv`, `/compare/export.csv`, `/sweep/export.csv` | O mesmo cálculo em CSV (mande a `seed` devolvida) |
+| `POST /api/traffic/video/estimate` | Lê as planilhas do protocolo (multipart) e estima plano, offset, chegadas por bloco, ℓ, h e amarelo utilizável |
+| `POST /api/traffic/video/validate` | Simula o plano observado com as contagens do vídeo e compara fila e saídas simuladas com as observadas |
+
+O intervalo h entre veículos é obrigatório e os demais parâmetros medidos no vídeo (ℓ, amarelo utilizável, fila inicial, offset) não têm valor padrão silencioso: se faltarem, valem 0 e o resultado traz um aviso `not_informed`. A fórmula de Webster é sempre uma aproximação (`exact = false`). Detalhes, formatos das planilhas e exemplos em [`docs/como-executar.md`](docs/como-executar.md).
+
 ### Erros
 
 Toda requisição inválida devolve HTTP 422 com `{"code", "message", "fields"?}`. `fields` lista o campo e o motivo de cada erro, tanto nos erros de formato quanto nos de regra:
@@ -622,6 +637,7 @@ Toda requisição inválida devolve HTTP 422 com `{"code", "message", "fields"?}
 - **Testes da Fase 11 (dimensionamento e experimentos em todos os modelos):** a tabela da seção 3 de [`docs/valores-de-referencia.md`](docs/valores-de-referencia.md) (λ = 90/h, μ = 15/h: P(Wq ≤ 20 s) de 43,5% a 92,7% e menor c = 9 para 80/20) e os custos da seção 7 (c ótimo = 12 com R$ 452,0/h); as propriedades (nível de serviço cresce com c, em t = 0 vale 1 − P(esperar), linha instável nunca é ótima, aumentar hₛ reduz o ótimo e aumentar hₑ o eleva); o nível de serviço exato do M/M/c/K conferido contra uma simulação FIFO independente (erro de até 0,01) e o do M/G/c com a tolerância documentada de 0,06; Erlang-B com K = c igual ao M/M/c/K, M/G/c com c = 1 igual ao M/G/1 e com CV = 1 igual ao M/M/c nos experimentos; e, no frontend, a conversão de custos por segundo, minuto ou hora, os fluxos da aba Dimensionamento com respostas reais da API gravadas como fixtures e o histórico do tipo `sizing`.
 - **Testes da Fase 12 (comparação de cenários):** a resolução dos cenários (absoluto e relativo, troca de modelo, CV e k, erros com o campo `scenarios[i].campo`); os fluxos separados de chegada e serviço (o serviço é sorteado por número do cliente, inclusive o dos recusados); cenário idêntico com a mesma semente tem diferença exatamente zero; a variância da diferença é menor com a semente comum (razão abaixo de 0,85 ao mudar c e μ); o IC pareado conferido contra o t de Student calculado à mão; veredito com o sentido; Bonferroni; instável não simulado e em risco; limites e teto de trabalho; NDJSON em ordem e o encerramento do gerador; CSV (cabeçalho, ordem e reprodutibilidade); um teste lento de cobertura (`--runslow`, cerca de 1 minuto) em que o IC pareado de 95% cobre a diferença analítica em ~95% de 300 repetições; um guarda de regressão com os resultados exatos de M/M/c, M/M/c/K, M/G/1 e M/G/c anteriores à Fase 12; e, no frontend, a sintaxe dos campos (`+20%`, `+1`), o fluxo NDJSON lido em pedaços que cortam linhas, a aba com respostas reais da API gravadas como fixtures, o CSV e o histórico do tipo `scenarios`.
 - **Testes da Fase 13 (distribuições e ajuste):** P(n) soma 1 (com a massa omitida) e P(0) = 1 − ρ no M/M/1; a cauda do M/M/c é exata e os percentis invertem a fórmula; o histograma do simulador FIFO reproduz a fórmula fechada do M/M/c dentro do IC (tolerância calibrada em 20 sementes) e o analítico do M/M/c/K e do M/G/1; caso determinístico de esperas (Lindley); a curva Wq × λ é a varredura da Fase 6; o ajuste recupera os parâmetros de amostras sintéticas de cada distribuição (tolerância calibrada em 30 sementes), coincide com o MLE do SciPy na lognormal e na Weibull, e a amostra exponencial dá CV ≈ 1 e sugestão M/M/c enquanto a constante dá M/D/c; o p-valor por Monte Carlo é calibrado (teste lento: com a distribuição verdadeira a rejeição a 5% fica entre 1% e 10%) enquanto o KS simples infla o p-valor; o limite da amostra reaproveita o do CSV; API por TestClient e por HTTP com uvicorn (inclusive o streaming), e Vitest com respostas reais da API gravadas como fixtures.
+- **Testes da Fase 13.1 (cruzamento semaforizado):** o motor confere com casos de resposta exata (fila formada no vermelho, veículo sem fila, amarelo utilizável, janela que estoura, fila inicial) e, em 9 combinações de semente e de parâmetros, com um simulador SimPy independente escrito só para os testes (tolerância de 1e-9 s); a lei de Little vale dentro de 6%; com x < 1 o atraso simulado fica a menos de 8% da fórmula de Webster (nas medições, de 1,1% a 5,7% acima) e no limite de fluxo baixo concorda com a fórmula fechada (7,69 s contra 7,50 s); a comparação de um plano igual à referência dá diferença exatamente 0; a leitura das planilhas recusa célula vazia, lacuna e estado desconhecido com a tabela e a linha; a estimação recupera plano e offset exatamente e ℓ e h dentro do IC em dados sintéticos; a validação detecta um modelo errado (RMSE da fila mais de 3 vezes maior). Os valores estão na seção 10 de [`docs/valores-de-referencia.md`](docs/valores-de-referencia.md)
 
 Para executar: `python -m pytest` (dentro de `backend/`) e `npm test` (dentro de `frontend/`).
 
@@ -679,7 +695,8 @@ users,avg_ms,p90_ms,throughput,error_rate
 - [x] **Fase 10 — Erlang-B e M/G/c:** Erlang-B dedicado (recursão estável, tráfego oferecido e carregado, dimensionamento por bloqueio alvo), M/G/c por Allen–Cunneen com marca de aproximação e avisos de faixa, simulação e comparação com IC nos dois modelos, e experimentos do M/G/1 (varredura de λ, μ e CV ou k, sensibilidade e comparação de distribuições). Rotas `/api/models/erlangb`, `/api/models/mgc` e `/api/experiments/services`.
 - [x] **Fase 11 — Dimensionamento e experimentos em todos os modelos:** experimentos para o Erlang-B (curva de Erlang) e o M/G/c (servidores e distribuições com c fixo), que completam os sete modelos do Laboratório; aba Dimensionamento com tabela por número de servidores, nível de serviço P(Wq ≤ t) e menor c para uma meta (exato no M/M/c e no M/M/c/K, por bloqueio alvo no Erlang-B e aproximado no M/G/c), custo total com c ótimo e gráfico custo × c, e histórico do tipo `sizing`. Rotas `/api/sizing/table`, `/sla` e `/cost`.
 - [x] **Fase 12 — Comparação de cenários:** cenários nomeados por sobrescrita (λ, μ, c, K, modelo, CV/k do serviço; absoluto ou relativo) sobre a base do Laboratório, réplicas com a mesma semente e fluxos separados de chegada e serviço (números aleatórios comuns), IC por cenário e IC da diferença pareada com veredito, correção de Bonferroni opcional, alertas de instável e em risco, resposta em NDJSON com progresso e cancelamento, exportação em CSV (`POST /api/scenarios/export.csv`), histórico do tipo `scenarios` e aba Cenários.
-- [x] **Fase 13 — Distribuições e ajuste de amostras:** P(n) analítica, P(Wq > t) (fórmula fechada no M/M/c; histograma de simulação FIFO com IC nos demais), sensibilidade Wq × λ sobre a varredura da Fase 6, ajuste por máxima verossimilhança de exponencial, Erlang-k, lognormal, Weibull e uniforme com AIC e p-valor de aderência por Monte Carlo (decisão D-02, não o KS simples), sugestão de modelo pelo CV integrada à aba Dados reais, rotas `/api/analysis`, aba Distribuições no Laboratório, painel Ajustar distribuição e histórico do tipo `fit`. Sistema na versão 2.0.
+- [x] **Fase 13 — Distribuições e ajuste de amostras:** P(n) analítica, P(Wq > t) (fórmula fechada no M/M/c; histograma de simulação FIFO com IC nos demais), sensibilidade Wq × λ sobre a varredura da Fase 6, ajuste por máxima verossimilhança de exponencial, Erlang-k, lognormal, Weibull e uniforme com AIC e p-valor de aderência por Monte Carlo (decisão D-02, não o KS simples), sugestão de modelo pelo CV integrada à aba Dados reais, rotas `/api/analysis`, aba Distribuições no Laboratório, painel Ajustar distribuição e histórico do tipo `fit`. Sistema na versão 1.10.
+- [x] **Fase 13.1 — Cruzamento semaforizado (fase de aplicação do seminário):** cruzamento de ciclo fixo com duas aproximações que dividem o mesmo ciclo (fila FIFO por aproximação, descarga com tempo do 1º veículo ℓ e intervalo h de uma das distribuições da Fase 9, amarelo utilizável, fila inicial, chegadas por blocos), atraso com e sem os pendentes, série da fila, referência de Webster rotulada como aproximação, comparação de planos com números aleatórios comuns e IC pareado, varredura da divisão do verde, leitura das planilhas do protocolo de coleta, estimação de plano, chegadas, ℓ e h e validação simulado × observado, rotas `/api/traffic`, aba Cruzamento e histórico do tipo `traffic`. Parâmetros medidos no vídeo sem valor padrão silencioso. Sistema na versão 1.11.
 
 ### Possíveis extensões
 

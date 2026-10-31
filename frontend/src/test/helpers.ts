@@ -51,6 +51,14 @@ import errorScenariosCapacity from "./fixtures/error-scenarios-capacity.json";
 import scenariosCompareMmc from "./fixtures/scenarios-compare-mmc.json";
 import scenariosCompareMmcBonferroni from "./fixtures/scenarios-compare-mmc-bonferroni.json";
 import scenariosExportMmc from "./fixtures/scenarios-export-mmc.json";
+import errorTrafficHeadway from "./fixtures/error-traffic-headway.json";
+import errorTrafficVideo from "./fixtures/error-traffic-video.json";
+import trafficCompare from "./fixtures/traffic-compare.json";
+import trafficExportSweep from "./fixtures/traffic-export-sweep.json";
+import trafficSimulate from "./fixtures/traffic-simulate.json";
+import trafficSweep from "./fixtures/traffic-sweep.json";
+import trafficVideoEstimate from "./fixtures/traffic-video-estimate.json";
+import trafficVideoValidate from "./fixtures/traffic-video-validate.json";
 import analysisDistributionMmc from "./fixtures/analysis-distribution-mmc.json";
 import analysisDistributionMmck from "./fixtures/analysis-distribution-mmck.json";
 import analysisDistributionMgc from "./fixtures/analysis-distribution-mgc.json";
@@ -78,6 +86,8 @@ export const fixtures = {
   experimentServersErlangb, experimentSweepErlangb, experimentSweepMgc,
   sizingCostMmc, sizingSlaErlangb, sizingSlaMmc, sizingTableMgc, sizingTableMmc,
   errorScenariosCapacity, scenariosCompareMmc, scenariosCompareMmcBonferroni, scenariosExportMmc,
+  errorTrafficHeadway, errorTrafficVideo, trafficCompare, trafficExportSweep, trafficSimulate, trafficSweep,
+  trafficVideoEstimate, trafficVideoValidate,
   analysisDistributionMmc, analysisDistributionMmck, analysisDistributionMgc, analysisSensitivityMm1, errorAnalysisErlangb, analysisFitLognormal, analysisFitConstant, errorAnalysisFitSample, realdataAnalyzeHint,
 };
 

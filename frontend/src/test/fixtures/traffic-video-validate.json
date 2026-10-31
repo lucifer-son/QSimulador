@@ -1,0 +1,2016 @@
+{
+ "approaches": {
+  "a1": {
+   "approach_id": "A",
+   "intervals": [
+    {
+     "start": 0.0,
+     "end": 60.0,
+     "queue": {
+      "observed": 5.0,
+      "mean": 2.95,
+      "low": 2.0,
+      "high": 4.0
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 12.05,
+      "low": 11.0,
+      "high": 13.0
+     }
+    },
+    {
+     "start": 60.0,
+     "end": 120.0,
+     "queue": {
+      "observed": 5.0,
+      "mean": 6.25,
+      "low": 3.950000000000001,
+      "high": 9.0
+     },
+     "departures": {
+      "observed": 13.0,
+      "mean": 9.7,
+      "low": 6.950000000000001,
+      "high": 12.524999999999999
+     }
+    },
+    {
+     "start": 120.0,
+     "end": 180.0,
+     "queue": {
+      "observed": 11.0,
+      "mean": 10.15,
+      "low": 8.0,
+      "high": 12.524999999999999
+     },
+     "departures": {
+      "observed": 9.0,
+      "mean": 11.1,
+      "low": 8.475,
+      "high": 13.524999999999999
+     }
+    },
+    {
+     "start": 180.0,
+     "end": 240.0,
+     "queue": {
+      "observed": 11.0,
+      "mean": 10.75,
+      "low": 7.950000000000001,
+      "high": 13.524999999999999
+     },
+     "departures": {
+      "observed": 15.0,
+      "mean": 14.4,
+      "low": 12.475,
+      "high": 17.049999999999997
+     }
+    },
+    {
+     "start": 240.0,
+     "end": 300.0,
+     "queue": {
+      "observed": 3.0,
+      "mean": 3.85,
+      "low": 2.0,
+      "high": 6.524999999999999
+     },
+     "departures": {
+      "observed": 15.0,
+      "mean": 13.9,
+      "low": 11.475,
+      "high": 16.049999999999997
+     }
+    },
+    {
+     "start": 300.0,
+     "end": 360.0,
+     "queue": {
+      "observed": 4.0,
+      "mean": 3.45,
+      "low": 1.0,
+      "high": 6.0
+     },
+     "departures": {
+      "observed": 8.0,
+      "mean": 9.4,
+      "low": 5.0,
+      "high": 13.0
+     }
+    },
+    {
+     "start": 360.0,
+     "end": 420.0,
+     "queue": {
+      "observed": 6.0,
+      "mean": 5.25,
+      "low": 3.0,
+      "high": 8.0
+     },
+     "departures": {
+      "observed": 13.0,
+      "mean": 13.2,
+      "low": 10.0,
+      "high": 16.0
+     }
+    },
+    {
+     "start": 420.0,
+     "end": 480.0,
+     "queue": {
+      "observed": 2.0,
+      "mean": 2.7,
+      "low": 1.0,
+      "high": 4.524999999999999
+     },
+     "departures": {
+      "observed": 14.0,
+      "mean": 12.55,
+      "low": 9.475,
+      "high": 15.524999999999999
+     }
+    },
+    {
+     "start": 480.0,
+     "end": 540.0,
+     "queue": {
+      "observed": 11.0,
+      "mean": 11.7,
+      "low": 10.0,
+      "high": 13.0
+     },
+     "departures": {
+      "observed": 15.0,
+      "mean": 15.0,
+      "low": 13.475,
+      "high": 17.0
+     }
+    },
+    {
+     "start": 540.0,
+     "end": 600.0,
+     "queue": {
+      "observed": 12.0,
+      "mean": 12.8,
+      "low": 9.475,
+      "high": 15.049999999999997
+     },
+     "departures": {
+      "observed": 15.0,
+      "mean": 14.9,
+      "low": 13.0,
+      "high": 17.0
+     }
+    },
+    {
+     "start": 600.0,
+     "end": 660.0,
+     "queue": {
+      "observed": 4.0,
+      "mean": 5.1,
+      "low": 2.0,
+      "high": 9.049999999999997
+     },
+     "departures": {
+      "observed": 13.0,
+      "mean": 12.7,
+      "low": 11.0,
+      "high": 14.524999999999999
+     }
+    },
+    {
+     "start": 660.0,
+     "end": 720.0,
+     "queue": {
+      "observed": 2.0,
+      "mean": 4.65,
+      "low": 1.4750000000000005,
+      "high": 10.0
+     },
+     "departures": {
+      "observed": 14.0,
+      "mean": 12.45,
+      "low": 10.475,
+      "high": 15.0
+     }
+    },
+    {
+     "start": 720.0,
+     "end": 780.0,
+     "queue": {
+      "observed": 0.0,
+      "mean": 0.4,
+      "low": 0.0,
+      "high": 3.5249999999999986
+     },
+     "departures": {
+      "observed": 8.0,
+      "mean": 10.25,
+      "low": 7.4750000000000005,
+      "high": 13.0
+     }
+    },
+    {
+     "start": 780.0,
+     "end": 840.0,
+     "queue": {
+      "observed": 6.0,
+      "mean": 5.7,
+      "low": 3.4750000000000005,
+      "high": 8.0
+     },
+     "departures": {
+      "observed": 8.0,
+      "mean": 8.7,
+      "low": 6.0,
+      "high": 11.524999999999999
+     }
+    },
+    {
+     "start": 840.0,
+     "end": 900.0,
+     "queue": {
+      "observed": 4.0,
+      "mean": 4.7,
+      "low": 1.9500000000000008,
+      "high": 7.049999999999997
+     },
+     "departures": {
+      "observed": 12.0,
+      "mean": 11.0,
+      "low": 7.425000000000001,
+      "high": 13.0
+     }
+    },
+    {
+     "start": 900.0,
+     "end": 960.0,
+     "queue": {
+      "observed": 6.0,
+      "mean": 8.95,
+      "low": 6.0,
+      "high": 11.524999999999999
+     },
+     "departures": {
+      "observed": 12.0,
+      "mean": 9.75,
+      "low": 6.4750000000000005,
+      "high": 13.0
+     }
+    },
+    {
+     "start": 960.0,
+     "end": 1020.0,
+     "queue": {
+      "observed": 9.0,
+      "mean": 7.15,
+      "low": 4.4750000000000005,
+      "high": 9.524999999999999
+     },
+     "departures": {
+      "observed": 9.0,
+      "mean": 13.8,
+      "low": 11.475,
+      "high": 16.525
+     }
+    },
+    {
+     "start": 1020.0,
+     "end": 1080.0,
+     "queue": {
+      "observed": 8.0,
+      "mean": 6.05,
+      "low": 3.0,
+      "high": 9.049999999999997
+     },
+     "departures": {
+      "observed": 14.0,
+      "mean": 14.1,
+      "low": 11.0,
+      "high": 16.0
+     }
+    },
+    {
+     "start": 1080.0,
+     "end": 1140.0,
+     "queue": {
+      "observed": 5.0,
+      "mean": 2.35,
+      "low": 0.4750000000000004,
+      "high": 5.0
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 10.7,
+      "low": 7.0,
+      "high": 14.524999999999999
+     }
+    },
+    {
+     "start": 1140.0,
+     "end": 1200.0,
+     "queue": {
+      "observed": 2.0,
+      "mean": 2.4,
+      "low": 0.4750000000000004,
+      "high": 4.0
+     },
+     "departures": {
+      "observed": 12.0,
+      "mean": 8.95,
+      "low": 5.4750000000000005,
+      "high": 12.0
+     }
+    },
+    {
+     "start": 1200.0,
+     "end": 1260.0,
+     "queue": {
+      "observed": 2.0,
+      "mean": 2.4,
+      "low": 1.0,
+      "high": 4.0
+     },
+     "departures": {
+      "observed": 11.0,
+      "mean": 11.0,
+      "low": 8.475,
+      "high": 13.524999999999999
+     }
+    },
+    {
+     "start": 1260.0,
+     "end": 1320.0,
+     "queue": {
+      "observed": 0.0,
+      "mean": 0.95,
+      "low": 0.0,
+      "high": 2.5249999999999986
+     },
+     "departures": {
+      "observed": 13.0,
+      "mean": 12.45,
+      "low": 11.0,
+      "high": 14.524999999999999
+     }
+    },
+    {
+     "start": 1320.0,
+     "end": 1380.0,
+     "queue": {
+      "observed": 0.0,
+      "mean": 0.1,
+      "low": 0.0,
+      "high": 1.0
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 10.85,
+      "low": 9.475,
+      "high": 12.524999999999999
+     }
+    },
+    {
+     "start": 1380.0,
+     "end": 1440.0,
+     "queue": {
+      "observed": 0.0,
+      "mean": 0.2,
+      "low": 0.0,
+      "high": 1.5249999999999986
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 9.9,
+      "low": 8.475,
+      "high": 11.0
+     }
+    },
+    {
+     "start": 1440.0,
+     "end": 1500.0,
+     "queue": {
+      "observed": 5.0,
+      "mean": 3.2,
+      "low": 1.0,
+      "high": 5.0
+     },
+     "departures": {
+      "observed": 9.0,
+      "mean": 11.0,
+      "low": 9.0,
+      "high": 13.0
+     }
+    },
+    {
+     "start": 1500.0,
+     "end": 1560.0,
+     "queue": {
+      "observed": 2.0,
+      "mean": 0.55,
+      "low": 0.0,
+      "high": 2.0
+     },
+     "departures": {
+      "observed": 12.0,
+      "mean": 11.65,
+      "low": 10.0,
+      "high": 13.0
+     }
+    },
+    {
+     "start": 1560.0,
+     "end": 1620.0,
+     "queue": {
+      "observed": 3.0,
+      "mean": 3.85,
+      "low": 0.4750000000000004,
+      "high": 6.524999999999999
+     },
+     "departures": {
+      "observed": 11.0,
+      "mean": 8.7,
+      "low": 6.0,
+      "high": 12.0
+     }
+    },
+    {
+     "start": 1620.0,
+     "end": 1680.0,
+     "queue": {
+      "observed": 4.0,
+      "mean": 5.05,
+      "low": 2.4750000000000005,
+      "high": 7.0
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 9.8,
+      "low": 6.4750000000000005,
+      "high": 12.524999999999999
+     }
+    },
+    {
+     "start": 1680.0,
+     "end": 1740.0,
+     "queue": {
+      "observed": 22.0,
+      "mean": 22.85,
+      "low": 20.0,
+      "high": 25.525
+     },
+     "departures": {
+      "observed": 12.0,
+      "mean": 12.2,
+      "low": 11.0,
+      "high": 14.0
+     }
+    },
+    {
+     "start": 1740.0,
+     "end": 1800.0,
+     "queue": {
+      "observed": 21.0,
+      "mean": 22.5,
+      "low": 19.475,
+      "high": 26.049999999999997
+     },
+     "departures": {
+      "observed": 16.0,
+      "mean": 15.35,
+      "low": 14.0,
+      "high": 17.0
+     }
+    },
+    {
+     "start": 1800.0,
+     "end": 1860.0,
+     "queue": {
+      "observed": 18.0,
+      "mean": 19.85,
+      "low": 15.475,
+      "high": 23.0
+     },
+     "departures": {
+      "observed": 15.0,
+      "mean": 14.65,
+      "low": 13.0,
+      "high": 16.0
+     }
+    },
+    {
+     "start": 1860.0,
+     "end": 1920.0,
+     "queue": {
+      "observed": 14.0,
+      "mean": 15.8,
+      "low": 10.425,
+      "high": 20.0
+     },
+     "departures": {
+      "observed": 15.0,
+      "mean": 15.05,
+      "low": 13.0,
+      "high": 17.0
+     }
+    },
+    {
+     "start": 1920.0,
+     "end": 1980.0,
+     "queue": {
+      "observed": 3.0,
+      "mean": 4.4,
+      "low": 1.0,
+      "high": 8.0
+     },
+     "departures": {
+      "observed": 14.0,
+      "mean": 14.4,
+      "low": 11.950000000000001,
+      "high": 16.0
+     }
+    },
+    {
+     "start": 1980.0,
+     "end": 2040.0,
+     "queue": {
+      "observed": 7.0,
+      "mean": 6.4,
+      "low": 2.4750000000000005,
+      "high": 9.524999999999999
+     },
+     "departures": {
+      "observed": 13.0,
+      "mean": 15.0,
+      "low": 12.475,
+      "high": 17.0
+     }
+    },
+    {
+     "start": 2040.0,
+     "end": 2100.0,
+     "queue": {
+      "observed": 2.0,
+      "mean": 1.85,
+      "low": 0.0,
+      "high": 5.0
+     },
+     "departures": {
+      "observed": 14.0,
+      "mean": 13.55,
+      "low": 11.475,
+      "high": 15.524999999999999
+     }
+    },
+    {
+     "start": 2100.0,
+     "end": 2160.0,
+     "queue": {
+      "observed": 0.0,
+      "mean": 0.2,
+      "low": 0.0,
+      "high": 1.0
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 9.65,
+      "low": 7.4750000000000005,
+      "high": 12.524999999999999
+     }
+    },
+    {
+     "start": 2160.0,
+     "end": 2220.0,
+     "queue": {
+      "observed": 0.0,
+      "mean": 1.55,
+      "low": 0.0,
+      "high": 3.0
+     },
+     "departures": {
+      "observed": 14.0,
+      "mean": 12.65,
+      "low": 11.0,
+      "high": 14.524999999999999
+     }
+    },
+    {
+     "start": 2220.0,
+     "end": 2280.0,
+     "queue": {
+      "observed": 2.0,
+      "mean": 2.1,
+      "low": 0.0,
+      "high": 4.0
+     },
+     "departures": {
+      "observed": 11.0,
+      "mean": 12.45,
+      "low": 11.0,
+      "high": 14.0
+     }
+    },
+    {
+     "start": 2280.0,
+     "end": 2340.0,
+     "queue": {
+      "observed": 0.0,
+      "mean": 1.85,
+      "low": 0.4750000000000004,
+      "high": 3.0
+     },
+     "departures": {
+      "observed": 13.0,
+      "mean": 11.25,
+      "low": 8.950000000000001,
+      "high": 13.524999999999999
+     }
+    },
+    {
+     "start": 2340.0,
+     "end": 2400.0,
+     "queue": {
+      "observed": 5.0,
+      "mean": 6.95,
+      "low": 4.4750000000000005,
+      "high": 9.524999999999999
+     },
+     "departures": {
+      "observed": 11.0,
+      "mean": 10.9,
+      "low": 8.0,
+      "high": 13.0
+     }
+    },
+    {
+     "start": 2400.0,
+     "end": 2460.0,
+     "queue": {
+      "observed": 1.0,
+      "mean": 2.15,
+      "low": 0.4750000000000004,
+      "high": 3.5249999999999986
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 10.8,
+      "low": 8.0,
+      "high": 12.524999999999999
+     }
+    },
+    {
+     "start": 2460.0,
+     "end": 2520.0,
+     "queue": {
+      "observed": 6.0,
+      "mean": 5.75,
+      "low": 2.950000000000001,
+      "high": 8.524999999999999
+     },
+     "departures": {
+      "observed": 4.0,
+      "mean": 5.4,
+      "low": 3.0,
+      "high": 8.0
+     }
+    },
+    {
+     "start": 2520.0,
+     "end": 2580.0,
+     "queue": {
+      "observed": 8.0,
+      "mean": 9.4,
+      "low": 5.950000000000001,
+      "high": 12.524999999999999
+     },
+     "departures": {
+      "observed": 14.0,
+      "mean": 12.35,
+      "low": 6.950000000000001,
+      "high": 15.524999999999999
+     }
+    },
+    {
+     "start": 2580.0,
+     "end": 2640.0,
+     "queue": {
+      "observed": 6.0,
+      "mean": 7.25,
+      "low": 5.0,
+      "high": 10.0
+     },
+     "departures": {
+      "observed": 14.0,
+      "mean": 14.15,
+      "low": 10.475,
+      "high": 16.525
+     }
+    },
+    {
+     "start": 2640.0,
+     "end": 2700.0,
+     "queue": {
+      "observed": 2.0,
+      "mean": 1.95,
+      "low": 1.0,
+      "high": 3.5249999999999986
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 11.3,
+      "low": 7.950000000000001,
+      "high": 13.524999999999999
+     }
+    },
+    {
+     "start": 2700.0,
+     "end": 2760.0,
+     "queue": {
+      "observed": 5.0,
+      "mean": 3.15,
+      "low": 1.0,
+      "high": 6.0
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 11.8,
+      "low": 9.0,
+      "high": 15.0
+     }
+    },
+    {
+     "start": 2760.0,
+     "end": 2820.0,
+     "queue": {
+      "observed": 5.0,
+      "mean": 4.35,
+      "low": 1.4750000000000005,
+      "high": 6.524999999999999
+     },
+     "departures": {
+      "observed": 15.0,
+      "mean": 13.8,
+      "low": 12.0,
+      "high": 15.524999999999999
+     }
+    },
+    {
+     "start": 2820.0,
+     "end": 2880.0,
+     "queue": {
+      "observed": 2.0,
+      "mean": 0.7,
+      "low": 0.0,
+      "high": 2.5249999999999986
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 10.65,
+      "low": 7.4750000000000005,
+      "high": 13.524999999999999
+     }
+    },
+    {
+     "start": 2880.0,
+     "end": 2940.0,
+     "queue": {
+      "observed": 0.0,
+      "mean": 0.4,
+      "low": 0.0,
+      "high": 1.0
+     },
+     "departures": {
+      "observed": 14.0,
+      "mean": 12.3,
+      "low": 11.0,
+      "high": 14.524999999999999
+     }
+    },
+    {
+     "start": 2940.0,
+     "end": 3000.0,
+     "queue": {
+      "observed": 6.0,
+      "mean": 6.65,
+      "low": 5.0,
+      "high": 8.524999999999999
+     },
+     "departures": {
+      "observed": 13.0,
+      "mean": 12.75,
+      "low": 11.0,
+      "high": 14.0
+     }
+    },
+    {
+     "start": 3000.0,
+     "end": 3060.0,
+     "queue": {
+      "observed": 8.0,
+      "mean": 8.35,
+      "low": 5.4750000000000005,
+      "high": 11.0
+     },
+     "departures": {
+      "observed": 12.0,
+      "mean": 12.3,
+      "low": 10.0,
+      "high": 14.524999999999999
+     }
+    },
+    {
+     "start": 3060.0,
+     "end": 3120.0,
+     "queue": {
+      "observed": 2.0,
+      "mean": 4.85,
+      "low": 1.4750000000000005,
+      "high": 9.099999999999994
+     },
+     "departures": {
+      "observed": 15.0,
+      "mean": 12.5,
+      "low": 9.475,
+      "high": 15.0
+     }
+    },
+    {
+     "start": 3120.0,
+     "end": 3180.0,
+     "queue": {
+      "observed": 5.0,
+      "mean": 6.2,
+      "low": 3.4750000000000005,
+      "high": 10.049999999999997
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 11.65,
+      "low": 8.950000000000001,
+      "high": 13.0
+     }
+    },
+    {
+     "start": 3180.0,
+     "end": 3240.0,
+     "queue": {
+      "observed": 12.0,
+      "mean": 10.25,
+      "low": 8.0,
+      "high": 13.524999999999999
+     },
+     "departures": {
+      "observed": 9.0,
+      "mean": 11.95,
+      "low": 10.0,
+      "high": 13.0
+     }
+    },
+    {
+     "start": 3240.0,
+     "end": 3300.0,
+     "queue": {
+      "observed": 10.0,
+      "mean": 8.1,
+      "low": 7.0,
+      "high": 11.0
+     },
+     "departures": {
+      "observed": 12.0,
+      "mean": 12.15,
+      "low": 10.0,
+      "high": 14.0
+     }
+    },
+    {
+     "start": 3300.0,
+     "end": 3360.0,
+     "queue": {
+      "observed": 7.0,
+      "mean": 6.55,
+      "low": 4.0,
+      "high": 8.524999999999999
+     },
+     "departures": {
+      "observed": 14.0,
+      "mean": 12.55,
+      "low": 10.0,
+      "high": 15.0
+     }
+    },
+    {
+     "start": 3360.0,
+     "end": 3420.0,
+     "queue": {
+      "observed": 7.0,
+      "mean": 6.3,
+      "low": 3.4750000000000005,
+      "high": 9.049999999999997
+     },
+     "departures": {
+      "observed": 13.0,
+      "mean": 13.25,
+      "low": 10.0,
+      "high": 15.524999999999999
+     }
+    },
+    {
+     "start": 3420.0,
+     "end": 3480.0,
+     "queue": {
+      "observed": 6.0,
+      "mean": 6.7,
+      "low": 3.4750000000000005,
+      "high": 10.049999999999997
+     },
+     "departures": {
+      "observed": 15.0,
+      "mean": 13.6,
+      "low": 10.950000000000001,
+      "high": 15.524999999999999
+     }
+    },
+    {
+     "start": 3480.0,
+     "end": 3540.0,
+     "queue": {
+      "observed": 4.0,
+      "mean": 3.1,
+      "low": 2.0,
+      "high": 5.049999999999997
+     },
+     "departures": {
+      "observed": 11.0,
+      "mean": 12.6,
+      "low": 9.0,
+      "high": 14.524999999999999
+     }
+    },
+    {
+     "start": 3540.0,
+     "end": 3600.0,
+     "queue": {
+      "observed": 2.0,
+      "mean": 1.7,
+      "low": 0.0,
+      "high": 3.0
+     },
+     "departures": {
+      "observed": 12.0,
+      "mean": 11.4,
+      "low": 9.0,
+      "high": 14.0
+     }
+    }
+   ],
+   "queue": {
+    "n": 60,
+    "bias": 0.22916666666666677,
+    "mae": 1.0725000000000002,
+    "rmse": 1.29898999226322,
+    "coverage": 0.9666666666666667
+   },
+   "departures": {
+    "n": 60,
+    "bias": 0.005000000000000071,
+    "mae": 1.1366666666666665,
+    "rmse": 1.4978595839842044,
+    "coverage": 0.9333333333333333
+   },
+   "departures_total": {
+    "observed": 720.0,
+    "mean": 720.3,
+    "low": 719.0,
+    "high": 722.0,
+    "relative_error": 0.0004166666666666035
+   },
+   "excluded": {
+    "queue": 0,
+    "departures": 0
+   },
+   "delay": {
+    "observed_mean": 26.8257740585774,
+    "observed_ci": [
+     24.2550288463666,
+     29.396519270788204
+    ],
+    "observed_n": 239,
+    "simulated_mean": 27.346087484386977,
+    "simulated_low": 24.793583195688093,
+    "simulated_high": 29.800020507689695,
+    "note": "O observado vem só dos veículos acompanhados até o fim (amostra que pode excluir os mais lentos)."
+   }
+  },
+  "a2": {
+   "approach_id": "B",
+   "intervals": [
+    {
+     "start": 0.0,
+     "end": 60.0,
+     "queue": {
+      "observed": 9.0,
+      "mean": 5.75,
+      "low": 4.0,
+      "high": 8.0
+     },
+     "departures": {
+      "observed": 8.0,
+      "mean": 11.25,
+      "low": 9.0,
+      "high": 13.0
+     }
+    },
+    {
+     "start": 60.0,
+     "end": 120.0,
+     "queue": {
+      "observed": 1.0,
+      "mean": 1.05,
+      "low": 0.0,
+      "high": 2.0
+     },
+     "departures": {
+      "observed": 14.0,
+      "mean": 10.7,
+      "low": 9.0,
+      "high": 13.0
+     }
+    },
+    {
+     "start": 120.0,
+     "end": 180.0,
+     "queue": {
+      "observed": 1.0,
+      "mean": 0.85,
+      "low": 0.0,
+      "high": 2.0
+     },
+     "departures": {
+      "observed": 8.0,
+      "mean": 8.2,
+      "low": 7.0,
+      "high": 9.524999999999999
+     }
+    },
+    {
+     "start": 180.0,
+     "end": 240.0,
+     "queue": {
+      "observed": 0.0,
+      "mean": 0.1,
+      "low": 0.0,
+      "high": 1.0
+     },
+     "departures": {
+      "observed": 7.0,
+      "mean": 6.75,
+      "low": 6.0,
+      "high": 8.0
+     }
+    },
+    {
+     "start": 240.0,
+     "end": 300.0,
+     "queue": {
+      "observed": 3.0,
+      "mean": 2.7,
+      "low": 0.4750000000000004,
+      "high": 4.0
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 10.4,
+      "low": 9.0,
+      "high": 12.524999999999999
+     }
+    },
+    {
+     "start": 300.0,
+     "end": 360.0,
+     "queue": {
+      "observed": 7.0,
+      "mean": 7.1,
+      "low": 4.4750000000000005,
+      "high": 9.049999999999997
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 9.6,
+      "low": 8.0,
+      "high": 11.0
+     }
+    },
+    {
+     "start": 360.0,
+     "end": 420.0,
+     "queue": {
+      "observed": 11.0,
+      "mean": 11.45,
+      "low": 7.0,
+      "high": 15.0
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 9.65,
+      "low": 7.4750000000000005,
+      "high": 12.049999999999997
+     }
+    },
+    {
+     "start": 420.0,
+     "end": 480.0,
+     "queue": {
+      "observed": 10.0,
+      "mean": 12.0,
+      "low": 8.475,
+      "high": 15.524999999999999
+     },
+     "departures": {
+      "observed": 11.0,
+      "mean": 9.45,
+      "low": 8.0,
+      "high": 11.524999999999999
+     }
+    },
+    {
+     "start": 480.0,
+     "end": 540.0,
+     "queue": {
+      "observed": 9.0,
+      "mean": 10.7,
+      "low": 7.0,
+      "high": 15.049999999999997
+     },
+     "departures": {
+      "observed": 9.0,
+      "mean": 9.3,
+      "low": 7.4750000000000005,
+      "high": 11.524999999999999
+     }
+    },
+    {
+     "start": 540.0,
+     "end": 600.0,
+     "queue": {
+      "observed": 5.0,
+      "mean": 6.75,
+      "low": 3.4750000000000005,
+      "high": 11.049999999999997
+     },
+     "departures": {
+      "observed": 12.0,
+      "mean": 11.95,
+      "low": 9.475,
+      "high": 14.0
+     }
+    },
+    {
+     "start": 600.0,
+     "end": 660.0,
+     "queue": {
+      "observed": 3.0,
+      "mean": 5.9,
+      "low": 4.0,
+      "high": 8.524999999999999
+     },
+     "departures": {
+      "observed": 12.0,
+      "mean": 10.85,
+      "low": 7.4750000000000005,
+      "high": 13.0
+     }
+    },
+    {
+     "start": 660.0,
+     "end": 720.0,
+     "queue": {
+      "observed": 4.0,
+      "mean": 6.65,
+      "low": 4.0,
+      "high": 9.0
+     },
+     "departures": {
+      "observed": 11.0,
+      "mean": 11.25,
+      "low": 8.950000000000001,
+      "high": 12.0
+     }
+    },
+    {
+     "start": 720.0,
+     "end": 780.0,
+     "queue": {
+      "observed": 6.0,
+      "mean": 3.7,
+      "low": 2.0,
+      "high": 6.524999999999999
+     },
+     "departures": {
+      "observed": 7.0,
+      "mean": 11.95,
+      "low": 8.950000000000001,
+      "high": 14.0
+     }
+    },
+    {
+     "start": 780.0,
+     "end": 840.0,
+     "queue": {
+      "observed": 9.0,
+      "mean": 5.5,
+      "low": 3.0,
+      "high": 8.0
+     },
+     "departures": {
+      "observed": 11.0,
+      "mean": 12.2,
+      "low": 10.475,
+      "high": 14.0
+     }
+    },
+    {
+     "start": 840.0,
+     "end": 900.0,
+     "queue": {
+      "observed": 1.0,
+      "mean": 0.7,
+      "low": 0.0,
+      "high": 2.0
+     },
+     "departures": {
+      "observed": 12.0,
+      "mean": 8.8,
+      "low": 7.0,
+      "high": 11.524999999999999
+     }
+    },
+    {
+     "start": 900.0,
+     "end": 960.0,
+     "queue": {
+      "observed": 6.0,
+      "mean": 6.25,
+      "low": 3.4750000000000005,
+      "high": 8.524999999999999
+     },
+     "departures": {
+      "observed": 13.0,
+      "mean": 12.45,
+      "low": 11.0,
+      "high": 14.524999999999999
+     }
+    },
+    {
+     "start": 960.0,
+     "end": 1020.0,
+     "queue": {
+      "observed": 0.0,
+      "mean": 0.35,
+      "low": 0.0,
+      "high": 2.5249999999999986
+     },
+     "departures": {
+      "observed": 11.0,
+      "mean": 10.9,
+      "low": 8.475,
+      "high": 12.0
+     }
+    },
+    {
+     "start": 1020.0,
+     "end": 1080.0,
+     "queue": {
+      "observed": 0.0,
+      "mean": 0.0,
+      "low": 0.0,
+      "high": 0.0
+     },
+     "departures": {
+      "observed": 7.0,
+      "mean": 7.35,
+      "low": 7.0,
+      "high": 9.524999999999999
+     }
+    },
+    {
+     "start": 1080.0,
+     "end": 1140.0,
+     "queue": {
+      "observed": 3.0,
+      "mean": 2.8,
+      "low": 0.4750000000000004,
+      "high": 5.0
+     },
+     "departures": {
+      "observed": 8.0,
+      "mean": 8.2,
+      "low": 6.0,
+      "high": 10.524999999999999
+     }
+    },
+    {
+     "start": 1140.0,
+     "end": 1200.0,
+     "queue": {
+      "observed": 7.0,
+      "mean": 6.6,
+      "low": 5.0,
+      "high": 8.0
+     },
+     "departures": {
+      "observed": 9.0,
+      "mean": 9.2,
+      "low": 6.0,
+      "high": 11.0
+     }
+    },
+    {
+     "start": 1200.0,
+     "end": 1260.0,
+     "queue": {
+      "observed": 6.0,
+      "mean": 6.0,
+      "low": 4.4750000000000005,
+      "high": 8.574999999999996
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 9.6,
+      "low": 7.950000000000001,
+      "high": 11.0
+     }
+    },
+    {
+     "start": 1260.0,
+     "end": 1320.0,
+     "queue": {
+      "observed": 5.0,
+      "mean": 3.85,
+      "low": 2.0,
+      "high": 5.524999999999999
+     },
+     "departures": {
+      "observed": 6.0,
+      "mean": 7.15,
+      "low": 5.0,
+      "high": 9.524999999999999
+     }
+    },
+    {
+     "start": 1320.0,
+     "end": 1380.0,
+     "queue": {
+      "observed": 3.0,
+      "mean": 3.95,
+      "low": 1.4750000000000005,
+      "high": 6.0
+     },
+     "departures": {
+      "observed": 9.0,
+      "mean": 6.9,
+      "low": 3.4750000000000005,
+      "high": 10.0
+     }
+    },
+    {
+     "start": 1380.0,
+     "end": 1440.0,
+     "queue": {
+      "observed": 2.0,
+      "mean": 2.8,
+      "low": 1.0,
+      "high": 5.0
+     },
+     "departures": {
+      "observed": 6.0,
+      "mean": 6.15,
+      "low": 2.4750000000000005,
+      "high": 9.0
+     }
+    },
+    {
+     "start": 1440.0,
+     "end": 1500.0,
+     "queue": {
+      "observed": 3.0,
+      "mean": 3.5,
+      "low": 1.0,
+      "high": 6.0
+     },
+     "departures": {
+      "observed": 7.0,
+      "mean": 7.3,
+      "low": 4.4750000000000005,
+      "high": 10.0
+     }
+    },
+    {
+     "start": 1500.0,
+     "end": 1560.0,
+     "queue": {
+      "observed": 3.0,
+      "mean": 3.35,
+      "low": 2.0,
+      "high": 5.524999999999999
+     },
+     "departures": {
+      "observed": 9.0,
+      "mean": 9.15,
+      "low": 6.4750000000000005,
+      "high": 11.524999999999999
+     }
+    },
+    {
+     "start": 1560.0,
+     "end": 1620.0,
+     "queue": {
+      "observed": 0.0,
+      "mean": 2.2,
+      "low": 0.0,
+      "high": 5.0
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 8.15,
+      "low": 5.4750000000000005,
+      "high": 11.524999999999999
+     }
+    },
+    {
+     "start": 1620.0,
+     "end": 1680.0,
+     "queue": {
+      "observed": 3.0,
+      "mean": 2.0,
+      "low": 0.0,
+      "high": 4.0
+     },
+     "departures": {
+      "observed": 6.0,
+      "mean": 9.2,
+      "low": 5.0,
+      "high": 12.524999999999999
+     }
+    },
+    {
+     "start": 1680.0,
+     "end": 1740.0,
+     "queue": {
+      "observed": 3.0,
+      "mean": 1.35,
+      "low": 0.0,
+      "high": 3.0
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 10.65,
+      "low": 8.0,
+      "high": 12.524999999999999
+     }
+    },
+    {
+     "start": 1740.0,
+     "end": 1800.0,
+     "queue": {
+      "observed": 2.0,
+      "mean": 3.3,
+      "low": 1.0,
+      "high": 6.0
+     },
+     "departures": {
+      "observed": 15.0,
+      "mean": 12.05,
+      "low": 10.475,
+      "high": 14.0
+     }
+    },
+    {
+     "start": 1800.0,
+     "end": 1860.0,
+     "queue": {
+      "observed": 2.0,
+      "mean": 3.2,
+      "low": 1.0,
+      "high": 7.0
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 10.1,
+      "low": 8.0,
+      "high": 12.049999999999997
+     }
+    },
+    {
+     "start": 1860.0,
+     "end": 1920.0,
+     "queue": {
+      "observed": 2.0,
+      "mean": 3.65,
+      "low": 0.4750000000000004,
+      "high": 8.049999999999997
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 9.55,
+      "low": 7.4750000000000005,
+      "high": 11.0
+     }
+    },
+    {
+     "start": 1920.0,
+     "end": 1980.0,
+     "queue": {
+      "observed": 5.0,
+      "mean": 5.75,
+      "low": 3.4750000000000005,
+      "high": 8.574999999999996
+     },
+     "departures": {
+      "observed": 8.0,
+      "mean": 8.9,
+      "low": 6.4750000000000005,
+      "high": 10.524999999999999
+     }
+    },
+    {
+     "start": 1980.0,
+     "end": 2040.0,
+     "queue": {
+      "observed": 6.0,
+      "mean": 6.35,
+      "low": 3.4750000000000005,
+      "high": 9.049999999999997
+     },
+     "departures": {
+      "observed": 9.0,
+      "mean": 9.4,
+      "low": 7.4750000000000005,
+      "high": 11.524999999999999
+     }
+    },
+    {
+     "start": 2040.0,
+     "end": 2100.0,
+     "queue": {
+      "observed": 10.0,
+      "mean": 10.3,
+      "low": 8.0,
+      "high": 13.0
+     },
+     "departures": {
+      "observed": 9.0,
+      "mean": 9.05,
+      "low": 6.4750000000000005,
+      "high": 11.0
+     }
+    },
+    {
+     "start": 2100.0,
+     "end": 2160.0,
+     "queue": {
+      "observed": 6.0,
+      "mean": 5.85,
+      "low": 4.0,
+      "high": 8.0
+     },
+     "departures": {
+      "observed": 11.0,
+      "mean": 11.45,
+      "low": 9.475,
+      "high": 13.0
+     }
+    },
+    {
+     "start": 2160.0,
+     "end": 2220.0,
+     "queue": {
+      "observed": 5.0,
+      "mean": 6.3,
+      "low": 5.0,
+      "high": 8.0
+     },
+     "departures": {
+      "observed": 12.0,
+      "mean": 10.55,
+      "low": 8.475,
+      "high": 12.0
+     }
+    },
+    {
+     "start": 2220.0,
+     "end": 2280.0,
+     "queue": {
+      "observed": 3.0,
+      "mean": 3.3,
+      "low": 2.0,
+      "high": 5.0
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 11.0,
+      "low": 8.475,
+      "high": 13.524999999999999
+     }
+    },
+    {
+     "start": 2280.0,
+     "end": 2340.0,
+     "queue": {
+      "observed": 2.0,
+      "mean": 2.8,
+      "low": 1.0,
+      "high": 5.0
+     },
+     "departures": {
+      "observed": 8.0,
+      "mean": 7.5,
+      "low": 4.0,
+      "high": 10.524999999999999
+     }
+    },
+    {
+     "start": 2340.0,
+     "end": 2400.0,
+     "queue": {
+      "observed": 2.0,
+      "mean": 2.9,
+      "low": 2.0,
+      "high": 5.0
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 9.9,
+      "low": 7.0,
+      "high": 12.524999999999999
+     }
+    },
+    {
+     "start": 2400.0,
+     "end": 2460.0,
+     "queue": {
+      "observed": 2.0,
+      "mean": 1.15,
+      "low": 0.0,
+      "high": 3.5249999999999986
+     },
+     "departures": {
+      "observed": 8.0,
+      "mean": 9.75,
+      "low": 8.0,
+      "high": 12.0
+     }
+    },
+    {
+     "start": 2460.0,
+     "end": 2520.0,
+     "queue": {
+      "observed": 0.0,
+      "mean": 0.75,
+      "low": 0.0,
+      "high": 2.0
+     },
+     "departures": {
+      "observed": 11.0,
+      "mean": 9.4,
+      "low": 7.4750000000000005,
+      "high": 12.049999999999997
+     }
+    },
+    {
+     "start": 2520.0,
+     "end": 2580.0,
+     "queue": {
+      "observed": 3.0,
+      "mean": 4.5,
+      "low": 3.0,
+      "high": 6.0
+     },
+     "departures": {
+      "observed": 13.0,
+      "mean": 12.25,
+      "low": 10.475,
+      "high": 13.524999999999999
+     }
+    },
+    {
+     "start": 2580.0,
+     "end": 2640.0,
+     "queue": {
+      "observed": 3.0,
+      "mean": 5.0,
+      "low": 2.4750000000000005,
+      "high": 8.0
+     },
+     "departures": {
+      "observed": 11.0,
+      "mean": 10.5,
+      "low": 9.0,
+      "high": 12.524999999999999
+     }
+    },
+    {
+     "start": 2640.0,
+     "end": 2700.0,
+     "queue": {
+      "observed": 11.0,
+      "mean": 13.2,
+      "low": 10.475,
+      "high": 15.524999999999999
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 9.8,
+      "low": 8.475,
+      "high": 11.524999999999999
+     }
+    },
+    {
+     "start": 2700.0,
+     "end": 2760.0,
+     "queue": {
+      "observed": 5.0,
+      "mean": 7.6,
+      "low": 4.425000000000001,
+      "high": 10.0
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 9.6,
+      "low": 7.4750000000000005,
+      "high": 11.0
+     }
+    },
+    {
+     "start": 2760.0,
+     "end": 2820.0,
+     "queue": {
+      "observed": 5.0,
+      "mean": 5.7,
+      "low": 3.0,
+      "high": 8.574999999999996
+     },
+     "departures": {
+      "observed": 8.0,
+      "mean": 9.9,
+      "low": 8.0,
+      "high": 11.524999999999999
+     }
+    },
+    {
+     "start": 2820.0,
+     "end": 2880.0,
+     "queue": {
+      "observed": 11.0,
+      "mean": 12.95,
+      "low": 9.475,
+      "high": 16.049999999999997
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 8.75,
+      "low": 6.0,
+      "high": 10.524999999999999
+     }
+    },
+    {
+     "start": 2880.0,
+     "end": 2940.0,
+     "queue": {
+      "observed": 8.0,
+      "mean": 8.95,
+      "low": 7.0,
+      "high": 13.099999999999994
+     },
+     "departures": {
+      "observed": 11.0,
+      "mean": 12.0,
+      "low": 9.475,
+      "high": 14.0
+     }
+    },
+    {
+     "start": 2940.0,
+     "end": 3000.0,
+     "queue": {
+      "observed": 8.0,
+      "mean": 7.8,
+      "low": 6.0,
+      "high": 11.574999999999996
+     },
+     "departures": {
+      "observed": 11.0,
+      "mean": 12.15,
+      "low": 11.0,
+      "high": 13.524999999999999
+     }
+    },
+    {
+     "start": 3000.0,
+     "end": 3060.0,
+     "queue": {
+      "observed": 5.0,
+      "mean": 3.45,
+      "low": 1.4750000000000005,
+      "high": 6.0
+     },
+     "departures": {
+      "observed": 9.0,
+      "mean": 10.35,
+      "low": 7.4750000000000005,
+      "high": 13.524999999999999
+     }
+    },
+    {
+     "start": 3060.0,
+     "end": 3120.0,
+     "queue": {
+      "observed": 5.0,
+      "mean": 4.75,
+      "low": 3.0,
+      "high": 6.524999999999999
+     },
+     "departures": {
+      "observed": 11.0,
+      "mean": 9.7,
+      "low": 7.0,
+      "high": 12.524999999999999
+     }
+    },
+    {
+     "start": 3120.0,
+     "end": 3180.0,
+     "queue": {
+      "observed": 3.0,
+      "mean": 2.65,
+      "low": 0.0,
+      "high": 4.524999999999999
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 10.1,
+      "low": 8.0,
+      "high": 11.524999999999999
+     }
+    },
+    {
+     "start": 3180.0,
+     "end": 3240.0,
+     "queue": {
+      "observed": 8.0,
+      "mean": 7.6,
+      "low": 4.4750000000000005,
+      "high": 11.049999999999997
+     },
+     "departures": {
+      "observed": 12.0,
+      "mean": 12.05,
+      "low": 10.475,
+      "high": 13.0
+     }
+    },
+    {
+     "start": 3240.0,
+     "end": 3300.0,
+     "queue": {
+      "observed": 4.0,
+      "mean": 5.2,
+      "low": 1.4750000000000005,
+      "high": 9.0
+     },
+     "departures": {
+      "observed": 14.0,
+      "mean": 12.4,
+      "low": 10.475,
+      "high": 14.524999999999999
+     }
+    },
+    {
+     "start": 3300.0,
+     "end": 3360.0,
+     "queue": {
+      "observed": 6.0,
+      "mean": 7.0,
+      "low": 2.950000000000001,
+      "high": 11.0
+     },
+     "departures": {
+      "observed": 12.0,
+      "mean": 12.2,
+      "low": 10.475,
+      "high": 14.0
+     }
+    },
+    {
+     "start": 3360.0,
+     "end": 3420.0,
+     "queue": {
+      "observed": 5.0,
+      "mean": 5.75,
+      "low": 1.0,
+      "high": 10.0
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 10.25,
+      "low": 8.475,
+      "high": 12.0
+     }
+    },
+    {
+     "start": 3420.0,
+     "end": 3480.0,
+     "queue": {
+      "observed": 6.0,
+      "mean": 6.85,
+      "low": 2.950000000000001,
+      "high": 12.524999999999999
+     },
+     "departures": {
+      "observed": 10.0,
+      "mean": 9.9,
+      "low": 7.4750000000000005,
+      "high": 12.0
+     }
+    },
+    {
+     "start": 3480.0,
+     "end": 3540.0,
+     "queue": {
+      "observed": 4.0,
+      "mean": 3.15,
+      "low": 0.0,
+      "high": 9.099999999999994
+     },
+     "departures": {
+      "observed": 8.0,
+      "mean": 9.7,
+      "low": 8.0,
+      "high": 11.0
+     }
+    },
+    {
+     "start": 3540.0,
+     "end": 3600.0,
+     "queue": {
+      "observed": 8.0,
+      "mean": 5.3,
+      "low": 2.4750000000000005,
+      "high": 8.049999999999997
+     },
+     "departures": {
+      "observed": 6.0,
+      "mean": 7.85,
+      "low": 4.0,
+      "high": 11.049999999999997
+     }
+    }
+   ],
+   "queue": {
+    "n": 60,
+    "bias": 0.3483333333333333,
+    "mae": 1.0650000000000002,
+    "rmse": 1.3834437706920606,
+    "coverage": 0.95
+   },
+   "departures": {
+    "n": 60,
+    "bias": 0.04499999999999997,
+    "mae": 0.9916666666666666,
+    "rmse": 1.4305010777113498,
+    "coverage": 0.9166666666666666
+   },
+   "departures_total": {
+    "observed": 590.0,
+    "mean": 592.7,
+    "low": 589.95,
+    "high": 595.525,
+    "relative_error": 0.004576271186440755
+   },
+   "excluded": {
+    "queue": 0,
+    "departures": 0
+   },
+   "delay": {
+    "observed_mean": 29.28776649746195,
+    "observed_ci": [
+     26.884888746838424,
+     31.690644248085473
+    ],
+    "observed_n": 197,
+    "simulated_mean": 30.406072500313492,
+    "simulated_low": 26.717979767508538,
+    "simulated_high": 35.867675087232335,
+    "note": "O observado vem só dos veículos acompanhados até o fim (amostra que pode excluir os mais lentos)."
+   }
+  }
+ },
+ "settings": {
+  "simulation_time": 3600.0,
+  "replications": 20,
+  "seed": 3,
+  "band_level": 0.95,
+  "note": "A faixa é o intervalo central de 95% dos valores simulados entre réplicas (variação do próprio processo), não um IC da média. Não há limite de aprovação: os erros descrevem o quanto o modelo reproduz o observado."
+ },
+ "notes": []
+}

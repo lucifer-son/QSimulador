@@ -10,6 +10,7 @@ import type { SizingResponse } from "../api/sizing";
 import type { CostUnit, SizingAction } from "./sizing";
 import type { NewRecord, RecordDetail, RecordKind } from "../api/records";
 import type { AnalysisResponse } from "../api/realdata";
+import type { CompareResult, SweepResult, TrafficResult, VideoValidation } from "../api/traffic";
 import type { FitResult } from "../api/analysis";
 import type {
   ServerComparisonResponse, SensitivityResponse, ServicesComparisonResponse, SweepResponse,
@@ -24,8 +25,9 @@ export const KIND_LABELS: Record<RecordKind, string> = {
   comparison: "Comparação",
   experiment: "Experimento",
   realdata: "Dados reais",
+  traffic: "Cruzamento",
 };
-export const KIND_ORDER: RecordKind[] = ["model", "simulation", "comparison", "experiment", "realdata"];
+export const KIND_ORDER: RecordKind[] = ["model", "simulation", "comparison", "experiment", "realdata", "traffic"];
 
 const ACTION_KIND: Record<Action, RecordKind> = { calculate: "model", simulate: "simulation", compare: "comparison" };
 const ACTION_LABEL: Record<Action, string> = { calculate: "Cálculo", simulate: "Simulação", compare: "Comparação" };
@@ -185,4 +187,42 @@ export function parseRealDataRecord(record: RecordDetail): AnalysisResponse | nu
   if (params.origin !== "realdata" || params.source !== "jtl") return null;
   if (!isObject(result.dataset) || !Array.isArray(result.ranking) || !Array.isArray(result.levels)) return null;
   return result as unknown as AnalysisResponse;
+}
+
+
+// ---------- Cruzamento semaforizado (Fase 13.1) ----------
+
+export type TrafficSnapshot =
+  | { type: "simulate"; result: TrafficResult }
+  | { type: "compare"; result: CompareResult }
+  | { type: "sweep"; result: SweepResult }
+  | { type: "validation"; result: VideoValidation };
+
+export const TRAFFIC_TITLE: Record<TrafficSnapshot["type"], string> = {
+  simulate: "Simulação do cruzamento", compare: "Planos semafóricos", sweep: "Varredura do verde", validation: "Validação com o vídeo",
+};
+
+export function trafficRecord(type: TrafficSnapshot["type"], request: unknown, result: object, title: string = TRAFFIC_TITLE[type]): NewRecord {
+  return { kind: "traffic", title, params: { origin: "traffic", mode: type, request: request ?? null }, result: result as Record<string, unknown> };
+}
+
+export function parseTrafficRecord(record: RecordDetail): TrafficSnapshot | null {
+  const { params, result } = record;
+  if (params.origin !== "traffic") return null;
+  switch (params.mode) {
+    case "simulate":
+      return isObject(result.metrics) && isObject(result.plan) && Array.isArray(result.approaches)
+        ? { type: "simulate", result: result as unknown as TrafficResult } : null;
+    case "compare":
+      return isObject(result.base) && Array.isArray(result.plans) && isObject(result.settings)
+        ? { type: "compare", result: result as unknown as CompareResult } : null;
+    case "sweep":
+      return Array.isArray(result.points) && typeof result.best_index === "number"
+        ? { type: "sweep", result: result as unknown as SweepResult } : null;
+    case "validation":
+      return isObject(result.approaches) && isObject(result.settings)
+        ? { type: "validation", result: result as unknown as VideoValidation } : null;
+    default:
+      return null;
+  }
 }

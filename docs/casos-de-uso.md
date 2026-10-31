@@ -51,6 +51,7 @@ flowchart LR
         UC13[UC-13 Dimensionar por nível de serviço e custo]
         UC14[UC-14 Comparar cenários com IC pareado]
         UC15[UC-15 Ver distribuições e ajustar uma amostra]
+        UC16[UC-16 Estudar um cruzamento semaforizado]
     end
 
     U --> UC01
@@ -103,6 +104,7 @@ flowchart LR
 | UC-13 | Dimensionar por nível de serviço e custo | Usuário, Cliente de API | ✅ |
 | UC-14 | Comparar cenários com intervalo de confiança pareado | Usuário, Cliente de API | ✅ |
 | UC-15 | Ver distribuições e ajustar uma amostra | Usuário, Cliente de API | ✅ |
+| UC-16 | Estudar um cruzamento semaforizado (simular, comparar planos e validar com o vídeo) | Usuário, Cliente de API | ✅ |
 
 > **Conferência de 08/10/2026:** os casos de uso implementados (UC-01 a UC-06 e UC-10) foram verificados executando o sistema. As divergências encontradas na auditoria em UC-02 (P0 não retornado), UC-03 (a simulação aceitava 1 réplica) e UC-04 (P0 simulado) foram fechadas. Os detalhes estão na seção 11 de [`requisitos-do-sistema.md`](requisitos-do-sistema.md).
 
@@ -453,6 +455,34 @@ flowchart LR
 
 ---
 
+### UC-16 — Estudar um cruzamento semaforizado ✅
+
+| Campo | Descrição |
+|-------|-----------|
+| **Ator principal** | Usuário, Cliente de API |
+| **Objetivo** | Medir o efeito dos tempos do semáforo (verde e vermelho) sobre as filas, o atraso e a vazão de um cruzamento com duas aproximações que dividem o mesmo ciclo, e conferir se o modelo reproduz o que foi observado em vídeo. |
+| **Pré-condições** | Para simular: o plano (verde, amarelo e todo-vermelho de cada fase), a chegada de cada aproximação e o intervalo h entre veículos na descarga. Para estimar e validar: as planilhas do protocolo de coleta (eventos semafóricos e contagens; cruzamentos da linha de retenção para estimar ℓ, h e o amarelo utilizável). |
+| **Pós-condições** | Resultados com IC (atraso com e sem os pendentes, fila, vazão, ciclos com fila), série da fila, referência analítica rotulada como aproximação, avisos de parâmetros não informados e de saturação; para planos e varredura, as diferenças pareadas e o veredito; para o vídeo, as estimativas e os erros do modelo contra o observado. Os resultados podem ser exportados em CSV e salvos no histórico (tipo `traffic`). |
+
+**Fluxo principal**
+1. Na aba Cruzamento, o usuário preenche o semáforo e as duas aproximações com o que mediu no vídeo (ou envia as planilhas em Dados do vídeo e usa “Usar no formulário”).
+2. Em Simular, executa; o sistema mostra o grau de saturação de cada aproximação, o atraso, a fila ao longo do tempo e a conferência com a fórmula de Webster.
+3. Em Comparar planos, define planos alternativos (por exemplo, mais verde para a via mais carregada); o sistema simula todos com os mesmos veículos e mostra a diferença com IC pareado e o veredito.
+4. Em Varrer o verde, informa o verde mínimo de cada fase e o passo; o sistema mantém o ciclo, mostra a curva do atraso, o ponto de menor atraso e os pontos que não se distinguem dele.
+5. Em Dados do vídeo, estima o plano, as chegadas, ℓ e h e valida o modelo: a fila e as saídas simuladas aparecem sobre as observadas, com viés, erros e cobertura.
+6. Salva os resultados no histórico ou exporta o CSV.
+
+**Fluxos alternativos**
+- **Parâmetro medido não informado (ℓ, amarelo utilizável, fila inicial, offset):** vale 0 e o resultado traz um aviso por parâmetro; o intervalo h não tem alternativa e é obrigatório.
+- **Aproximação saturada (x ≥ 1):** a simulação roda e avisa que a fila cresce e que as médias dependem do tempo simulado; o atraso “com pendentes” continua sendo um limite inferior.
+- **Plano com ciclo diferente da referência:** a comparação avisa que a diferença mistura a redistribuição do verde com a mudança da capacidade total.
+- **Planilha inválida (coluna ausente, estado desconhecido, lacuna entre intervalos, célula obrigatória vazia):** a leitura é recusada com a tabela, a coluna e a linha; nada é preenchido por suposição.
+- **Sem o CSV de cruzamentos:** o plano e as chegadas são estimados, mas ℓ, h e o amarelo utilizável voltam sem estimativa e seguem como “não informado”.
+- **Plano do vídeo que não é de tempo fixo (ciclo variando):** a estimação avisa e o modelo usa as médias.
+- **Verde mínimo ausente na varredura, soma dos mínimos maior que o verde do ciclo, mais de 40 pontos, arquivo acima de 10 MiB:** erro identificando o campo (413 para o tamanho).
+
+---
+
 ## 5. Rastreabilidade
 
 | Caso de uso | Fase do roadmap | Componentes principais |
@@ -470,6 +500,7 @@ flowchart LR
 | UC-13 | Fase 11 — Dimensionamento | Módulo de dimensionamento (Erlang C, M/M/c/K exato, cauda do M/G/c), rotas `/api/sizing`, aba Dimensionamento |
 | UC-14 | Fase 12 — Comparação de cenários | Módulo de cenários (números aleatórios comuns, IC t pareado, veredito), rota `/api/scenarios` em NDJSON, exportação CSV, aba Cenários |
 | UC-15 | Fase 13 — Distribuições e ajuste | Módulo de distribuições (P(n) e cauda da espera), simulador FIFO de esperas, curva Wq × λ sobre a varredura da Fase 6, ajuste por máxima verossimilhança com bootstrap paramétrico, rotas `/api/analysis` (ajuste em NDJSON), aba Distribuições e painel Ajustar distribuição |
+| UC-16 | Fase 13.1 — Cruzamento semaforizado | Módulo `app/traffic` (plano, motor por recursão por veículo com números aleatórios comuns, métricas, referência de Webster, comparação de planos e varredura, leitura e estimação das planilhas do vídeo, validação), rotas `/api/traffic` (NDJSON e multipart), exportação CSV, aba Cruzamento e histórico `traffic` |
 
 ---
 

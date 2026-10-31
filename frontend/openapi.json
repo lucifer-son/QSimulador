@@ -964,7 +964,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SweepRequest"
+                "$ref": "#/components/schemas/app__api__schemas__SweepRequest"
               }
             }
           },
@@ -1327,6 +1327,349 @@
         }
       }
     },
+    "/api/traffic/simulate": {
+      "post": {
+        "tags": [
+          "Cruzamento semaforizado"
+        ],
+        "summary": "Simulate",
+        "description": "Simula o cruzamento (duas aproximações, ciclo fixo compartilhado) e devolve filas, atrasos e vazão com IC.\n\nCada réplica usa fluxos independentes de chegada e de intervalo de descarga por aproximação. O atraso é\ndado de duas formas: dos veículos que já cruzaram e **com os pendentes** (quem ainda espera em T, contado só até T,\nlimite inferior). `reference` traz a aproximação analítica (Webster para x < 1; fluida para x ≥ 1), sempre com `exact = false`.",
+        "operationId": "simulate_api_traffic_simulate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrafficResultOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros ou arquivos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/traffic/export.csv": {
+      "post": {
+        "tags": [
+          "Cruzamento semaforizado"
+        ],
+        "summary": "Export Simulation Csv",
+        "operationId": "export_simulation_csv_api_traffic_export_csv_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/csv": {}
+            }
+          },
+          "422": {
+            "description": "Parâmetros ou arquivos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/traffic/compare": {
+      "post": {
+        "tags": [
+          "Cruzamento semaforizado"
+        ],
+        "summary": "Compare Plans",
+        "description": "Compara até 10 planos alternativos com a referência, com IC pareado (números aleatórios comuns).\n\nEventos: `start`, `base`, um `plan` por plano (com `completed` e `total`) e `done` com o resultado completo.\nSe o ciclo mudar em relação à referência, o plano traz o aviso `cycle_changed`.",
+        "operationId": "compare_plans_api_traffic_compare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__api__schemas_traffic__CompareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Uma linha JSON por evento (application/x-ndjson).",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrafficEventOut",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros ou arquivos inválidos",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/traffic/compare/export.csv": {
+      "post": {
+        "tags": [
+          "Cruzamento semaforizado"
+        ],
+        "summary": "Export Compare Csv",
+        "operationId": "export_compare_csv_api_traffic_compare_export_csv_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__api__schemas_traffic__CompareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/csv": {}
+            }
+          },
+          "422": {
+            "description": "Parâmetros ou arquivos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/traffic/sweep": {
+      "post": {
+        "tags": [
+          "Cruzamento semaforizado"
+        ],
+        "summary": "Sweep Green Split",
+        "description": "Varre a divisão do verde mantendo o ciclo (g1 + g2 constante) e devolve a curva de atraso do cruzamento.\n\nEventos: `start`, um `point` por divisão e `done` com `best_index` e, para cada ponto, `vs_best`\n(`best`, `worse`, `indistinguishable`): a comparação pareada com o melhor. O ciclo ótimo de Webster\nvem como referência aproximada.",
+        "operationId": "sweep_green_split_api_traffic_sweep_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__api__schemas_traffic__SweepRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Uma linha JSON por evento (application/x-ndjson).",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrafficEventOut",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros ou arquivos inválidos",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/traffic/sweep/export.csv": {
+      "post": {
+        "tags": [
+          "Cruzamento semaforizado"
+        ],
+        "summary": "Export Sweep Csv",
+        "operationId": "export_sweep_csv_api_traffic_sweep_export_csv_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__api__schemas_traffic__SweepRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/csv": {}
+            }
+          },
+          "422": {
+            "description": "Parâmetros ou arquivos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/traffic/video/estimate": {
+      "post": {
+        "tags": [
+          "Cruzamento semaforizado"
+        ],
+        "summary": "Video Estimate",
+        "description": "Lê as planilhas do protocolo e estima plano, offset, chegadas por bloco, ℓ, h e amarelo utilizável. Nada é preenchido por suposição: dado ausente em uma célula obrigatória recusa o arquivo (com a linha), e o que não puder ser estimado volta como `null` e vira o aviso `not_informed` no cruzamento. signal_events: eventos semafóricos (timestamp, approach_id, signal_state). counts: contagens por intervalo (interval_start, interval_end, approach_id, arrivals, departures, queue_count, queue_visible). crossings (opcional): um cruzamento da linha de retenção por linha (crossing_time, approach_id). trajectories (opcional): veículos acompanhados.",
+        "operationId": "video_estimate_api_traffic_video_estimate_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_video_estimate_api_traffic_video_estimate_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEstimateOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros ou arquivos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Arquivo acima do limite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/traffic/video/validate": {
+      "post": {
+        "tags": [
+          "Cruzamento semaforizado"
+        ],
+        "summary": "Video Validate",
+        "description": "Simula o plano observado com as chegadas do vídeo e compara com a fila e as saídas observadas, intervalo a intervalo. As chegadas usam as contagens observadas (número fixo por intervalo). A resposta traz erros (viés, MAE, RMSE) e a cobertura da faixa simulada; não há teste de hipótese nem limite de aprovação. signal_events: eventos semafóricos (timestamp, approach_id, signal_state). counts: contagens por intervalo (interval_start, interval_end, approach_id, arrivals, departures, queue_count, queue_visible). crossings (opcional): um cruzamento da linha de retenção por linha (crossing_time, approach_id). trajectories (opcional): veículos acompanhados.",
+        "operationId": "video_validate_api_traffic_video_validate_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_video_validate_api_traffic_video_validate_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoValidationOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros ou arquivos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Arquivo acima do limite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/analysis/distribution": {
       "post": {
         "tags": [
@@ -1528,7 +1871,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CompareRequest"
+                "$ref": "#/components/schemas/app__api__schemas_realdata__CompareRequest"
               }
             }
           },
@@ -1941,7 +2284,8 @@
                     "simulation",
                     "comparison",
                     "experiment",
-                    "realdata"
+                    "realdata",
+                    "traffic"
                   ],
                   "type": "string"
                 },
@@ -4025,6 +4369,114 @@
         ],
         "title": "AnalysisWaitTailOut"
       },
+      "ApproachIn": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Nome exibido (até 60 caracteres)."
+          },
+          "lambda": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lambda",
+            "description": "Taxa de chegada constante (veículos/s). Informe isto ou `profile`."
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/BlockIn"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile",
+            "description": "Taxa de chegada por blocos consecutivos a partir de t = 0."
+          },
+          "headway": {
+            "$ref": "#/components/schemas/ServiceSpec",
+            "description": "Intervalo entre veículos que cruzam a linha de retenção (s), medido no vídeo. Sem valor padrão."
+          },
+          "first_vehicle_time": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Vehicle Time",
+            "description": "ℓ: segundos do início do verde até o 1º veículo da fila cruzar. Não informado → 0, com aviso."
+          },
+          "amber_usable": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amber Usable",
+            "description": "Segundos do amarelo em que ainda se cruza. Não informado → 0, com aviso."
+          },
+          "initial_queue": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initial Queue",
+            "description": "Veículos já esperando em t = 0. Não informado → 0, com aviso."
+          }
+        },
+        "type": "object",
+        "required": [
+          "headway"
+        ],
+        "title": "ApproachIn"
+      },
+      "BlockIn": {
+        "properties": {
+          "duration": {
+            "type": "number",
+            "title": "Duration",
+            "description": "Duração do bloco (s)."
+          },
+          "lambda": {
+            "type": "number",
+            "title": "Lambda",
+            "description": "Taxa de chegada no bloco (veículos/s). Pode ser 0."
+          }
+        },
+        "type": "object",
+        "required": [
+          "duration",
+          "lambda"
+        ],
+        "title": "BlockIn"
+      },
       "Body_analyze_csv_api_realdata_analyze_post": {
         "properties": {
           "file": {
@@ -4138,32 +4590,176 @@
         ],
         "title": "Body_import_levels_api_realdata_import_levels_post"
       },
-      "CompareRequest": {
+      "Body_video_estimate_api_traffic_video_estimate_post": {
         "properties": {
-          "model": {
+          "signal_events": {
             "type": "string",
-            "enum": [
-              "mm1",
-              "mmc",
-              "mm1k",
-              "mmck",
-              "mm1n",
-              "mmcn"
+            "contentMediaType": "application/octet-stream",
+            "title": "Signal Events",
+            "description": "CSV dos eventos semafóricos."
+          },
+          "counts": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "Counts",
+            "description": "CSV das contagens por intervalo."
+          },
+          "crossings": {
+            "anyOf": [
+              {
+                "type": "string",
+                "contentMediaType": "application/octet-stream"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Model"
+            "title": "Crossings",
+            "description": "CSV dos cruzamentos da linha de retenção (necessário para ℓ, h e o amarelo utilizável)."
           },
-          "mu": {
+          "trajectories": {
+            "anyOf": [
+              {
+                "type": "string",
+                "contentMediaType": "application/octet-stream"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trajectories",
+            "description": "CSV dos veículos acompanhados (para o atraso observado)."
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id",
+            "description": "Sessão a usar, se os arquivos tiverem mais de uma."
+          },
+          "approach_ids": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approach Ids",
+            "description": "As duas aproximações, separadas por vírgula (a 1ª é a da fase 1)."
+          },
+          "max_headway": {
             "type": "number",
-            "exclusiveMinimum": 0.0,
-            "title": "Mu",
-            "description": "Taxa de serviço por servidor (req/s)."
+            "title": "Max Headway",
+            "description": "Intervalo máximo (s) entre veículos para contar como descarga saturada.",
+            "default": 4.0
           },
-          "servers": {
+          "min_run": {
             "type": "integer",
-            "title": "Servers",
-            "default": 1
+            "title": "Min Run",
+            "description": "Veículos mínimos da sequência saturada de um verde.",
+            "default": 5
           },
-          "capacity": {
+          "core": {
+            "type": "integer",
+            "title": "Core",
+            "description": "Veículos da cabeça da fila usados no ajuste da reta de descarga.",
+            "default": 8
+          },
+          "profile_block": {
+            "type": "number",
+            "title": "Profile Block",
+            "description": "Duração (s) dos blocos do perfil de chegadas sugerido.",
+            "default": 900.0
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level",
+            "default": 0.95
+          }
+        },
+        "type": "object",
+        "required": [
+          "signal_events",
+          "counts"
+        ],
+        "title": "Body_video_estimate_api_traffic_video_estimate_post"
+      },
+      "Body_video_validate_api_traffic_video_validate_post": {
+        "properties": {
+          "signal_events": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "Signal Events"
+          },
+          "counts": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "Counts"
+          },
+          "config": {
+            "type": "string",
+            "title": "Config",
+            "description": "JSON do cruzamento (phases, offset, approaches com headway etc.) — o corpo de /simulate sem as chegadas, que vêm das contagens."
+          },
+          "crossings": {
+            "anyOf": [
+              {
+                "type": "string",
+                "contentMediaType": "application/octet-stream"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crossings"
+          },
+          "trajectories": {
+            "anyOf": [
+              {
+                "type": "string",
+                "contentMediaType": "application/octet-stream"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trajectories"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "approach_ids": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approach Ids"
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications",
+            "default": 30
+          },
+          "seed": {
             "anyOf": [
               {
                 "type": "integer"
@@ -4172,44 +4768,21 @@
                 "type": "null"
               }
             ],
-            "title": "Capacity"
+            "title": "Seed"
           },
-          "think_time": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Think Time"
-          },
-          "levels": {
-            "items": {
-              "$ref": "#/components/schemas/LevelModel"
-            },
-            "type": "array",
-            "title": "Levels",
-            "description": "Os níveis devolvidos por /analyze."
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level",
+            "default": 0.95
           }
         },
         "type": "object",
         "required": [
-          "model",
-          "mu",
-          "levels"
+          "signal_events",
+          "counts",
+          "config"
         ],
-        "title": "CompareRequest",
-        "examples": [
-          {
-            "levels": [],
-            "model": "mm1n",
-            "mu": 10.0,
-            "servers": 1,
-            "think_time": 1.0
-          }
-        ]
+        "title": "Body_video_validate_api_traffic_video_validate_post"
       },
       "CompareResponse": {
         "properties": {
@@ -7552,6 +8125,108 @@
         ],
         "title": "ParameterSensitivityOut"
       },
+      "PhaseIn": {
+        "properties": {
+          "green": {
+            "type": "number",
+            "title": "Green",
+            "description": "Verde da fase (s)."
+          },
+          "amber": {
+            "type": "number",
+            "title": "Amber",
+            "description": "Amarelo (s).",
+            "default": 0.0
+          },
+          "all_red": {
+            "type": "number",
+            "title": "All Red",
+            "description": "Todo-vermelho depois do amarelo (s).",
+            "default": 0.0
+          }
+        },
+        "type": "object",
+        "required": [
+          "green"
+        ],
+        "title": "PhaseIn"
+      },
+      "PhasePatch": {
+        "properties": {
+          "green": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Green"
+          },
+          "amber": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amber"
+          },
+          "all_red": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "All Red"
+          }
+        },
+        "type": "object",
+        "title": "PhasePatch",
+        "description": "O que trocar em uma fase do plano alternativo. O que não vier fica como na base."
+      },
+      "PlanIn": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Nome exibido (até 60 caracteres). Padrão: Plano n."
+          },
+          "phases": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/PhasePatch"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Phases",
+            "description": "2 itens: o que trocar na fase 1 e na fase 2 (null mantém a fase)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "phases"
+        ],
+        "title": "PlanIn"
+      },
       "QueueCalculateResponse": {
         "properties": {
           "model": {
@@ -7974,7 +8649,8 @@
               "simulation",
               "comparison",
               "experiment",
-              "realdata"
+              "realdata",
+              "traffic"
             ],
             "title": "Kind",
             "description": "Tipo do registro."
@@ -8035,7 +8711,8 @@
               "simulation",
               "comparison",
               "experiment",
-              "realdata"
+              "realdata",
+              "traffic"
             ],
             "title": "Kind"
           },
@@ -8138,7 +8815,8 @@
               "simulation",
               "comparison",
               "experiment",
-              "realdata"
+              "realdata",
+              "traffic"
             ],
             "title": "Kind"
           },
@@ -10028,6 +10706,92 @@
         ],
         "title": "ServicesComparisonResponse"
       },
+      "SimulateRequest": {
+        "properties": {
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time",
+            "description": "Duração simulada T (s). Máx. 86 400."
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications",
+            "description": "Réplicas independentes (2 a 100).",
+            "default": 10
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time",
+            "description": "Aquecimento descartado (s). Use 0 para reproduzir uma gravação.",
+            "default": 0.0
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Semente (reprodutível). Sem semente, uma é sorteada e devolvida."
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level",
+            "description": "Nível dos ICs.",
+            "default": 0.95
+          },
+          "phases": {
+            "items": {
+              "$ref": "#/components/schemas/PhaseIn"
+            },
+            "type": "array",
+            "title": "Phases",
+            "description": "Exatamente 2 fases: a da aproximação 1 e a da aproximação 2."
+          },
+          "offset": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offset",
+            "description": "Segundos do ciclo já decorridos em t = 0 (0 = o verde da fase 1 começa em t = 0). Não informado → 0, com aviso."
+          },
+          "approaches": {
+            "items": {
+              "$ref": "#/components/schemas/ApproachIn"
+            },
+            "type": "array",
+            "title": "Approaches",
+            "description": "Exatamente 2 aproximações."
+          },
+          "series_step": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Series Step",
+            "description": "Passo da série temporal da fila (s). Padrão: ~240 pontos."
+          }
+        },
+        "type": "object",
+        "required": [
+          "simulation_time",
+          "phases",
+          "approaches"
+        ],
+        "title": "SimulateRequest"
+      },
       "SimulatedCompareRequest": {
         "properties": {
           "model": {
@@ -11608,7 +12372,415 @@
         ],
         "title": "SweepPointOut"
       },
-      "SweepRequest": {
+      "SweepResponse": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "variable": {
+            "type": "string",
+            "title": "Variable"
+          },
+          "fixed": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Fixed",
+            "description": "Parâmetros mantidos fixos, com os nomes da API."
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/SweepPointOut"
+            },
+            "type": "array",
+            "title": "Points"
+          },
+          "simulation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SweepSimulationOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Configuração efetiva da simulação, com a semente usada."
+          },
+          "service": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Só em mg1 e mgc: o serviço do ponto base."
+          }
+        },
+        "type": "object",
+        "required": [
+          "model",
+          "variable",
+          "fixed",
+          "points",
+          "simulation"
+        ],
+        "title": "SweepResponse"
+      },
+      "SweepSimulationOut": {
+        "properties": {
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time"
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications"
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed"
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level"
+          }
+        },
+        "type": "object",
+        "required": [
+          "simulation_time",
+          "replications",
+          "warmup_time",
+          "seed",
+          "confidence_level"
+        ],
+        "title": "SweepSimulationOut"
+      },
+      "TrafficEventOut": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total"
+          },
+          "completed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "TrafficEventOut",
+        "description": "Uma linha do NDJSON: `type` é start, base, plan, point, done ou error; o resto depende do tipo."
+      },
+      "TrafficResultOut": {
+        "properties": {
+          "settings": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Settings"
+          },
+          "plan": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Plan"
+          },
+          "approaches": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Approaches"
+          },
+          "alerts": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Alerts"
+          },
+          "metrics": {
+            "additionalProperties": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Metrics"
+          },
+          "reference": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Reference"
+          },
+          "series": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Series"
+          }
+        },
+        "type": "object",
+        "required": [
+          "settings",
+          "plan",
+          "approaches",
+          "alerts",
+          "metrics",
+          "reference"
+        ],
+        "title": "TrafficResultOut",
+        "description": "Resultado da simulação: configuração, plano, aproximações, avisos, métricas com IC, referência analítica e série da fila."
+      },
+      "VideoEstimateOut": {
+        "properties": {
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "horizon": {
+            "type": "number",
+            "title": "Horizon"
+          },
+          "approach_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Approach Ids"
+          },
+          "method": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Method"
+          },
+          "signal": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Signal"
+          },
+          "arrivals": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Arrivals"
+          },
+          "discharge": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discharge"
+          },
+          "suggested": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Suggested"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "session_id",
+          "horizon",
+          "approach_ids",
+          "method",
+          "signal",
+          "arrivals",
+          "discharge",
+          "suggested",
+          "notes"
+        ],
+        "title": "VideoEstimateOut",
+        "description": "Estimativas a partir das planilhas do vídeo: plano, chegadas, descarga e o corpo sugerido para /simulate."
+      },
+      "VideoValidationOut": {
+        "properties": {
+          "approaches": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Approaches"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Settings"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "approaches",
+          "settings",
+          "notes"
+        ],
+        "title": "VideoValidationOut",
+        "description": "Simulado × observado por intervalo, com erros e cobertura da faixa simulada."
+      },
+      "app__api__schemas__MetricComparisonOut": {
+        "properties": {
+          "analytical": {
+            "type": "number",
+            "title": "Analytical"
+          },
+          "simulated_mean": {
+            "type": "number",
+            "title": "Simulated Mean"
+          },
+          "ci_low": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ci Low"
+          },
+          "ci_high": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ci High"
+          },
+          "absolute_error": {
+            "type": "number",
+            "title": "Absolute Error"
+          },
+          "relative_error_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relative Error Pct"
+          },
+          "within_ci": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Within Ci"
+          }
+        },
+        "type": "object",
+        "required": [
+          "analytical",
+          "simulated_mean",
+          "ci_low",
+          "ci_high",
+          "absolute_error",
+          "relative_error_pct",
+          "within_ci"
+        ],
+        "title": "MetricComparisonOut"
+      },
+      "app__api__schemas__SweepRequest": {
         "properties": {
           "model": {
             "type": "string",
@@ -11807,167 +12979,78 @@
           }
         ]
       },
-      "SweepResponse": {
+      "app__api__schemas_realdata__CompareRequest": {
         "properties": {
           "model": {
             "type": "string",
+            "enum": [
+              "mm1",
+              "mmc",
+              "mm1k",
+              "mmck",
+              "mm1n",
+              "mmcn"
+            ],
             "title": "Model"
           },
-          "variable": {
-            "type": "string",
-            "title": "Variable"
+          "mu": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Mu",
+            "description": "Taxa de serviço por servidor (req/s)."
           },
-          "fixed": {
-            "additionalProperties": {
-              "type": "number"
-            },
-            "type": "object",
-            "title": "Fixed",
-            "description": "Parâmetros mantidos fixos, com os nomes da API."
+          "servers": {
+            "type": "integer",
+            "title": "Servers",
+            "default": 1
           },
-          "points": {
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity"
+          },
+          "think_time": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Think Time"
+          },
+          "levels": {
             "items": {
-              "$ref": "#/components/schemas/SweepPointOut"
+              "$ref": "#/components/schemas/LevelModel"
             },
             "type": "array",
-            "title": "Points"
-          },
-          "simulation": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SweepSimulationOut"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Configuração efetiva da simulação, com a semente usada."
-          },
-          "service": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ServiceOut"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Só em mg1 e mgc: o serviço do ponto base."
+            "title": "Levels",
+            "description": "Os níveis devolvidos por /analyze."
           }
         },
         "type": "object",
         "required": [
           "model",
-          "variable",
-          "fixed",
-          "points",
-          "simulation"
+          "mu",
+          "levels"
         ],
-        "title": "SweepResponse"
-      },
-      "SweepSimulationOut": {
-        "properties": {
-          "simulation_time": {
-            "type": "number",
-            "title": "Simulation Time"
-          },
-          "replications": {
-            "type": "integer",
-            "title": "Replications"
-          },
-          "warmup_time": {
-            "type": "number",
-            "title": "Warmup Time"
-          },
-          "seed": {
-            "type": "integer",
-            "title": "Seed"
-          },
-          "confidence_level": {
-            "type": "number",
-            "title": "Confidence Level"
+        "title": "CompareRequest",
+        "examples": [
+          {
+            "levels": [],
+            "model": "mm1n",
+            "mu": 10.0,
+            "servers": 1,
+            "think_time": 1.0
           }
-        },
-        "type": "object",
-        "required": [
-          "simulation_time",
-          "replications",
-          "warmup_time",
-          "seed",
-          "confidence_level"
-        ],
-        "title": "SweepSimulationOut"
-      },
-      "app__api__schemas__MetricComparisonOut": {
-        "properties": {
-          "analytical": {
-            "type": "number",
-            "title": "Analytical"
-          },
-          "simulated_mean": {
-            "type": "number",
-            "title": "Simulated Mean"
-          },
-          "ci_low": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Ci Low"
-          },
-          "ci_high": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Ci High"
-          },
-          "absolute_error": {
-            "type": "number",
-            "title": "Absolute Error"
-          },
-          "relative_error_pct": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Relative Error Pct"
-          },
-          "within_ci": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Within Ci"
-          }
-        },
-        "type": "object",
-        "required": [
-          "analytical",
-          "simulated_mean",
-          "ci_low",
-          "ci_high",
-          "absolute_error",
-          "relative_error_pct",
-          "within_ci"
-        ],
-        "title": "MetricComparisonOut"
+        ]
       },
       "app__api__schemas_realdata__MetricComparisonOut": {
         "properties": {
@@ -12037,6 +13120,195 @@
           "relative_error_pct"
         ],
         "title": "MetricComparisonOut"
+      },
+      "app__api__schemas_traffic__CompareRequest": {
+        "properties": {
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time",
+            "description": "Duração simulada T (s). Máx. 86 400."
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications",
+            "description": "Réplicas independentes (2 a 100).",
+            "default": 10
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time",
+            "description": "Aquecimento descartado (s). Use 0 para reproduzir uma gravação.",
+            "default": 0.0
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Semente (reprodutível). Sem semente, uma é sorteada e devolvida."
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level",
+            "description": "Nível dos ICs.",
+            "default": 0.95
+          },
+          "phases": {
+            "items": {
+              "$ref": "#/components/schemas/PhaseIn"
+            },
+            "type": "array",
+            "title": "Phases",
+            "description": "Exatamente 2 fases: a da aproximação 1 e a da aproximação 2."
+          },
+          "offset": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offset",
+            "description": "Segundos do ciclo já decorridos em t = 0 (0 = o verde da fase 1 começa em t = 0). Não informado → 0, com aviso."
+          },
+          "approaches": {
+            "items": {
+              "$ref": "#/components/schemas/ApproachIn"
+            },
+            "type": "array",
+            "title": "Approaches",
+            "description": "Exatamente 2 aproximações."
+          },
+          "scenarios": {
+            "items": {
+              "$ref": "#/components/schemas/PlanIn"
+            },
+            "type": "array",
+            "title": "Scenarios",
+            "description": "De 1 a 10 planos alternativos, além da referência."
+          },
+          "bonferroni": {
+            "type": "boolean",
+            "title": "Bonferroni",
+            "description": "Corrige o nível dos ICs das diferenças pelo número de planos.",
+            "default": false
+          },
+          "series_step": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Series Step"
+          }
+        },
+        "type": "object",
+        "required": [
+          "simulation_time",
+          "phases",
+          "approaches",
+          "scenarios"
+        ],
+        "title": "CompareRequest"
+      },
+      "app__api__schemas_traffic__SweepRequest": {
+        "properties": {
+          "simulation_time": {
+            "type": "number",
+            "title": "Simulation Time",
+            "description": "Duração simulada T (s). Máx. 86 400."
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications",
+            "description": "Réplicas independentes (2 a 100).",
+            "default": 10
+          },
+          "warmup_time": {
+            "type": "number",
+            "title": "Warmup Time",
+            "description": "Aquecimento descartado (s). Use 0 para reproduzir uma gravação.",
+            "default": 0.0
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Semente (reprodutível). Sem semente, uma é sorteada e devolvida."
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level",
+            "description": "Nível dos ICs.",
+            "default": 0.95
+          },
+          "phases": {
+            "items": {
+              "$ref": "#/components/schemas/PhaseIn"
+            },
+            "type": "array",
+            "title": "Phases",
+            "description": "Exatamente 2 fases: a da aproximação 1 e a da aproximação 2."
+          },
+          "offset": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offset",
+            "description": "Segundos do ciclo já decorridos em t = 0 (0 = o verde da fase 1 começa em t = 0). Não informado → 0, com aviso."
+          },
+          "approaches": {
+            "items": {
+              "$ref": "#/components/schemas/ApproachIn"
+            },
+            "type": "array",
+            "title": "Approaches",
+            "description": "Exatamente 2 aproximações."
+          },
+          "min_green": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Min Green",
+            "description": "Verde mínimo de cada fase (s), definido por quem conhece a segurança do cruzamento. Sem valor padrão."
+          },
+          "step": {
+            "type": "number",
+            "title": "Step",
+            "description": "Passo da varredura (s). Até 40 pontos."
+          }
+        },
+        "type": "object",
+        "required": [
+          "simulation_time",
+          "phases",
+          "approaches",
+          "min_green",
+          "step"
+        ],
+        "title": "SweepRequest"
       }
     }
   }

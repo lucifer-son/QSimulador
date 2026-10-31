@@ -45,6 +45,7 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 | E12 — Dimensionamento e cobertura dos experimentos | US-32, US-33 | Fase 11 |
 | E13 — Comparação de cenários | US-34 | Fase 12 |
 | E14 — Distribuições e ajuste de amostras | US-35 | Fase 13 |
+| E15 — Cruzamento semaforizado | US-36 a US-39 | Fase 13.1 |
 
 ---
 
@@ -348,6 +349,47 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 
 ---
 
+### E15 — Cruzamento semaforizado
+
+#### US-36 — Simular um cruzamento com duas aproximações e ver filas, atraso e vazão ✅ · M · UC-16
+> Como **estudante**, quero simular um cruzamento semaforizado com os dados que medi, para ver como o ciclo do semáforo forma e dissipa as filas de cada via.
+
+**Critérios de aceitação**
+- **Dado** o intervalo entre veículos (h) não informado, **quando** simulo, **então** a API recusa com o campo `approaches.i.headway`; **dado** ℓ, o amarelo utilizável, a fila inicial ou o offset não informados, **então** o resultado traz um aviso por parâmetro (`not_informed`) dizendo que assumiu 0.
+- **Dado** uma aproximação com x ≥ 1, **quando** simulo, **então** a tela avisa que a fila cresce e que as médias dependem do tempo simulado; o atraso aparece com e sem os pendentes.
+- **Dado** a mesma semente, **quando** repito a simulação, **então** o resultado é idêntico; a lei de Little é respeitada (Lq = λ·Wq, dentro de 6%).
+- **Dado** os quatro casos com x < 1 do documento de valores de referência, **quando** comparo com a fórmula de Webster, **então** a simulação fica a menos de 8% dela (nas medições, no máximo 5,7%), que aparece rotulada como aproximação.
+
+#### US-37 — Comparar planos semafóricos e achar a melhor divisão do verde ✅ · M · UC-16
+> Como **estudante**, quero comparar planos de tempo e varrer a divisão do verde, para saber quais reduzem o atraso sem concluir mais do que os dados permitem.
+
+**Critérios de aceitação**
+- **Dado** a referência com verdes de 30 s e 30 s e dois planos com 38 s e 22 s e com 22 s e 38 s (ciclo mantido), sobre chegadas de 0,15 e 0,08 veíc./s, **quando** comparo, **então** o primeiro reduz e o segundo aumenta o atraso do cruzamento com IC pareado que exclui zero.
+- **Dado** um plano igual à referência, **quando** comparo, **então** a diferença é exatamente 0 e o veredito é inconclusivo.
+- **Dado** um plano que muda o ciclo, **quando** comparo, **então** a tela avisa que a diferença mistura redistribuição e capacidade.
+- **Dado** a varredura com verdes mínimos informados, **quando** executo, **então** o ciclo é mantido em todos os pontos, o atraso forma uma curva em U com o mínimo no interior, os pontos que não se distinguem do melhor são marcados e a varredura não roda sem os verdes mínimos.
+
+#### US-38 — Estimar os parâmetros do modelo a partir das planilhas do vídeo ✅ · M · UC-16
+> Como **estudante**, quero enviar as planilhas da coleta e receber o plano, as chegadas e os tempos de descarga estimados, para não digitar tudo à mão nem inventar valores.
+
+**Critérios de aceitação**
+- **Dado** dados sintéticos gerados com ℓ = 2,4 s e h = 2,0 s (CV 0,3), **quando** estimo, **então** o IC de ℓ contém 2,4 s, o IC de h contém 2,0 s, o plano e o offset são recuperados exatamente e o CV de h fica em 0,3 ± 0,08.
+- **Dado** que não enviei o CSV de cruzamentos, **quando** estimo, **então** ℓ, h e o amarelo utilizável voltam sem estimativa e o corpo sugerido deixa esses campos vazios.
+- **Dado** uma célula obrigatória vazia (por exemplo, `arrivals`), **quando** envio, **então** a leitura é recusada citando a tabela e a linha, e nada é preenchido.
+- **Dado** um plano cujo ciclo varia, **quando** estimo, **então** aparece o aviso de que não parece de tempo fixo.
+- **Dado** o resultado, **quando** uso “Usar no formulário”, **então** o formulário recebe o plano, o offset, o perfil por blocos de 15 minutos e o que foi medido, e o que não foi estimado fica vazio.
+
+#### US-39 — Validar o modelo contra o que foi observado ✅ · M · UC-16
+> Como **estudante**, quero comparar a fila e as saídas simuladas com as observadas no vídeo, para saber o quanto o modelo reproduz o cruzamento antes de testar outros planos.
+
+**Critérios de aceitação**
+- **Dado** observações geradas pelo próprio modelo, **quando** valido com os parâmetros estimados, **então** a fila observada cai dentro da faixa simulada em pelo menos 85% dos intervalos, o viés da fila fica abaixo de 1,5 veículo e o total de saídas difere menos de 5%.
+- **Dado** um modelo errado (verde da via 1 reduzido à metade), **quando** valido, **então** o RMSE da fila é mais de 3 vezes o do modelo correto.
+- **Dado** filas parcialmente visíveis ou intervalos sem contagem, **quando** valido, **então** esses intervalos ficam fora da comparação e aparecem contados em uma observação.
+- **Dado** o resultado da validação, **quando** o leio, **então** a tela diz que não há limite de aprovação e que a faixa é a variação do próprio processo, não um IC da média.
+
+---
+
 ## 4. Rastreabilidade com os casos de uso
 
 | Caso de uso | Histórias |
@@ -367,6 +409,7 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 | UC-13 — Dimensionamento | US-32 |
 | UC-14 — Comparação de cenários | US-34 |
 | UC-15 — Distribuições e ajuste de amostras | US-35 |
+| UC-16 — Cruzamento semaforizado | US-36, US-37, US-38, US-39 |
 | Transversais (API, qualidade, Docker) | US-25, US-26, US-27, US-28 |
 
 ---

@@ -461,6 +461,97 @@ curl.exe -N -X POST http://127.0.0.1:8000/api/analysis/fit `
 
 Na interface: no Laboratório, depois de calcular, a aba **Distribuições** mostra os três gráficos (o losango é a configuração atual; há escala logarítmica e a opção "Conferir com a simulação"). O menu **Ajustar distribuição** recebe a amostra colada (um valor por linha, vírgula decimal aceita) ou importada de um CSV ou TXT (primeira coluna; cabeçalho ignorado), mostra o histograma com as curvas das candidatas, a tabela (menor AIC marcado, p-valor ± erro de Monte Carlo) e a sugestão de modelo, e salva o ajuste no histórico (tipo `fit`; a amostra não é guardada, e a semente reproduz o p-valor).
 
+### Cruzamento semaforizado (Fase 13.1)
+
+Simula um cruzamento de **ciclo fixo com duas fases** em que as duas aproximações dividem o mesmo ciclo: o verde de uma é o vermelho da outra. Tempos em **segundos** e taxas em **veículos por segundo** na API (a interface usa veículos por minuto).
+
+**O modelo**
+
+- Cada aproximação é uma fila FIFO única (as faixas são agregadas na linha de retenção). As duas só se acoplam pelo ciclo.
+- Em cada verde, o 1º veículo da fila cruza **ℓ** segundos depois do início do verde e cada seguinte, um intervalo **h** depois do anterior (h segue uma das distribuições da Fase 9). A descarga vale até o fim do verde mais o **amarelo utilizável**. Quem chega ao verde aberto sem ninguém à frente cruza na hora.
+- As chegadas são de Poisson, com taxa constante (`lambda`) ou constante por blocos (`profile`: lista de `{duration, lambda}` a partir de t = 0). `offset` diz quantos segundos do ciclo já tinham passado em t = 0 (0 = o verde da fase 1 começa em t = 0).
+- **Premissas e limites:** sem conversões, pedestres, ônibus, bloqueio do cruzamento por fila que invade a outra aproximação, semáforo atuado nem coordenação entre cruzamentos.
+- **Sem valor padrão silencioso:** o intervalo h é obrigatório (`approaches.i.headway`). ℓ (`first_vehicle_time`), o amarelo utilizável (`amber_usable`), a fila inicial (`initial_queue`) e o `offset`, se omitidos (ou `null`), valem 0 e o resultado traz um aviso `not_informed` para cada um. Meça-os no vídeo.
+
+**Simular** (um plano, com réplicas e IC):
+
+```powershell
+curl.exe -X POST http://127.0.0.1:8000/api/traffic/simulate `
+  -H "Content-Type: application/json" `
+  -d '{\"phases\":[{\"green\":30,\"amber\":3,\"all_red\":2},{\"green\":25,\"amber\":3,\"all_red\":2}],\"offset\":0,\"approaches\":[{\"lambda\":0.2,\"headway\":{\"distribution\":\"lognormal\",\"mean\":2,\"cv\":0.3},\"first_vehicle_time\":2.4,\"amber_usable\":1,\"initial_queue\":0},{\"lambda\":0.16,\"headway\":{\"distribution\":\"lognormal\",\"mean\":2,\"cv\":0.3},\"first_vehicle_time\":2.4,\"amber_usable\":1,\"initial_queue\":0}],\"simulation_time\":3600,\"replications\":20,\"seed\":2026}'
+```
+
+Os valores acima são **hipotéticos**, só para conhecer a rota; não são medições de nenhum cruzamento.
+
+A resposta traz `plan`, `approaches` (grau de saturação x, capacidade, intervalo), `alerts`, `metrics` (`x` = cruzamento, `a1`, `a2`; cada métrica com `mean`, `std`, `ci_low`, `ci_high`, `n`), `reference` (aproximação analítica) e `series` (fila ao longo do tempo).
+
+| Métrica | O que é |
+| --- | --- |
+| `delay` | Atraso médio (chegada até cruzar a linha de retenção) dos veículos que **já cruzaram**. |
+| `delay_censored` | Atraso médio **com os pendentes**: quem ainda espera em T entra contado só até T (limite inferior). Se a fila está crescendo, `delay` parece melhor do que a realidade; olhe sempre os dois. |
+| `queue_mean`, `queue_max`, `queue_end` | Fila média no tempo, máxima e ao fim (inclui a fila inicial). |
+| `throughput` | Veículos que cruzam por segundo. |
+| `stopped_fraction` | Fração dos veículos que esperou (atraso > 0). |
+| `overflow_cycles` | Fração dos ciclos que terminam o verde com fila (falha de ciclo). |
+| `arrivals`, `departures`, `pending` | Chegadas e saídas na janela de medição e pendentes ao fim. |
+
+Os veículos da fila inicial ocupam a fila e a capacidade, mas não entram no atraso (esperavam desde antes da gravação).
+
+**Avisos:** `not_informed` (parâmetro não informado), `oversaturated` (x ≥ 1: a demanda supera a capacidade do verde, a fila cresce e as médias dependem de T), `at_risk` (x ≥ 0,9) e `check_units` (intervalo médio abaixo de 0,5 s: confira se está em segundos).
+
+**Referência analítica (`reference`)**, sempre `exact = false`:
+
+- x < 1: atraso uniforme mais o termo aleatório e a correção de Webster (1958).
+- x ≥ 1: modelo fluido (a sobra de demanda se acumula ao longo de T), com o mesmo corte em T que a simulação aplica aos pendentes, e a fila final esperada (λ − c)·T. Perto de x ≈ 1,1 o fluido subestima, porque ignora a aleatoriedade.
+- `webster_cycle`: ciclo ótimo (1,5 L + 5) / (1 − Y), se Y < 1.
+
+**Comparar planos** (NDJSON com `start`, `base`, um `plan` por plano e `done`; `-N` mostra cada linha quando chega):
+
+```powershell
+curl.exe -N -X POST http://127.0.0.1:8000/api/traffic/compare `
+  -H "Content-Type: application/json" `
+  -d '{\"phases\":[{\"green\":30,\"amber\":3,\"all_red\":2},{\"green\":30,\"amber\":3,\"all_red\":2}],\"offset\":0,\"approaches\":[{\"lambda\":0.15,\"headway\":{\"distribution\":\"exponential\",\"mean\":2},\"first_vehicle_time\":2,\"amber_usable\":1,\"initial_queue\":0},{\"lambda\":0.08,\"headway\":{\"distribution\":\"exponential\",\"mean\":2},\"first_vehicle_time\":2,\"amber_usable\":1,\"initial_queue\":0}],\"scenarios\":[{\"name\":\"Mais verde na 1\",\"phases\":[{\"green\":38},{\"green\":22}]}],\"simulation_time\":1800,\"replications\":8,\"seed\":5}'
+```
+
+Cada plano troca só as durações informadas (`green`, `amber`, `all_red`; `null` mantém a fase). Todos usam as **mesmas chegadas e os mesmos intervalos** (números aleatórios comuns), e cada diferença sai com IC t pareado e veredito `higher`, `lower` ou `inconclusive`. `inconclusive` não quer dizer igual: as réplicas feitas não bastam para distinguir. `bonferroni: true` corrige o nível pelo número de planos. Se o plano muda o ciclo, aparece `cycle_changed`: a diferença mistura a redistribuição do verde com a mudança da capacidade total.
+
+**Varrer o verde** (NDJSON com `start`, um `point` por divisão e `done`): mantém o ciclo (verde 1 + verde 2 constante) e informe o verde mínimo de cada fase e o passo. O verde mínimo é uma restrição de segurança e **não tem valor padrão**.
+
+```powershell
+curl.exe -N -X POST http://127.0.0.1:8000/api/traffic/sweep `
+  -H "Content-Type: application/json" `
+  -d '{... mesmo corpo do /simulate ..., \"min_green\":[10,10],\"step\":5}'
+```
+
+Em `done`, `best_index` aponta o ponto de menor atraso com pendentes e cada ponto traz `vs_best`: `best`, `worse` ou `indistinguishable` (o IC pareado da diferença para o melhor contém 0). Até 40 pontos.
+
+**Exportar CSV:** `POST /api/traffic/export.csv`, `/compare/export.csv` e `/sweep/export.csv` aceitam o mesmo corpo e refazem o cálculo. Mande a `seed` que a resposta devolveu: sem semente, cada pedido sorteia a sua e o CSV sairia diferente. UTF-8 com BOM, vírgula e ponto decimal.
+
+**Dados do vídeo** (multipart): `POST /api/traffic/video/estimate` e `/video/validate`.
+
+| Arquivo | Colunas | Obrigatório |
+| --- | --- | --- |
+| `signal_events` | `timestamp`, `approach_id`, `signal_state` (verde, amarelo ou vermelho) | sim |
+| `counts` | `interval_start`, `interval_end`, `approach_id`, `arrivals`, `departures`, `queue_count`, `queue_visible`, `queue_count_start` (a fila no início do 1º intervalo) | sim (`arrivals` em todas as linhas) |
+| `crossings` | `crossing_time`, `approach_id` (um cruzamento da linha de retenção por linha) | para estimar ℓ, h e o amarelo utilizável |
+| `trajectories` | `approach_id`, `queue_arrival_time`, `crossing_time`, `complete_observation` | para o atraso observado |
+
+CSV com vírgula, ponto e vírgula ou tabulação; decimal com ponto ou vírgula; tempos em segundos do vídeo ou `hh:mm:ss`; também aceita `session_id`. O tempo zero é o início do primeiro intervalo de contagem. Os intervalos de contagem devem ser contíguos, e `queue_visible = não` tira a fila daquele intervalo da validação. Célula vazia em coluna obrigatória **recusa o arquivo** (HTTP 422, com a tabela e a linha): nada vira zero nem média.
+
+```powershell
+curl.exe -X POST http://127.0.0.1:8000/api/traffic/video/estimate `
+  -F "signal_events=@sinais.csv" -F "counts=@contagens.csv" -F "crossings=@cruzamentos.csv" `
+  -F "approach_ids=A,B"
+```
+
+A estimação devolve: o plano (verde, amarelo e todo-vermelho médios de cada fase, ciclo com desvio e `offset`; `not_fixed_time` se o ciclo variar); a taxa de chegada por intervalo e por bloco, com IC de Poisson; ℓ e h; e `suggested`, um corpo pronto para `/simulate` (o que não foi estimado vai como `null`). ℓ e h vêm de uma reta ajustada em todos os verdes saturados: o instante do n-ésimo veículo depois do início do verde = ℓ + (n − 1)·h, usando só os primeiros `core` veículos de cada verde e só verdes completos. Os critérios `max_headway` (padrão 4 s), `min_run` (5), `core` (8) e `profile_block` (900 s) **não são dados medidos**: definem o que conta como descarga saturada e voltam em `method`.
+
+`/video/validate` recebe os mesmos arquivos e o campo `config` (o corpo do `/simulate` sem as chegadas), simula o plano observado e compara, por intervalo, a fila no fim e as saídas simuladas com as observadas: viés, erro médio absoluto, RMSE e `coverage` (fração dos pontos observados dentro da faixa central das réplicas). **Não há teste de hipótese nem limite de aprovação**: os números dizem o quanto o modelo reproduz o observado, e a decisão é de quem analisa. Na validação, o **número** de chegadas de cada intervalo é o observado e só o instante dentro dele é sorteado (usar a contagem de cada minuto como taxa de um novo Poisson sortearia a contagem duas vezes e inflaria o atraso).
+
+Limites: ciclo de até 600 s, tempo simulado de até 24 h, até 200 blocos de chegada, 10 planos, 40 pontos de varredura, fila inicial de até 500 veículos e 1.000.000 de veículos esperados somando réplicas e planos. Arquivo acima de 10 MiB: HTTP 413.
+
+Na interface, a aba **Cruzamento** tem quatro modos (Simular, Comparar planos, Varrer o verde e Dados do vídeo). O botão "Carregar exemplo ilustrativo" usa valores hipotéticos; os campos medidos no vídeo começam vazios. Em Dados do vídeo, "Usar no formulário" leva o plano, o offset, o perfil por blocos e o que foi medido para o formulário, e "Validar o modelo com as contagens" mostra a fila e as saídas simuladas sobre as observadas. Os resultados podem ser salvos no histórico (tipo `traffic`) e exportados em CSV.
+
 ### Erros da API
 
 Qualquer requisição inválida (nos endpoints de modelo e de experimentos) devolve HTTP 422 com o formato `{"code", "message", "fields"?}`. `fields` lista o campo e o motivo de cada erro, tanto nos de formato quanto nos de regra, e a interface usa essa lista para marcar o campo certo:

@@ -13,7 +13,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 JsonType = JSON().with_variant(JSONB(), "postgresql")
 
-RECORD_KINDS = ("model", "simulation", "comparison", "experiment", "realdata")
+RECORD_KINDS = ("model", "simulation", "comparison", "experiment", "realdata", "traffic")
 
 
 def utcnow() -> datetime:

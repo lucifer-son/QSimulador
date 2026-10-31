@@ -1,0 +1,10 @@
+{
+ "code": "invalid_parameter",
+ "message": "Informe cv.",
+ "fields": [
+  {
+   "field": "approaches.1.headway.cv",
+   "message": "Informe cv."
+  }
+ ]
+}

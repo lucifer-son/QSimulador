@@ -8,8 +8,8 @@ import {
   type RecordDetail, type RecordKind, type RecordSummary,
 } from "../api/records";
 import {
-  KIND_LABELS, KIND_ORDER, parseExperimentRecord, parseFitRecord, parseLabRecord, parseRealDataRecord,
-  type ExperimentSnapshot, type LabSnapshot,
+  KIND_LABELS, KIND_ORDER, parseExperimentRecord, parseFitRecord, parseLabRecord, parseRealDataRecord, parseTrafficRecord,
+  type ExperimentSnapshot, type LabSnapshot, type TrafficSnapshot,
 } from "../domain/records";
 import { useRecords } from "../hooks/RecordsContext";
 import { FitResultView } from "./FitResultView";
@@ -20,6 +20,7 @@ import { ScenariosView } from "./ScenariosView";
 import { SizingResultView } from "./SizingTab";
 import { SweepResult } from "./SweepPanel";
 import { RealDataResults } from "./RealDataTab";
+import { TrafficCompareView, TrafficSimulationView, TrafficSweepView, TrafficValidationView } from "./TrafficViews";
 
 const PAGE = 20;
 
@@ -42,6 +43,7 @@ type Viewer =
   | { kind: "experiment"; record: RecordDetail; snapshot: ExperimentSnapshot }
   | { kind: "realdata"; record: RecordDetail; analysis: AnalysisResponse }
   | { kind: "fit"; record: RecordDetail; fit: FitResult }
+  | { kind: "traffic"; record: RecordDetail; snapshot: TrafficSnapshot }
   | { kind: "unknown"; record: RecordDetail };
 
 function toViewer(record: RecordDetail): Viewer {
@@ -53,7 +55,17 @@ function toViewer(record: RecordDetail): Viewer {
   if (experiment) return { kind: "experiment", record, snapshot: experiment };
   const analysis = parseRealDataRecord(record);
   if (analysis) return { kind: "realdata", record, analysis };
+  const traffic = parseTrafficRecord(record);
+  if (traffic) return { kind: "traffic", record, snapshot: traffic };
   return { kind: "unknown", record };
+}
+
+function TrafficView({ snapshot }: { snapshot: TrafficSnapshot }) {
+  if (snapshot.type === "simulate") return <TrafficSimulationView result={snapshot.result} />;
+  if (snapshot.type === "compare") return <TrafficCompareView data={snapshot.result} />;
+  if (snapshot.type === "sweep") return <TrafficSweepView data={snapshot.result} />;
+  const { a1, a2 } = snapshot.result.approaches;
+  return <TrafficValidationView result={snapshot.result} ids={{ a1: a1.approach_id, a2: a2.approach_id }} />;
 }
 
 function ExperimentView({ snapshot }: { snapshot: ExperimentSnapshot }) {
@@ -245,6 +257,7 @@ export function HistoryTab({ onReopenLab }: Props) {
             {viewer.kind === "experiment" && <ExperimentView snapshot={viewer.snapshot} />}
             {viewer.kind === "fit" && <FitResultView result={viewer.fit} />}
             {viewer.kind === "realdata" && <RealDataResults result={viewer.analysis} />}
+            {viewer.kind === "traffic" && <TrafficView snapshot={viewer.snapshot} />}
             {viewer.kind === "unknown" && (
               <p className="field-error" role="alert">
                 Não foi possível reabrir este registro: o formato dos dados não é reconhecido por esta versão.

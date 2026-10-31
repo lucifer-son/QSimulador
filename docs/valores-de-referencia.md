@@ -122,6 +122,66 @@ Teste lento (`--runslow`): taxa de rejeição a 5% entre 1% e 10% (300 amostras 
 
 Custo: ~0,8 a 1,0 µs por unidade de n·B (n = 40.000 com B = 200: ~6 s). Teto de trabalho: n·B ≤ 8.000.000.
 
+## 10. Cruzamento semaforizado (Fase 13.1)
+
+**Valores de um modelo hipotético, não medições de um cruzamento real.** Servem para conferir o motor e a referência analítica. Os testes estão em `backend/tests/test_traffic_engine.py`, `test_traffic_core.py` e `test_traffic_video.py`.
+
+**Fórmulas.** C é o ciclo, g o verde, a o amarelo utilizável, ℓ o tempo do 1º veículo, h̄ o intervalo médio, q a chegada média:
+
+- verde efetivo g_e = g + a − ℓ + h̄; razão de verde λ_v = g_e / C; capacidade c = λ_v / h̄; grau de saturação x = q / c;
+- atraso uniforme d₁ = C (1 − λ_v)² / (2 (1 − min(1, x) λ_v));
+- Webster (x < 1): d = d₁ + x² / (2 q (1 − x)) − 0,65 (C / q²)^(1/3) · x^(2 + 5 λ_v);
+- ciclo ótimo de Webster: C₀ = (1,5 L + 5) / (1 − Y), com L = Σ [(ℓ − h̄) + amarelo + todo-vermelho − a] e Y = Σ q·h̄.
+
+**Descarga com resposta exata** (ciclo de 40 s, verde 1 em [0, 20 s], ℓ = 2 s, h = 2 s constante, amarelo utilizável 0):
+
+| Situação | Chegadas (s) | Cruzam em (s) |
+|---|---|---|
+| Fila formada no vermelho | 25, 26, 27 | 42, 44, 46 (atrasos de 17, 18 e 19 s) |
+| Veículo sem fila no verde, mesmo nos ℓ primeiros segundos | 41 | 41 |
+| Veículo atrás de uma fila | 25 e 41 | 42 e 44 |
+| Chega depois do fim do verde / ainda dentro do verde | 20,5 / 19 | 42 / 19 |
+| Amarelo utilizável de 1 s | 21 / 21,5 | 21 / 42 |
+| Verde de 6 s ([0, 6] e [40, 46]) e cinco veículos já esperando | 10, 10,1, 10,2, 10,3, 10,4 | 42, 44, 46, 82, 84 |
+| Fila inicial de 3 veículos, verde começando em 0 | 0, 0, 0 | 2, 4, 6 |
+| Fila inicial de 3 veículos, verde começado 5 s antes | 0, 0, 0 | 0, 2, 4 |
+
+**Limite de fluxo baixo.** Com ℓ = 0, sem amarelo, C = 60 s, verde de 30 s e chegada de 0,01 veíc./s por aproximação, só atrasam os que chegam no vermelho: d = (C − g)² / (2C) = 7,50 s. A simulação (40 réplicas, T = 7.200 s, semente 3) dá 7,69 s (+2,6%).
+
+**Webster contra a simulação.** C = 70 s (verdes g₁ e g₂ mais amarelo 3 s e todo-vermelho 2 s por fase), ℓ = 2 s, h = 2 s constante, amarelo utilizável 1 s (g_e = g + 1), T = 7.200 s, 30 réplicas, semente 1. Atraso em segundos, com os pendentes:
+
+| λ₁ / λ₂ (veíc./s) | g₁ / g₂ (s) | x₁ / x₂ | Webster 1 / 2 | Simulação 1 [IC 95%] | Simulação 2 [IC 95%] |
+|---|---|---|---|---|---|
+| 0,10 / 0,05 | 30 / 30 | 0,452 / 0,226 | 15,00 / 12,69 | 15,34 [15,09; 15,59] | 13,42 [13,12; 13,72] |
+| 0,15 / 0,10 | 30 / 30 | 0,677 / 0,452 | 18,42 / 15,00 | 18,81 [18,36; 19,25] | 15,39 [15,11; 15,66] |
+| 0,18 / 0,12 | 35 / 25 | 0,700 / 0,646 | 15,79 / 21,07 | 16,08 [15,78; 16,38] | 21,29 [20,97; 21,62] |
+| 0,20 / 0,10 | 40 / 20 | 0,683 / 0,667 | 12,49 / 25,10 | 13,01 [12,73; 13,29] | 25,98 [25,30; 26,65] |
+
+A simulação fica de 1,1% a 5,7% acima da fórmula, e a fórmula cai dentro do IC em 3 das 8 aproximações. O teste aceita até 8%. Conta à mão do 2º caso, aproximação 1: g_e = 30 + 1 − 2 + 2 = 31 s, λ_v = 0,4429, c = 0,2214 veíc./s, x = 0,677; d₁ = 15,52 s; termo aleatório 4,74 s; correção 1,83 s; d = 18,42 s. Ciclo ótimo de Webster do mesmo caso: L = 2 × (0 + 3 + 2 − 1) = 8 s, Y = 0,5 e C₀ = (1,5 × 8 + 5) / 0,5 = 34,0 s.
+
+**Modelo fluido (x ≥ 1).** Mesma configuração, λ₁ = 0,40 veíc./s (x = 1,81, capacidade 0,2214 veíc./s):
+
+| λ₁ (veíc./s) | x | Atraso com pendentes: simulação / fluido | Fila final: simulação / (λ − c)·T |
+|---|---|---|---|
+| 0,40 | 1,81 | 1.670 s / 1.618 s (+3,2%) | 1.322 / 1.286 |
+| 0,30 | 1,36 | 1.034 s / 957 s (+8%) | 615 / 566 |
+| 0,25 | 1,13 | 535 s / 429 s (+25%) | 260 / 206 |
+
+Perto de x ≈ 1 o fluido subestima, porque ignora a aleatoriedade da chegada e da descarga.
+
+**Dados sintéticos do vídeo** (`synthetic_files`, em `backend/tests/helpers_traffic.py`; gerados pelo próprio simulador, **não são dados reais**). Verdade usada: fase 1 com verde 30 s, amarelo 3 s e todo-vermelho 2 s; fase 2 com 25 s, 3 s e 2 s; offset 17 s; chegadas de 0,20 e 0,16 veíc./s; ℓ = 2,4 s; h lognormal de média 2 s e CV 0,3; amarelo utilizável 1 s; fila inicial de 5 e 0 veículos; 3.600 s com contagens por minuto, 40 réplicas na validação.
+
+| Semente | Via | ℓ estimado (s) | h estimado (s) | Viés da fila (veíc.) | Cobertura da fila | Cobertura das saídas | Erro do total de saídas |
+|---|---|---|---|---|---|---|---|
+| 12 | 1 | 2,42 | 1,975 | 0,26 | 98% | 95% | 0,01% |
+| 12 | 2 | 2,35 | 2,007 | 0,17 | 97% | 93% | 0,42% |
+| 13 | 1 | 2,33 | 2,018 | 0,83 | 95% | 100% | −0,25% |
+| 13 | 2 | 2,40 | 1,987 | −0,02 | 98% | 93% | −0,23% |
+| 14 | 1 | 2,44 | 1,997 | 0,09 | 97% | 97% | −0,22% |
+| 14 | 2 | 2,57 | 1,941 | 0,23 | 98% | 97% | 0,03% |
+
+O plano e o offset são recuperados exatamente nas três sementes. Em 5 das 6 estimativas o IC de h contém 2,0 s (na semente 14, via 2, h = 1,941 s erra 3,0%).
+
 ## 8. Propriedades que valem como teste (sem número fixo)
 
 | Propriedade | Aplicação |
@@ -141,3 +201,7 @@ Custo: ~0,8 a 1,0 µs por unidade de n·B (n = 40.000 com B = 200: ~6 s). Teto d
 | Lei de conservação de Kleinrock para prioridades não preemptivas: Σ ρₖ·Wq,ₖ é invariante (igual ao caso FIFO quando os tempos de serviço são iguais) | Fase 15 |
 | Erlang-A tende ao Erlang-C quando a taxa de abandono tende a zero | Fase 20 |
 | Equações de tráfego de Jackson: λ = (I − Rᵀ)⁻¹ Λ; cada nó M/M/c com o λ resultante | Fase 19 |
+| Lei de Little no cruzamento: Lq = λ·Wq com o atraso que inclui os pendentes, dentro de 6% | Fase 13.1 |
+| Um plano igual à referência, com a mesma semente, tem diferença pareada exatamente 0 | Fase 13.1 |
+| O motor por recursão coincide com um simulador SimPy independente (tolerância de 1e-9 s) | Fase 13.1 |
+| O número de chegadas de cada intervalo da validação é o observado | Fase 13.1 |

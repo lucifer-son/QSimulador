@@ -25,6 +25,7 @@ Cada fase foi dimensionada para caber em **um chat de trabalho** (plano, impleme
 | 11 | Dimensionamento, nível de serviço e custo ✅| L-05, L-06 | M | M1 |
 | 12 | Comparação de cenários ✅| L-07 | M | M2 |
 | 13 | Gráficos de distribuição e ajuste de amostras ✅ | L-08, L-09 | M | M2 |
+| 13.1 | Cruzamento semaforizado: duas aproximações com ciclo compartilhado ✅ | — (fase de aplicação do seminário) | M/G | M2 |
 | 14 | Chegadas variáveis (NHPP) e warm-up | L-10, L-11 | M | M2 |
 | 15 | Prioridades e tipos de entidade | L-12 | G | M2 |
 | 16 | Didática: cenários prontos, tutorial e guia | L-13, L-14 | M | M3 |
@@ -322,7 +323,7 @@ Otimização automática; cenários com mais de um modelo ao mesmo tempo além d
 | Lacunas | L-08, L-09 |
 | Esforço / prioridade | M / Média |
 | Depende de | Fase 9 |
-| Status | ✅ Concluída em 26/10/2026 (QSimulador 2.0) |
+| Status | ✅ Concluída em 26/10/2026 (QSimulador 1.10) |
 | Requisitos | RFC-22 a RFC-26 (oficiais: RF-72 a RF-82; caso de uso UC-15; história US-35) |
 | História | USC-13: como estudante, quero ver a distribuição do número de clientes e do tempo de espera, e descobrir se meus dados seguem uma distribuição conhecida, para escolher o modelo certo |
 
@@ -371,6 +372,79 @@ O escopo foi entregue inteiro, em duas etapas no mesmo pacote (motor estatístic
 - **Sugestão por CV:** o limiar de "CV ≈ 0" (0,1) é uma proposta nossa (`CV_DETERMINISTIC`); os de "CV ≈ 1" (0,7 a 1,3) são os do diagnóstico V6. Na aba Dados reais a sugestão usa o CV dos tempos de resposta do menor nível de carga, que só aproxima o CV do serviço quando a carga é baixa; por isso é uma indicação, e o ajuste da amostra de serviço é quem decide. O recomendador não mudou (ranking, escores e recomendação intactos).
 - **Suítes ao fim da fase:** backend com 1.368 testes passando e 54 ignorados (48 de PostgreSQL e 6 lentos, que passam com `--runslow`); frontend com 601 passando. Na partida (Fase 12) o frontend tinha 568 passando e 1 falha de ambiente: o helper de teste lia o `Blob` do `fetch` do Node 22 pelo `FileReader` do jsdom. Corrigido em `src/test/helpers.ts` (usa `Blob.text()` e `arrayBuffer()` quando existem).
 - **Fora do que foi medido:** o ajuste não testa misturas nem chegadas não Poisson (fora de escopo). A uniforme fica na tabela sem entrar no ΔAIC (o suporte depende da amostra).
+
+---
+
+## Fase 13.1: Cruzamento semaforizado (fase de aplicação)
+
+| Campo | Valor |
+|-------|-------|
+| **Lacuna** | Nenhuma do concorrente: é uma **fase de aplicação**, pedida pelo seminário de Modelagem e Simulação (congestionamento na Av. Agamenon Magalhães, região do Derby, no Grande Recife). |
+| **Esforço** | M/G |
+| **Depende de** | Fase 9 (distribuições do intervalo entre veículos), Fase 12 (números aleatórios comuns e IC pareado) e Fase 13 (ajuste de distribuição) |
+| **Status** | ✅ Concluída em 30/10/2026 (QSimulador 1.11) |
+| **Requisitos** | RF-83 a RF-95 · UC-16 · US-36 a US-39 |
+
+### História
+
+O seminário pede um problema prático de modelagem e simulação. O problema escolhido é o congestionamento causado pela demanda de veículos e pelo tempo dos semáforos, com dados reais por vídeo, comparando manhã e tarde. O QSimulador só tinha filas em regime estacionário, sem semáforo: não havia servidor que fecha e abre nem comparação de planos. Esta fase acrescenta o cruzamento semaforizado sem tocar nos modelos anteriores.
+
+### Objetivo
+
+Simular um cruzamento de ciclo fixo com duas aproximações que dividem o mesmo ciclo, comparar planos de tempo com IC pareado, varrer a divisão do verde, estimar os parâmetros a partir das planilhas do protocolo de coleta e **validar o modelo contra o que foi observado antes de qualquer conclusão**.
+
+### Decisões
+
+| # | Decisão |
+|---|---------|
+| D-01 | Nomeada Fase 13.1, antes da Fase 14, como fase de aplicação (não é lacuna do concorrente). |
+| D-02 | Motor por recursão por veículo (o instante em que cada veículo cruza depende do anterior e da janela de verde): exato para fila FIFO, rápido e compatível com números aleatórios comuns. Um SimPy independente, **só nos testes**, confere o motor. |
+| D-03 | As duas aproximações são independentes e acopladas só pelo ciclo; sem bloqueio do cruzamento por fila que invade a outra. |
+| D-04 | Parâmetros do vídeo sem valor padrão silencioso: h é obrigatório; ℓ, amarelo utilizável, fila inicial e offset valem 0 com aviso `not_informed`. |
+| D-05 | Chegadas por blocos constantes de taxa; a Fase 14 generaliza isso para o NHPP. |
+| D-06 | Comparação de planos com os números aleatórios comuns da Fase 12; o verde mínimo da varredura é informado pelo usuário e o ciclo é mantido. |
+| D-07 | A fórmula de Webster entra como **aproximação rotulada** (`exact = false`), com avisos de faixa. |
+| D-08 | Validação contra o vídeo por métricas de erro e cobertura, sem teste de hipótese (isso é a Fase 21). |
+| D-09 | Entrega única: núcleo e API, dados do vídeo, interface e documentação. |
+| D-10 | Versão do sistema 1.10 → **1.11** (a indicação de "2.0" que aparecia na documentação da Fase 13 era um erro e foi corrigida). |
+
+### Entregas
+
+- **Núcleo (`app/traffic`)**: plano e validação; motor; métricas; referência analítica; comparação e varredura; leitura, estimação e validação com o vídeo.
+- **API**: `POST /api/traffic/simulate`, `/compare`, `/sweep`, `/export.csv`, `/compare/export.csv`, `/sweep/export.csv`, `/video/estimate`, `/video/validate`; tipo de registro `traffic` no histórico (sem migração: a coluna já é texto).
+- **Interface**: aba Cruzamento com quatro modos, gráficos (fila, atraso por plano, curva do verde, validação), exportação CSV, "Usar no formulário" e reabertura pelo histórico.
+- **Documentação**: requisitos (4.16), UC-16, US-36 a US-39, como executar, valores de referência e documentação acadêmica.
+
+### Fora de escopo
+
+Conversões e movimentos permitidos, pedestres, ônibus, bloqueio por fila que invade o cruzamento, semáforo atuado, coordenação entre cruzamentos, teste de hipótese da validação (Fase 21) e chegadas não homogêneas contínuas (Fase 14).
+
+### Critérios de aceite e testes
+
+- Backend: **1.477 testes** passando e 54 ignorados (eram 1.368 e 54: +109 novos).
+- Frontend: **639 testes** passando e 76 ignorados (eram 601 e 70: +38 novos; os seis novos de contrato só rodam com a API no ar).
+- Contrato: os seis testes de contrato do módulo foram executados contra a API real e passaram.
+- O motor coincide (tolerância de 1e-9 s) com um simulador SimPy independente em 9 combinações de semente e de parâmetros (fila inicial, amarelo utilizável, offset e ℓ).
+- Casos de resposta exata (fila formada no vermelho, veículo sem fila, amarelo utilizável, fila inicial, janela que estoura) e o limite de fluxo baixo conferem com a fórmula fechada r²/(2C).
+
+### Resultado e medições
+
+Medições feitas com as simulações descritas em [valores de referência](valores-de-referencia.md); são **resultados de modelo, não de um cruzamento real**.
+
+| Verificação | Resultado medido |
+|-------------|------------------|
+| Simulação × Webster, 4 casos com x entre 0,23 e 0,70 (8 aproximações, 30 réplicas) | A simulação fica de 1,1% a 5,7% acima da fórmula; a fórmula cai dentro do IC da simulação em 3 das 8. |
+| Simulação × modelo fluido, x = 1,81 | Atraso com pendentes 1.670 s contra 1.618 s da referência (+3%); fila final 1.322 contra 1.286 veículos. Perto de x ≈ 1,1 o fluido subestima (ver valores de referência). |
+| Limite de fluxo baixo (C = 60 s, verde 30 s, λ = 0,01 veíc./s) | 7,69 s contra 7,50 s da fórmula fechada (+2,6%). |
+| Recuperação de parâmetros em dados sintéticos (ℓ = 2,4 s, h = 2,0 s, CV 0,3; três sementes) | O plano e o offset são recuperados exatamente. ℓ cai dentro do IC nas 6 estimativas (erro máximo de 0,17 s); h cai dentro do IC em 5 das 6 (a outra erra 3,0%); o CV fica a menos de 0,02 do valor usado. |
+| Validação dos mesmos dados (40 réplicas) | Viés da fila entre −0,02 e 0,83 veículo; fila observada na faixa simulada em 95% a 98% dos intervalos; saídas em 93% a 100%; total de saídas a menos de 0,5%. |
+| Modelo errado (verde da via 1 pela metade) | RMSE da fila mais de 3 vezes o do modelo correto e cobertura menor. |
+| Custo | 4 h simuladas com 100 réplicas em cerca de 0,2 s no ambiente de desenvolvimento. |
+
+### Lições
+
+- A validação mostrou um erro de método que a lógica sozinha não apontava: usar a contagem de cada minuto como **taxa** de um novo Poisson sorteia as chegadas duas vezes e infla o atraso em cerca de 10 s no exemplo. Na validação, o número de chegadas de cada intervalo é o observado, e o perfil sugerido para experimentos agrega as contagens em blocos de 15 minutos.
+- O estimador de ℓ e h precisa usar só os primeiros veículos de cada verde e só verdes completos: com fluxo alto, chegadas sem fila contaminam a média dos intervalos e verdes cortados pelo início da gravação inventam um "primeiro veículo" tardio.
 
 ---
 

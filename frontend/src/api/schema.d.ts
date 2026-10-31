@@ -659,6 +659,168 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/traffic/simulate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Simulate
+         * @description Simula o cruzamento (duas aproximações, ciclo fixo compartilhado) e devolve filas, atrasos e vazão com IC.
+         *
+         *     Cada réplica usa fluxos independentes de chegada e de intervalo de descarga por aproximação. O atraso é
+         *     dado de duas formas: dos veículos que já cruzaram e **com os pendentes** (quem ainda espera em T, contado só até T,
+         *     limite inferior). `reference` traz a aproximação analítica (Webster para x < 1; fluida para x ≥ 1), sempre com `exact = false`.
+         */
+        post: operations["simulate_api_traffic_simulate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/traffic/export.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Export Simulation Csv */
+        post: operations["export_simulation_csv_api_traffic_export_csv_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/traffic/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compare Plans
+         * @description Compara até 10 planos alternativos com a referência, com IC pareado (números aleatórios comuns).
+         *
+         *     Eventos: `start`, `base`, um `plan` por plano (com `completed` e `total`) e `done` com o resultado completo.
+         *     Se o ciclo mudar em relação à referência, o plano traz o aviso `cycle_changed`.
+         */
+        post: operations["compare_plans_api_traffic_compare_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/traffic/compare/export.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Export Compare Csv */
+        post: operations["export_compare_csv_api_traffic_compare_export_csv_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/traffic/sweep": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sweep Green Split
+         * @description Varre a divisão do verde mantendo o ciclo (g1 + g2 constante) e devolve a curva de atraso do cruzamento.
+         *
+         *     Eventos: `start`, um `point` por divisão e `done` com `best_index` e, para cada ponto, `vs_best`
+         *     (`best`, `worse`, `indistinguishable`): a comparação pareada com o melhor. O ciclo ótimo de Webster
+         *     vem como referência aproximada.
+         */
+        post: operations["sweep_green_split_api_traffic_sweep_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/traffic/sweep/export.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Export Sweep Csv */
+        post: operations["export_sweep_csv_api_traffic_sweep_export_csv_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/traffic/video/estimate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Video Estimate
+         * @description Lê as planilhas do protocolo e estima plano, offset, chegadas por bloco, ℓ, h e amarelo utilizável. Nada é preenchido por suposição: dado ausente em uma célula obrigatória recusa o arquivo (com a linha), e o que não puder ser estimado volta como `null` e vira o aviso `not_informed` no cruzamento. signal_events: eventos semafóricos (timestamp, approach_id, signal_state). counts: contagens por intervalo (interval_start, interval_end, approach_id, arrivals, departures, queue_count, queue_visible). crossings (opcional): um cruzamento da linha de retenção por linha (crossing_time, approach_id). trajectories (opcional): veículos acompanhados.
+         */
+        post: operations["video_estimate_api_traffic_video_estimate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/traffic/video/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Video Validate
+         * @description Simula o plano observado com as chegadas do vídeo e compara com a fila e as saídas observadas, intervalo a intervalo. As chegadas usam as contagens observadas (número fixo por intervalo). A resposta traz erros (viés, MAE, RMSE) e a cobertura da faixa simulada; não há teste de hipótese nem limite de aprovação. signal_events: eventos semafóricos (timestamp, approach_id, signal_state). counts: contagens por intervalo (interval_start, interval_end, approach_id, arrivals, departures, queue_count, queue_visible). crossings (opcional): um cruzamento da linha de retenção por linha (crossing_time, approach_id). trajectories (opcional): veículos acompanhados.
+         */
+        post: operations["video_validate_api_traffic_video_validate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/analysis/distribution": {
         parameters: {
             query?: never;
@@ -1629,6 +1791,54 @@ export interface components {
                 [key: string]: number;
             };
         };
+        /** ApproachIn */
+        ApproachIn: {
+            /**
+             * Name
+             * @description Nome exibido (até 60 caracteres).
+             */
+            name?: string | null;
+            /**
+             * Lambda
+             * @description Taxa de chegada constante (veículos/s). Informe isto ou `profile`.
+             */
+            lambda?: number | null;
+            /**
+             * Profile
+             * @description Taxa de chegada por blocos consecutivos a partir de t = 0.
+             */
+            profile?: components["schemas"]["BlockIn"][] | null;
+            /** @description Intervalo entre veículos que cruzam a linha de retenção (s), medido no vídeo. Sem valor padrão. */
+            headway: components["schemas"]["ServiceSpec"];
+            /**
+             * First Vehicle Time
+             * @description ℓ: segundos do início do verde até o 1º veículo da fila cruzar. Não informado → 0, com aviso.
+             */
+            first_vehicle_time?: number | null;
+            /**
+             * Amber Usable
+             * @description Segundos do amarelo em que ainda se cruza. Não informado → 0, com aviso.
+             */
+            amber_usable?: number | null;
+            /**
+             * Initial Queue
+             * @description Veículos já esperando em t = 0. Não informado → 0, com aviso.
+             */
+            initial_queue?: number | null;
+        };
+        /** BlockIn */
+        BlockIn: {
+            /**
+             * Duration
+             * @description Duração do bloco (s).
+             */
+            duration: number;
+            /**
+             * Lambda
+             * @description Taxa de chegada no bloco (veículos/s). Pode ser 0.
+             */
+            lambda: number;
+        };
         /** Body_analyze_csv_api_realdata_analyze_post */
         Body_analyze_csv_api_realdata_analyze_post: {
             /**
@@ -1693,41 +1903,99 @@ export interface components {
              */
             file: string;
         };
-        /**
-         * CompareRequest
-         * @example {
-         *       "levels": [],
-         *       "model": "mm1n",
-         *       "mu": 10,
-         *       "servers": 1,
-         *       "think_time": 1
-         *     }
-         */
-        CompareRequest: {
+        /** Body_video_estimate_api_traffic_video_estimate_post */
+        Body_video_estimate_api_traffic_video_estimate_post: {
             /**
-             * Model
-             * @enum {string}
+             * Signal Events
+             * @description CSV dos eventos semafóricos.
              */
-            model: "mm1" | "mmc" | "mm1k" | "mmck" | "mm1n" | "mmcn";
+            signal_events: string;
             /**
-             * Mu
-             * @description Taxa de serviço por servidor (req/s).
+             * Counts
+             * @description CSV das contagens por intervalo.
              */
-            mu: number;
+            counts: string;
             /**
-             * Servers
-             * @default 1
+             * Crossings
+             * @description CSV dos cruzamentos da linha de retenção (necessário para ℓ, h e o amarelo utilizável).
              */
-            servers: number;
-            /** Capacity */
-            capacity?: number | null;
-            /** Think Time */
-            think_time?: number | null;
+            crossings?: string | null;
             /**
-             * Levels
-             * @description Os níveis devolvidos por /analyze.
+             * Trajectories
+             * @description CSV dos veículos acompanhados (para o atraso observado).
              */
-            levels: components["schemas"]["LevelModel"][];
+            trajectories?: string | null;
+            /**
+             * Session Id
+             * @description Sessão a usar, se os arquivos tiverem mais de uma.
+             */
+            session_id?: string | null;
+            /**
+             * Approach Ids
+             * @description As duas aproximações, separadas por vírgula (a 1ª é a da fase 1).
+             */
+            approach_ids?: string | null;
+            /**
+             * Max Headway
+             * @description Intervalo máximo (s) entre veículos para contar como descarga saturada.
+             * @default 4
+             */
+            max_headway: number;
+            /**
+             * Min Run
+             * @description Veículos mínimos da sequência saturada de um verde.
+             * @default 5
+             */
+            min_run: number;
+            /**
+             * Core
+             * @description Veículos da cabeça da fila usados no ajuste da reta de descarga.
+             * @default 8
+             */
+            core: number;
+            /**
+             * Profile Block
+             * @description Duração (s) dos blocos do perfil de chegadas sugerido.
+             * @default 900
+             */
+            profile_block: number;
+            /**
+             * Confidence Level
+             * @default 0.95
+             */
+            confidence_level: number;
+        };
+        /** Body_video_validate_api_traffic_video_validate_post */
+        Body_video_validate_api_traffic_video_validate_post: {
+            /** Signal Events */
+            signal_events: string;
+            /** Counts */
+            counts: string;
+            /**
+             * Config
+             * @description JSON do cruzamento (phases, offset, approaches com headway etc.) — o corpo de /simulate sem as chegadas, que vêm das contagens.
+             */
+            config: string;
+            /** Crossings */
+            crossings?: string | null;
+            /** Trajectories */
+            trajectories?: string | null;
+            /** Session Id */
+            session_id?: string | null;
+            /** Approach Ids */
+            approach_ids?: string | null;
+            /**
+             * Replications
+             * @default 30
+             */
+            replications: number;
+            /** Seed */
+            seed?: number | null;
+            /**
+             * Confidence Level
+             * @default 0.95
+             */
+            confidence_level: number;
         };
         /** CompareResponse */
         CompareResponse: {
@@ -3373,6 +3641,51 @@ export interface components {
                 [key: string]: components["schemas"]["MetricEffectOut"];
             };
         };
+        /** PhaseIn */
+        PhaseIn: {
+            /**
+             * Green
+             * @description Verde da fase (s).
+             */
+            green: number;
+            /**
+             * Amber
+             * @description Amarelo (s).
+             * @default 0
+             */
+            amber: number;
+            /**
+             * All Red
+             * @description Todo-vermelho depois do amarelo (s).
+             * @default 0
+             */
+            all_red: number;
+        };
+        /**
+         * PhasePatch
+         * @description O que trocar em uma fase do plano alternativo. O que não vier fica como na base.
+         */
+        PhasePatch: {
+            /** Green */
+            green?: number | null;
+            /** Amber */
+            amber?: number | null;
+            /** All Red */
+            all_red?: number | null;
+        };
+        /** PlanIn */
+        PlanIn: {
+            /**
+             * Name
+             * @description Nome exibido (até 60 caracteres). Padrão: Plano n.
+             */
+            name?: string | null;
+            /**
+             * Phases
+             * @description 2 itens: o que trocar na fase 1 e na fase 2 (null mantém a fase).
+             */
+            phases: (components["schemas"]["PhasePatch"] | null)[];
+        };
         /** QueueCalculateResponse */
         QueueCalculateResponse: {
             /** Model */
@@ -3529,7 +3842,7 @@ export interface components {
              * @description Tipo do registro.
              * @enum {string}
              */
-            kind: "model" | "simulation" | "comparison" | "experiment" | "realdata";
+            kind: "model" | "simulation" | "comparison" | "experiment" | "realdata" | "traffic";
             /**
              * Title
              * @description Título exibido no histórico.
@@ -3566,7 +3879,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "model" | "simulation" | "comparison" | "experiment" | "realdata";
+            kind: "model" | "simulation" | "comparison" | "experiment" | "realdata" | "traffic";
             /** Title */
             title: string;
             /** App Version */
@@ -3617,7 +3930,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "model" | "simulation" | "comparison" | "experiment" | "realdata";
+            kind: "model" | "simulation" | "comparison" | "experiment" | "realdata" | "traffic";
             /** Title */
             title: string;
             /** App Version */
@@ -4440,6 +4753,57 @@ export interface components {
              */
             servers?: number | null;
         };
+        /** SimulateRequest */
+        SimulateRequest: {
+            /**
+             * Simulation Time
+             * @description Duração simulada T (s). Máx. 86 400.
+             */
+            simulation_time: number;
+            /**
+             * Replications
+             * @description Réplicas independentes (2 a 100).
+             * @default 10
+             */
+            replications: number;
+            /**
+             * Warmup Time
+             * @description Aquecimento descartado (s). Use 0 para reproduzir uma gravação.
+             * @default 0
+             */
+            warmup_time: number;
+            /**
+             * Seed
+             * @description Semente (reprodutível). Sem semente, uma é sorteada e devolvida.
+             */
+            seed?: number | null;
+            /**
+             * Confidence Level
+             * @description Nível dos ICs.
+             * @default 0.95
+             */
+            confidence_level: number;
+            /**
+             * Phases
+             * @description Exatamente 2 fases: a da aproximação 1 e a da aproximação 2.
+             */
+            phases: components["schemas"]["PhaseIn"][];
+            /**
+             * Offset
+             * @description Segundos do ciclo já decorridos em t = 0 (0 = o verde da fase 1 começa em t = 0). Não informado → 0, com aviso.
+             */
+            offset?: number | null;
+            /**
+             * Approaches
+             * @description Exatamente 2 aproximações.
+             */
+            approaches: components["schemas"]["ApproachIn"][];
+            /**
+             * Series Step
+             * @description Passo da série temporal da fila (s). Padrão: ~240 pontos.
+             */
+            series_step?: number | null;
+        };
         /**
          * SimulatedCompareRequest
          * @example {
@@ -5103,6 +5467,166 @@ export interface components {
                 [key: string]: components["schemas"]["MetricSummaryOut"];
             } | null;
         };
+        /** SweepResponse */
+        SweepResponse: {
+            /** Model */
+            model: string;
+            /** Variable */
+            variable: string;
+            /**
+             * Fixed
+             * @description Parâmetros mantidos fixos, com os nomes da API.
+             */
+            fixed: {
+                [key: string]: number;
+            };
+            /** Points */
+            points: components["schemas"]["SweepPointOut"][];
+            /** @description Configuração efetiva da simulação, com a semente usada. */
+            simulation: components["schemas"]["SweepSimulationOut"] | null;
+            /** @description Só em mg1 e mgc: o serviço do ponto base. */
+            service?: components["schemas"]["ServiceOut"] | null;
+        };
+        /** SweepSimulationOut */
+        SweepSimulationOut: {
+            /** Simulation Time */
+            simulation_time: number;
+            /** Replications */
+            replications: number;
+            /** Warmup Time */
+            warmup_time: number;
+            /** Seed */
+            seed: number;
+            /** Confidence Level */
+            confidence_level: number;
+        };
+        /**
+         * TrafficEventOut
+         * @description Uma linha do NDJSON: `type` é start, base, plan, point, done ou error; o resto depende do tipo.
+         */
+        TrafficEventOut: {
+            /** Type */
+            type: string;
+            /** Total */
+            total?: number | null;
+            /** Completed */
+            completed?: number | null;
+            /** Code */
+            code?: string | null;
+            /** Message */
+            message?: string | null;
+            /** Field */
+            field?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * TrafficResultOut
+         * @description Resultado da simulação: configuração, plano, aproximações, avisos, métricas com IC, referência analítica e série da fila.
+         */
+        TrafficResultOut: {
+            /** Settings */
+            settings: {
+                [key: string]: unknown;
+            };
+            /** Plan */
+            plan: {
+                [key: string]: unknown;
+            };
+            /** Approaches */
+            approaches: {
+                [key: string]: unknown;
+            }[];
+            /** Alerts */
+            alerts: {
+                [key: string]: unknown;
+            }[];
+            /** Metrics */
+            metrics: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            };
+            /** Reference */
+            reference: {
+                [key: string]: unknown;
+            };
+            /** Series */
+            series?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * VideoEstimateOut
+         * @description Estimativas a partir das planilhas do vídeo: plano, chegadas, descarga e o corpo sugerido para /simulate.
+         */
+        VideoEstimateOut: {
+            /** Session Id */
+            session_id: string | null;
+            /** Horizon */
+            horizon: number;
+            /** Approach Ids */
+            approach_ids: string[];
+            /** Method */
+            method: {
+                [key: string]: unknown;
+            };
+            /** Signal */
+            signal: {
+                [key: string]: unknown;
+            };
+            /** Arrivals */
+            arrivals: {
+                [key: string]: unknown;
+            };
+            /** Discharge */
+            discharge: {
+                [key: string]: unknown;
+            } | null;
+            /** Suggested */
+            suggested: {
+                [key: string]: unknown;
+            };
+            /** Notes */
+            notes: string[];
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * VideoValidationOut
+         * @description Simulado × observado por intervalo, com erros e cobertura da faixa simulada.
+         */
+        VideoValidationOut: {
+            /** Approaches */
+            approaches: {
+                [key: string]: unknown;
+            };
+            /** Settings */
+            settings: {
+                [key: string]: unknown;
+            };
+            /** Notes */
+            notes: string[];
+        } & {
+            [key: string]: unknown;
+        };
+        /** MetricComparisonOut */
+        app__api__schemas__MetricComparisonOut: {
+            /** Analytical */
+            analytical: number;
+            /** Simulated Mean */
+            simulated_mean: number;
+            /** Ci Low */
+            ci_low: number | null;
+            /** Ci High */
+            ci_high: number | null;
+            /** Absolute Error */
+            absolute_error: number;
+            /** Relative Error Pct */
+            relative_error_pct: number | null;
+            /** Within Ci */
+            within_ci: boolean | null;
+        };
         /**
          * SweepRequest
          * @example {
@@ -5141,7 +5665,7 @@ export interface components {
          *       "variable": "cv"
          *     }
          */
-        SweepRequest: {
+        app__api__schemas__SweepRequest: {
             /**
              * Model
              * @description Modelo: mm1, mmc, mm1k, mmck, mg1, erlangb ou mgc (as mesmas chaves das rotas /api/models). No erlangb a capacidade é sempre K = c; mg1 e mgc recebem o serviço em `service`.
@@ -5226,55 +5750,41 @@ export interface components {
              */
             confidence_level: number;
         };
-        /** SweepResponse */
-        SweepResponse: {
-            /** Model */
-            model: string;
-            /** Variable */
-            variable: string;
+        /**
+         * CompareRequest
+         * @example {
+         *       "levels": [],
+         *       "model": "mm1n",
+         *       "mu": 10,
+         *       "servers": 1,
+         *       "think_time": 1
+         *     }
+         */
+        app__api__schemas_realdata__CompareRequest: {
             /**
-             * Fixed
-             * @description Parâmetros mantidos fixos, com os nomes da API.
+             * Model
+             * @enum {string}
              */
-            fixed: {
-                [key: string]: number;
-            };
-            /** Points */
-            points: components["schemas"]["SweepPointOut"][];
-            /** @description Configuração efetiva da simulação, com a semente usada. */
-            simulation: components["schemas"]["SweepSimulationOut"] | null;
-            /** @description Só em mg1 e mgc: o serviço do ponto base. */
-            service?: components["schemas"]["ServiceOut"] | null;
-        };
-        /** SweepSimulationOut */
-        SweepSimulationOut: {
-            /** Simulation Time */
-            simulation_time: number;
-            /** Replications */
-            replications: number;
-            /** Warmup Time */
-            warmup_time: number;
-            /** Seed */
-            seed: number;
-            /** Confidence Level */
-            confidence_level: number;
-        };
-        /** MetricComparisonOut */
-        app__api__schemas__MetricComparisonOut: {
-            /** Analytical */
-            analytical: number;
-            /** Simulated Mean */
-            simulated_mean: number;
-            /** Ci Low */
-            ci_low: number | null;
-            /** Ci High */
-            ci_high: number | null;
-            /** Absolute Error */
-            absolute_error: number;
-            /** Relative Error Pct */
-            relative_error_pct: number | null;
-            /** Within Ci */
-            within_ci: boolean | null;
+            model: "mm1" | "mmc" | "mm1k" | "mmck" | "mm1n" | "mmcn";
+            /**
+             * Mu
+             * @description Taxa de serviço por servidor (req/s).
+             */
+            mu: number;
+            /**
+             * Servers
+             * @default 1
+             */
+            servers: number;
+            /** Capacity */
+            capacity?: number | null;
+            /** Think Time */
+            think_time?: number | null;
+            /**
+             * Levels
+             * @description Os níveis devolvidos por /analyze.
+             */
+            levels: components["schemas"]["LevelModel"][];
         };
         /** MetricComparisonOut */
         app__api__schemas_realdata__MetricComparisonOut: {
@@ -5295,6 +5805,121 @@ export interface components {
             relative_error_pct: number | null;
             /** Model Within Observed Ci */
             model_within_observed_ci?: boolean | null;
+        };
+        /** CompareRequest */
+        app__api__schemas_traffic__CompareRequest: {
+            /**
+             * Simulation Time
+             * @description Duração simulada T (s). Máx. 86 400.
+             */
+            simulation_time: number;
+            /**
+             * Replications
+             * @description Réplicas independentes (2 a 100).
+             * @default 10
+             */
+            replications: number;
+            /**
+             * Warmup Time
+             * @description Aquecimento descartado (s). Use 0 para reproduzir uma gravação.
+             * @default 0
+             */
+            warmup_time: number;
+            /**
+             * Seed
+             * @description Semente (reprodutível). Sem semente, uma é sorteada e devolvida.
+             */
+            seed?: number | null;
+            /**
+             * Confidence Level
+             * @description Nível dos ICs.
+             * @default 0.95
+             */
+            confidence_level: number;
+            /**
+             * Phases
+             * @description Exatamente 2 fases: a da aproximação 1 e a da aproximação 2.
+             */
+            phases: components["schemas"]["PhaseIn"][];
+            /**
+             * Offset
+             * @description Segundos do ciclo já decorridos em t = 0 (0 = o verde da fase 1 começa em t = 0). Não informado → 0, com aviso.
+             */
+            offset?: number | null;
+            /**
+             * Approaches
+             * @description Exatamente 2 aproximações.
+             */
+            approaches: components["schemas"]["ApproachIn"][];
+            /**
+             * Scenarios
+             * @description De 1 a 10 planos alternativos, além da referência.
+             */
+            scenarios: components["schemas"]["PlanIn"][];
+            /**
+             * Bonferroni
+             * @description Corrige o nível dos ICs das diferenças pelo número de planos.
+             * @default false
+             */
+            bonferroni: boolean;
+            /** Series Step */
+            series_step?: number | null;
+        };
+        /** SweepRequest */
+        app__api__schemas_traffic__SweepRequest: {
+            /**
+             * Simulation Time
+             * @description Duração simulada T (s). Máx. 86 400.
+             */
+            simulation_time: number;
+            /**
+             * Replications
+             * @description Réplicas independentes (2 a 100).
+             * @default 10
+             */
+            replications: number;
+            /**
+             * Warmup Time
+             * @description Aquecimento descartado (s). Use 0 para reproduzir uma gravação.
+             * @default 0
+             */
+            warmup_time: number;
+            /**
+             * Seed
+             * @description Semente (reprodutível). Sem semente, uma é sorteada e devolvida.
+             */
+            seed?: number | null;
+            /**
+             * Confidence Level
+             * @description Nível dos ICs.
+             * @default 0.95
+             */
+            confidence_level: number;
+            /**
+             * Phases
+             * @description Exatamente 2 fases: a da aproximação 1 e a da aproximação 2.
+             */
+            phases: components["schemas"]["PhaseIn"][];
+            /**
+             * Offset
+             * @description Segundos do ciclo já decorridos em t = 0 (0 = o verde da fase 1 começa em t = 0). Não informado → 0, com aviso.
+             */
+            offset?: number | null;
+            /**
+             * Approaches
+             * @description Exatamente 2 aproximações.
+             */
+            approaches: components["schemas"]["ApproachIn"][];
+            /**
+             * Min Green
+             * @description Verde mínimo de cada fase (s), definido por quem conhece a segurança do cruzamento. Sem valor padrão.
+             */
+            min_green: number[];
+            /**
+             * Step
+             * @description Passo da varredura (s). Até 40 pontos.
+             */
+            step: number;
         };
     };
     responses: never;
@@ -6060,7 +6685,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SweepRequest"];
+                "application/json": components["schemas"]["app__api__schemas__SweepRequest"];
             };
         };
         responses: {
@@ -6348,6 +6973,288 @@ export interface operations {
             };
         };
     };
+    simulate_api_traffic_simulate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SimulateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrafficResultOut"];
+                };
+            };
+            /** @description Parâmetros ou arquivos inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    export_simulation_csv_api_traffic_export_csv_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SimulateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": unknown;
+                };
+            };
+            /** @description Parâmetros ou arquivos inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    compare_plans_api_traffic_compare_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["app__api__schemas_traffic__CompareRequest"];
+            };
+        };
+        responses: {
+            /** @description Uma linha JSON por evento (application/x-ndjson). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/x-ndjson": components["schemas"]["TrafficEventOut"];
+                };
+            };
+            /** @description Parâmetros ou arquivos inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/x-ndjson": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    export_compare_csv_api_traffic_compare_export_csv_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["app__api__schemas_traffic__CompareRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": unknown;
+                };
+            };
+            /** @description Parâmetros ou arquivos inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    sweep_green_split_api_traffic_sweep_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["app__api__schemas_traffic__SweepRequest"];
+            };
+        };
+        responses: {
+            /** @description Uma linha JSON por evento (application/x-ndjson). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/x-ndjson": components["schemas"]["TrafficEventOut"];
+                };
+            };
+            /** @description Parâmetros ou arquivos inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/x-ndjson": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    export_sweep_csv_api_traffic_sweep_export_csv_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["app__api__schemas_traffic__SweepRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": unknown;
+                };
+            };
+            /** @description Parâmetros ou arquivos inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    video_estimate_api_traffic_video_estimate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_video_estimate_api_traffic_video_estimate_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEstimateOut"];
+                };
+            };
+            /** @description Arquivo acima do limite */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Parâmetros ou arquivos inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    video_validate_api_traffic_video_validate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_video_validate_api_traffic_video_validate_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoValidationOut"];
+                };
+            };
+            /** @description Arquivo acima do limite */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Parâmetros ou arquivos inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     distribution_api_analysis_distribution_post: {
         parameters: {
             query?: never;
@@ -6507,7 +7414,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CompareRequest"];
+                "application/json": components["schemas"]["app__api__schemas_realdata__CompareRequest"];
             };
         };
         responses: {
@@ -6756,7 +7663,7 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description Filtra por tipo. */
-                kind?: ("model" | "simulation" | "comparison" | "experiment" | "realdata") | null;
+                kind?: ("model" | "simulation" | "comparison" | "experiment" | "realdata" | "traffic") | null;
                 limit?: number;
                 offset?: number;
             };

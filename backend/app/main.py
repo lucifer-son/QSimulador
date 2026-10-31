@@ -16,6 +16,7 @@ from app.api.realdata_extra import router as realdata_extra_router
 from app.api.records import router as records_router
 from app.api.scenarios import router as scenarios_router
 from app.api.sizing import router as sizing_router
+from app.api.traffic import router as traffic_router
 from app.persistence.config import PersistenceLimits, database_url_from_env
 from app.persistence.database import Database, create_db_engine
 
@@ -76,6 +77,7 @@ def create_app(
     application.include_router(experiments_router)
     application.include_router(sizing_router)
     application.include_router(scenarios_router)
+    application.include_router(traffic_router)
     application.include_router(analysis_router)
     application.include_router(realdata_router)
     application.include_router(realdata_extra_router)

@@ -6,7 +6,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-RecordKind = Literal["model", "simulation", "comparison", "experiment", "realdata"]
+RecordKind = Literal["model", "simulation", "comparison", "experiment", "realdata", "traffic"]
 
 TITLE_MAX = 120
 

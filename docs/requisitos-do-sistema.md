@@ -4,7 +4,7 @@ Laboratório interativo de modelagem, simulação e análise de sistemas de fila
 
 Este documento especifica os **requisitos funcionais (RF)** e **não funcionais (RNF)** do sistema e os relaciona aos [Casos de Uso](casos-de-uso.md) e às [Histórias de Usuário](historias-de-usuario.md). Para instruções de execução, veja [`como-executar.md`](como-executar.md).
 
-**Versão:** 2.0 (Fase 13: Gráficos de distribuição e ajuste de amostras)
+**Versão:** 1.11 (Fase 13.1: Cruzamento semaforizado)
 
 ---
 
@@ -23,6 +23,7 @@ Este documento especifica os **requisitos funcionais (RF)** e **não funcionais 
 | 1.8 | Fase 11: incluídos RF-57 a RF-63 (experimentos do Erlang-B e do M/G/c, que completam a cobertura dos sete modelos do Laboratório; tabela de dimensionamento por número de servidores, nível de serviço P(Wq ≤ t) e menor c para uma meta, custo total e c ótimo, dimensionamento dos modelos de um servidor pela família com c, e histórico do tipo `sizing`), que correspondem aos RFC-12 a RFC-16 do [roadmap competitivo](roadmap-competitivo.md) mais a extensão dos experimentos; incluída a seção 4.13. O M/G/c tem o nível de serviço aproximado (cauda exponencial) e rotulado como tal. |
 | 1.9 | Fase 12: incluídos RF-64 a RF-71 (comparação de cenários por sobrescrita de λ, μ, c, K, modelo e variabilidade do serviço, com números aleatórios comuns, IC da diferença pareada, veredito, streaming, alertas de instabilidade, exportação em CSV e histórico do tipo `scenarios`), que correspondem aos RFC-17 a RFC-21 do [roadmap competitivo](roadmap-competitivo.md); incluída a seção 4.14. A rota de exportação é `POST` (o `GET` proposto no roadmap não carrega a lista de cenários). |
 | 1.10 | Fase 13: incluídos RF-72 a RF-82 (P(n) analítica; P(Wq > t) por fórmula fechada no M/M/c e por histograma de simulação nos demais modelos; sensibilidade Wq × λ; ajuste por máxima verossimilhança de cinco distribuições com AIC e p-valor de aderência por Monte Carlo, decisão D-02; sugestão de modelo pelo CV integrada à aba Dados reais; API, interface e histórico do tipo `fit`), que correspondem aos RFC-22 a RFC-26 do [roadmap competitivo](roadmap-competitivo.md); incluída a seção 4.15 e o UC-15. O histograma de espera usa um simulador FIFO próprio (os motores SimPy só guardam a média), e a sensibilidade reaproveita a varredura de λ da Fase 6. |
+| 1.11 | Fase 13.1 (cruzamento semaforizado, fase de aplicação do seminário de Modelagem e Simulação): incluídos RF-83 a RF-95 (cruzamento de ciclo fixo com duas aproximações e fila FIFO acopladas só pelo ciclo; chegadas por blocos; parâmetros medidos no vídeo sem valor padrão silencioso e com avisos; atraso com e sem os pendentes; série da fila; referência de Webster rotulada como aproximação; comparação de planos com números aleatórios comuns e IC pareado; varredura da divisão do verde; leitura das planilhas do protocolo; estimação de plano, chegadas, ℓ e h por reta de descarga; validação simulado × observado; rotas `/api/traffic`; aba Cruzamento e histórico do tipo `traffic`), que não correspondem a RFC do [roadmap competitivo](roadmap-competitivo.md) (não é lacuna do concorrente); incluída a seção 4.16 e o UC-16. Correção: o cabeçalho trazia a versão 2.0 por engano; a versão do sistema na Fase 13 era a 1.10. |
 
 ---
 
@@ -61,7 +62,7 @@ Este documento especifica os **requisitos funcionais (RF)** e **não funcionais 
 O sistema permite que o usuário **defina** um modelo de filas, **calcule** suas métricas analiticamente, **simule** seu comportamento por eventos discretos, **compare** teoria e simulação, **visualize** os resultados e, nas fases futuras, **analise** modelos mais complexos, **execute** experimentos, **importe** medições do JMeter e **persista** resultados.
 
 **Fora do escopo:**
-- redes de filas (várias estações interligadas);
+- redes de filas (várias estações interligadas), salvo o cruzamento semaforizado de duas aproximações da Fase 13.1, que tem ciclo compartilhado mas não encaminha clientes de uma fila para a outra;
 - distribuições de chegada e serviço diferentes da exponencial na versão inicial;
 - autenticação e múltiplos usuários;
 - simulação em tempo real distribuída.
@@ -253,6 +254,24 @@ As rotas são `POST /api/models/erlangb/calculate`, `/simulate`, `/compare` e `/
 | RF-81 | O sistema deve expor `POST /api/analysis/distribution`, `/sensitivity` e `/fit`; o ajuste responde em NDJSON (`start`, uma `candidate` por candidata, `done`) e para o trabalho quando o cliente fecha a conexão. O limite da amostra é o do envio de CSV da Fase 7 (10 MiB: corpo maior dá 413 `file_too_large`, e no máximo metade desse número de bytes em valores). Erros de validação saem como 422 com o campo, antes do primeiro byte do fluxo. | M | T | UC-15 | US-35 | ✅ |
 | RF-82 | O sistema deve mostrar, no Laboratório, a aba Distribuições (P(n), P(Wq > t) e Wq × λ com o ponto atual) nos modelos aplicáveis, o painel Ajustar distribuição (colar ou importar a amostra, histograma com as curvas ajustadas e tabela de candidatas) e a sugestão por CV na aba Dados reais; e permitir salvar o ajuste no histórico como experimento do tipo `fit`, sem alterar o esquema do banco e sem guardar a amostra. | S | T | UC-09, UC-15 | US-35 | ✅ |
 
+### 4.16 Cruzamento semaforizado (Fase 13.1)
+
+| ID | Requisito | Prior. | Verif. | UC | US | Status |
+|----|-----------|--------|--------|----|----|--------|
+| RF-83 | O sistema deve simular um cruzamento semaforizado de ciclo fixo com duas fases em sequência (verde, amarelo e todo-vermelho por fase), em que a aproximação 1 é atendida na fase 1 e a 2 na fase 2, cada uma com uma fila FIFO única (faixas agregadas na linha de retenção) e acopladas uma à outra só pelo ciclo. O 1º veículo da fila cruza ℓ segundos depois do início do verde e cada seguinte um intervalo h depois do anterior (h sorteado de uma das distribuições da Fase 9), dentro da janela [início do verde + ℓ, fim do verde + amarelo utilizável]; quem chega ao verde aberto sem fila à frente cruza na hora. Ficam fora: conversões, pedestres, ônibus, bloqueio do cruzamento por fila que invade a outra aproximação, semáforo atuado e coordenação entre cruzamentos. | M | T | UC-16 | US-36 | ✅ |
+| RF-84 | O sistema deve gerar as chegadas de cada aproximação como processo de Poisson de taxa constante ou constante por blocos consecutivos (de 1 a 200, taxa maior ou igual a 0 e ao menos um bloco positivo, cobrindo o tempo simulado), aceitar fila inicial e o instante do ciclo em t = 0 (`offset`) e usar fluxos aleatórios independentes por aproximação e por réplica (chegadas e intervalos de descarga separados), de modo que a mesma semente reproduza o resultado e planos diferentes enfrentem os mesmos veículos. | M | T | UC-16 | US-36 | ✅ |
+| RF-85 | O sistema não deve atribuir valor padrão silencioso aos parâmetros medidos no vídeo: o intervalo h é obrigatório (campo `approaches.i.headway`); ℓ, o amarelo utilizável, a fila inicial e o `offset`, se não informados, valem 0 e o resultado traz o aviso `not_informed` com o campo. Deve ainda avisar o grau de saturação x ≥ 1 (a fila cresce e as médias dependem de T), x ≥ 0,9 e intervalo médio abaixo de 0,5 s (conferir a unidade). | M | T | UC-16 | US-36 | ✅ |
+| RF-86 | O sistema deve devolver, por aproximação e para o cruzamento, com média, desvio e IC entre réplicas: o atraso médio dos veículos que já cruzaram e o atraso com os pendentes (quem ainda espera em T entra contado só até T, um limite inferior), a fila média no tempo, a máxima e a do fim, a vazão, a fração que parou, a fração de ciclos que terminam com fila, e as chegadas, saídas e pendentes. Os veículos da fila inicial ocupam a fila e a capacidade, mas não entram no atraso. | M | T | UC-16 | US-36 | ✅ |
+| RF-87 | O sistema deve devolver a fila de cada aproximação ao longo do tempo (média das réplicas e IC da média), com passo configurável (padrão de cerca de 240 pontos; no máximo 2.000). | S | T | UC-16 | US-36 | ✅ |
+| RF-88 | O sistema deve calcular, como aproximação rotulada (`exact = false`), o atraso uniforme e o de Webster (1958) para x < 1; o modelo fluido para x ≥ 1, com o mesmo corte em T que a simulação aplica aos pendentes e a fila final esperada; e o ciclo ótimo de Webster. O verde efetivo é verde + amarelo utilizável − ℓ + h̄. | S | T | UC-16 | US-36 | ✅ |
+| RF-89 | O sistema deve comparar de 1 a 10 planos alternativos (troca de verde, amarelo e todo-vermelho de cada fase) com a referência, com os mesmos números aleatórios em todos os planos, IC t pareado da diferença, veredito (`higher`, `lower`, `inconclusive`), correção opcional de Bonferroni, aviso `cycle_changed` quando o ciclo muda e resposta em NDJSON (`start`, `base`, um `plan` por plano, `done`). | M | T | UC-16 | US-37 | ✅ |
+| RF-90 | O sistema deve varrer a divisão do verde mantendo o ciclo (verde 1 + verde 2 constante; amarelo e todo-vermelho fixos), de um verde mínimo por fase informado pelo usuário (sem valor padrão) até o limite, em até 40 pontos, devolvendo o ponto de menor atraso com pendentes, a comparação pareada de cada ponto com ele (`best`, `worse`, `indistinguishable`) e o ciclo ótimo de Webster como referência aproximada. | S | T | UC-16 | US-37 | ✅ |
+| RF-91 | O sistema deve ler as planilhas do protocolo de coleta (eventos semafóricos, contagens por intervalo, cruzamentos da linha de retenção e veículos acompanhados; CSV com vírgula, ponto e vírgula ou tabulação, decimal com ponto ou vírgula, tempos em segundos ou hh:mm:ss, aliases em português), escolher a sessão e as duas aproximações e recusar o arquivo, nomeando a tabela e a linha, quando faltar coluna, houver estado desconhecido, valor negativo, intervalos sobrepostos ou com lacuna, ou célula obrigatória vazia (dado ausente nunca vira zero nem média). | M | T | UC-16 | US-38 | ✅ |
+| RF-92 | O sistema deve estimar a partir das planilhas: o plano (verde, amarelo e todo-vermelho médios por fase, ciclo com desvio e `offset`), com aviso `not_fixed_time` se o ciclo variar; a taxa de chegada por intervalo e por bloco de 15 minutos com IC de Poisson; ℓ e h pela reta instante-do-n-ésimo-veículo = ℓ + (n − 1)·h ajustada nos primeiros veículos de cada verde saturado (verdes cortados pelo início ou pelo fim da gravação ficam de fora), com IC, CV de h e a distribuição sugerida pelo ajuste da Fase 13; o amarelo utilizável; e a fila inicial. O que não puder ser estimado volta `null`. Os critérios do método (`max_headway`, `min_run`, `core`, `profile_block`) são ecoados no resultado. | M | T | UC-16 | US-38 | ✅ |
+| RF-93 | O sistema deve validar o modelo contra o vídeo: simular o plano observado com o número de chegadas de cada intervalo igual ao observado (só o instante dentro do intervalo é sorteado) e comparar, por intervalo, a fila no fim e as saídas com as observadas, devolvendo viés, erro médio absoluto, RMSE e a cobertura da faixa simulada (percentis entre réplicas), o total de saídas e, havendo veículos acompanhados, o atraso observado com IC. Intervalos sem dado utilizável ficam de fora e são contados. Não há teste de hipótese nem limite de aprovação. | M | T | UC-16 | US-39 | ✅ |
+| RF-94 | O sistema deve expor `POST /api/traffic/simulate`, `/compare`, `/sweep` (os dois últimos em NDJSON, que para o trabalho quando o cliente fecha a conexão), `/export.csv`, `/compare/export.csv`, `/sweep/export.csv`, `/video/estimate` e `/video/validate` (multipart), com erros 422 que identificam o campo (por exemplo `approaches.1.headway.cv`) e 413 para arquivo acima de 10 MiB. | M | T | UC-16 | US-36 a US-39 | ✅ |
+| RF-95 | O sistema deve mostrar a aba Cruzamento, com os modos Simular, Comparar planos, Varrer o verde e Dados do vídeo; formulário sem valores medidos preenchidos (o exemplo é rotulado como hipotético); erros da API nos campos; gráficos da fila, do atraso por plano, da curva do verde e da validação; exportação em CSV; “Usar no formulário” para as estimativas do vídeo; e salvar e reabrir os resultados no histórico (tipo `traffic`). | M | T, D | UC-16 | US-36 a US-39 | ✅ |
+
 ### 4.10 API
 
 | ID | Requisito | Prior. | Verif. | UC | US | Status |
@@ -381,6 +400,16 @@ Restrições de validação por parâmetro. Valores marcados como **(proposto)**
 | Réplicas do p-valor (`bootstrap`) | Inteiro | 0 (sem p-valor) ou de 20 a 2.000 | 200, ou o que o teto permitir | n·B ≤ 8.000.000 |
 | `span` e `points` (sensibilidade) | Real e inteiro | span de 0 (exclusivo) a 0,95; points de 3 a 200 | 0,5 e 41 | — |
 | `points` (P(Wq > t)) | Inteiro | De 2 a 200 | 60 | — |
+| Ciclo do cruzamento | Real | Soma de verde, amarelo e todo-vermelho das duas fases; verde > 0, amarelo e todo-vermelho ≥ 0 | — | 600 s |
+| `offset` (cruzamento) | Real | Maior ou igual a 0 e menor que o ciclo; vazio = não informado (0, com aviso) | — | — |
+| Perfil de chegadas por blocos | Lista | De 1 a 200 blocos; duração > 0; taxa ≥ 0 com ao menos um bloco positivo; cobre o tempo simulado | — | 200 blocos |
+| Tempo simulado do cruzamento | Real | Maior que 0 | — | 86.400 s |
+| Intervalo h (`headway`) | Distribuição | Obrigatório; média e parâmetros como na Fase 9 | Sem padrão | — |
+| ℓ, amarelo utilizável | Real | ℓ menor que o verde utilizável; amarelo utilizável menor ou igual ao amarelo; vazio = não informado (0, com aviso) | — | — |
+| Fila inicial (cruzamento) | Inteiro | Maior ou igual a 0; vazio = não informada (0, com aviso) | — | 500 |
+| Planos alternativos | Lista | De 1 a 10 | — | 10 |
+| Pontos da varredura | Inteiro | De 1 a 40, com o verde mínimo de cada fase informado | Sem padrão | 40 |
+| Veículos esperados (cruzamento) | Inteiro | Σ chegadas × réplicas × planos | — | 1.000.000 |
 
 ---
 
@@ -428,6 +457,7 @@ Restrições de validação por parâmetro. Valores marcados como **(proposto)**
 | 11 | Dimensionamento e experimentos em todos os modelos | RF-57 a RF-63 |
 | 12 | Comparação de cenários | RF-64 a RF-71 |
 | 13 | Distribuições e ajuste de amostras | RF-72 a RF-82 |
+| 13.1 | Cruzamento semaforizado (fase de aplicação) | RF-83 a RF-95 |
 | Transversal | Qualidade, desempenho, segurança, observabilidade | RNF-05, RNF-06, RNF-08 a RNF-12, RNF-14, RNF-16, RNF-18, RNF-19, RNF-21 a RNF-23, RNF-27 a RNF-32 |
 
 ---
@@ -451,6 +481,7 @@ Restrições de validação por parâmetro. Valores marcados como **(proposto)**
 | UC-13 | RF-59 a RF-63 |
 | UC-14 | RF-64 a RF-71 |
 | UC-15 | RF-72 a RF-82 |
+| UC-16 | RF-83 a RF-95 |
 
 ---
 
