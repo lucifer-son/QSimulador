@@ -4,12 +4,16 @@ Unidades: tempos em **segundos** e taxas em **veículos por segundo**. A interfa
 veículos por minuto ou por hora; a API e o domínio ficam sempre em segundos.
 
 Modelo (premissas, também documentadas em docs/como-executar.md):
-- ciclo fixo de duas fases em sequência; cada fase tem verde, amarelo e todo-vermelho;
-- a aproximação 1 é atendida na fase 1 e a aproximação 2 na fase 2 (movimentos protegidos, sem
-  conversões nem pedestres);
+- ciclo fixo de 2 a 4 fases em sequência; cada fase tem verde, amarelo e todo-vermelho;
+- a aproximação i é atendida na fase i (movimentos protegidos): para um cruzamento com mais de duas
+  fases, cada movimento com verde próprio (por exemplo, uma conversão à esquerda protegida ou uma
+  terceira via) é uma aproximação;
 - cada aproximação é uma fila FIFO única (as faixas são agregadas na linha de retenção);
-- as duas filas só se acoplam pelo ciclo: o verde de uma é o vermelho da outra, e não há bloqueio
-  do cruzamento por fila que invade a outra aproximação.
+- as filas só se acoplam pelo ciclo: o verde de uma é o vermelho das outras, e não há bloqueio
+  do cruzamento por fila que invade outra aproximação;
+- classes de veículos (carro, moto, ônibus...): cada veículo tem uma classe e deixa a linha de
+  retenção ocupada por h · fator da classe, em que h é o intervalo de um carro (fator 1) e o fator
+  é a equivalência em carros, informada por quem conhece o cruzamento (sem valor padrão).
 
 Parâmetros que vêm do vídeo (tempo até o 1º veículo cruzar, amarelo utilizável, fila inicial, instante
 do ciclo em que a gravação começa) **não têm valor padrão silencioso**: se não forem informados, o
@@ -27,13 +31,17 @@ from app.domain.service.distributions import ServiceDistribution, build_distribu
 from app.domain.validation.errors import QueueValidationError
 
 MAX_CYCLE = 600.0               # s
+MIN_APPROACHES = 2
+MAX_APPROACHES = 4
+MAX_CLASSES = 8
+MAX_FIRST_VEHICLE_CV = 3.0
 MAX_PROFILE_BLOCKS = 200
 MAX_INITIAL_QUEUE = 500
 MAX_TRAFFIC_EXPECTED_ARRIVALS = 1_000_000   # Σ λ·T·R entre as duas aproximações (e os planos, nas comparações)
 MAX_SIMULATION_TIME = 86_400.0  # 24 h
 MIN_PLAUSIBLE_HEADWAY = 0.5     # s: abaixo disso o aviso `check_units` lembra de conferir a unidade
 
-APPROACH_KEYS = ("a1", "a2")
+APPROACH_KEYS = ("a1", "a2", "a3", "a4")
 
 
 def pt(n: float) -> str:
@@ -75,6 +83,7 @@ class ArrivalProfile:
     rates: tuple[float, ...]
     end: float | None            # fim do último bloco (None = perfil constante, vale para sempre)
     counts: tuple[int, ...] | None = None   # reprodução de uma sessão: nº de chegadas fixo por bloco (só o instante é sorteado)
+    class_counts: tuple[tuple[int, ...], ...] | None = None   # com classes: por bloco, o nº de chegadas de cada classe
 
     @property
     def constant(self) -> bool:
@@ -103,36 +112,66 @@ class ArrivalProfile:
 
 
 @dataclass(frozen=True)
+class VehicleClass:
+    """Classe de veículo: parcela da demanda (share) e equivalência em carros (factor)."""
+
+    name: str
+    share: float
+    factor: float
+
+
+@dataclass(frozen=True)
 class Approach:
     name: str
     profile: ArrivalProfile
-    headway: ServiceDistribution        # tempo entre veículos consecutivos que cruzam a linha de retenção (s)
+    headway: ServiceDistribution        # intervalo de um carro (fator 1) entre veículos que cruzam a linha de retenção (s)
     first_vehicle_time: float           # ℓ (s): do início do verde até o 1º veículo da fila cruzar a linha de retenção
     amber_usable: float                 # a (s), parte do amarelo em que ainda se cruza
     initial_queue: int                  # veículos já esperando em t = 0
     not_informed: tuple[str, ...] = ()  # parâmetros que o usuário não informou (viraram 0)
+    classes: tuple[VehicleClass, ...] = ()   # vazio = só carros (fator 1)
+    first_vehicle_cv: float = 0.0       # CV de ℓ entre ciclos (lognormal em torno de ℓ); 0 = ℓ constante
+
+    @property
+    def mean_factor(self) -> float:
+        """Equivalência média em carros de um veículo da demanda (1 sem classes)."""
+        return sum(c.share * c.factor for c in self.classes) if self.classes else 1.0
+
+    @property
+    def mean_headway(self) -> float:
+        """Intervalo médio por veículo da mistura: h · fator médio."""
+        return self.headway.mean * self.mean_factor
+
+    @property
+    def headway_cv(self) -> float:
+        """CV do intervalo por veículo da mistura (h independente da classe): E[h²]·E[f²] / (h̄·f̄)² − 1."""
+        h = self.headway
+        second_h = h.variance + h.mean ** 2
+        second_f = sum(c.share * c.factor ** 2 for c in self.classes) if self.classes else 1.0
+        cv2 = second_h * second_f / (h.mean * self.mean_factor) ** 2 - 1.0
+        return math.sqrt(max(cv2, 0.0))
 
 
 @dataclass(frozen=True)
 class Signal:
-    phases: tuple[Phase, Phase]
+    phases: tuple[Phase, ...]
     offset: float                       # s do ciclo já decorridos em t = 0 (0 = o verde da fase 1 começa em t = 0)
     offset_informed: bool = True
 
     @property
     def cycle(self) -> float:
-        return self.phases[0].total + self.phases[1].total
+        return sum(p.total for p in self.phases)
 
     def green_start(self, index: int) -> float:
-        """Instante (do ciclo 0) em que começa o verde da aproximação `index` (0 ou 1)."""
-        shift = 0.0 if index == 0 else self.phases[0].total
+        """Instante (do ciclo 0) em que começa o verde da aproximação `index` (0 a 3)."""
+        shift = sum(p.total for p in self.phases[:index])
         return shift - self.offset
 
 
 @dataclass(frozen=True)
 class Intersection:
     signal: Signal
-    approaches: tuple[Approach, Approach]
+    approaches: tuple[Approach, ...]
     tags: dict = field(default_factory=dict, compare=False)
 
     def effective_green(self, index: int) -> float:
@@ -143,11 +182,11 @@ class Intersection:
         de partida é ℓ − h̄.
         """
         phase, app = self.signal.phases[index], self.approaches[index]
-        return phase.green + app.amber_usable - app.first_vehicle_time + app.headway.mean
+        return phase.green + app.amber_usable - app.first_vehicle_time + app.mean_headway
 
     def capacity(self, index: int) -> float:
         """Capacidade média em veículos/s: (verde efetivo / ciclo) × (1 / intervalo médio)."""
-        return self.effective_green(index) / self.signal.cycle / self.approaches[index].headway.mean
+        return self.effective_green(index) / self.signal.cycle / self.approaches[index].mean_headway
 
     def saturation(self, index: int, horizon: float) -> float:
         """Grau de saturação x = λ médio / capacidade."""
@@ -164,10 +203,11 @@ def build_phase(label: str, values: Mapping[str, object]) -> Phase:
 
 
 def build_signal(phases: object, offset: object | None) -> Signal:
-    if not isinstance(phases, (list, tuple)) or len(phases) != 2:
-        raise QueueValidationError("phases deve ter exatamente 2 fases (uma por aproximação).", "phases")
+    if not isinstance(phases, (list, tuple)) or not MIN_APPROACHES <= len(phases) <= MAX_APPROACHES:
+        raise QueueValidationError(
+            f"phases deve ter de {MIN_APPROACHES} a {MAX_APPROACHES} fases (uma por aproximação).", "phases")
     built = tuple(build_phase(f"phases.{i}", p) for i, p in enumerate(phases))
-    cycle = built[0].total + built[1].total
+    cycle = sum(p.total for p in built)
     if cycle > MAX_CYCLE:
         raise QueueValidationError(f"O ciclo ({cycle:g} s) passa do limite de {MAX_CYCLE:g} s.", "phases")
     if offset is None:
@@ -185,24 +225,98 @@ def build_profile(label: str, lam: object | None, blocks: object | None) -> Arri
         return ArrivalProfile((0.0,), (_real(f"{label}.lambda", lam, positive=True),), None)
     if not isinstance(blocks, (list, tuple)) or not 1 <= len(blocks) <= MAX_PROFILE_BLOCKS:
         raise QueueValidationError(f"{label}.profile deve ter de 1 a {MAX_PROFILE_BLOCKS} blocos.", f"{label}.profile")
-    starts, rates, t = [], [], 0.0
+    starts, rates, counts, t = [], [], [], 0.0
+    with_count = [isinstance(b, Mapping) and b.get("count") is not None for b in blocks]
+    if any(with_count) and not all(with_count):
+        raise QueueValidationError(
+            f"{label}.profile: ou todos os blocos trazem `count` (reproduz as contagens observadas) ou nenhum.", f"{label}.profile")
     for j, block in enumerate(blocks):
         duration = _real(f"{label}.profile.{j}.duration", block.get("duration"), positive=True)
-        rate = _real(f"{label}.profile.{j}.lambda", block.get("lam", block.get("lambda")), nonnegative=True)
+        if with_count[j]:
+            count = block.get("count")
+            if isinstance(count, bool) or not isinstance(count, Integral) or count < 0:
+                raise QueueValidationError(f"{label}.profile.{j}.count deve ser um inteiro maior ou igual a 0.", f"{label}.profile.{j}.count")
+            counts.append(int(count))
+            rate = count / duration
+        else:
+            rate = _real(f"{label}.profile.{j}.lambda", block.get("lam", block.get("lambda")), nonnegative=True)
         starts.append(t)
         rates.append(rate)
         t += duration
     if not any(r > 0 for r in rates):
         raise QueueValidationError(f"{label}.profile precisa ter ao menos um bloco com taxa maior que zero.", f"{label}.profile")
-    return ArrivalProfile(tuple(starts), tuple(rates), t)
+    return ArrivalProfile(tuple(starts), tuple(rates), t, counts=tuple(counts) if counts else None)
+
+
+def build_classes(label: str, classes: object | None) -> tuple[VehicleClass, ...]:
+    """Classes de veículos: nome, parcela da demanda (soma 1) e equivalência em carros. Sem valor padrão."""
+    if classes is None:
+        return ()
+    if not isinstance(classes, (list, tuple)) or not 1 <= len(classes) <= MAX_CLASSES:
+        raise QueueValidationError(f"{label}.classes deve ter de 1 a {MAX_CLASSES} classes.", f"{label}.classes")
+    built, names = [], set()
+    for j, item in enumerate(classes):
+        if not isinstance(item, Mapping):
+            raise QueueValidationError(f"{label}.classes.{j} deve ser um objeto com name, share e factor.", f"{label}.classes.{j}")
+        name = str(item.get("name") or "").strip()[:40]
+        if not name:
+            raise QueueValidationError(f"{label}.classes.{j}.name é obrigatório.", f"{label}.classes.{j}.name")
+        if name.lower() in names:
+            raise QueueValidationError(f"{label}.classes: a classe “{name}” aparece mais de uma vez.", f"{label}.classes.{j}.name")
+        names.add(name.lower())
+        share = _real(f"{label}.classes.{j}.share", item.get("share"), nonnegative=True)
+        factor = _real(f"{label}.classes.{j}.factor", item.get("factor"), positive=True)
+        built.append(VehicleClass(name, share, factor))
+    total = sum(c.share for c in built)
+    if abs(total - 1.0) > 1e-6:
+        raise QueueValidationError(
+            f"{label}.classes: as parcelas (share) somam {total:.6g}, e devem somar 1.", f"{label}.classes")
+    return tuple(built)
+
+
+def _with_class_counts(label: str, prof: ArrivalProfile, blocks: object, classes: tuple[VehicleClass, ...]) -> ArrivalProfile:
+    """Contagens por classe em cada bloco (`class_counts`: nome → nº). Faltando, a divisão sai pelas parcelas (share)."""
+    names = [c.name.lower() for c in classes]
+    table = []
+    for j, block in enumerate(blocks):
+        given = block.get("class_counts")
+        if given is None:
+            raise QueueValidationError(
+                f"{label}.profile.{j}.class_counts é obrigatório quando as classes e as contagens (count) são informadas.",
+                f"{label}.profile.{j}.class_counts")
+        if not isinstance(given, Mapping):
+            raise QueueValidationError(f"{label}.profile.{j}.class_counts deve ser um objeto nome → contagem.", f"{label}.profile.{j}.class_counts")
+        lowered = {str(k).strip().lower(): v for k, v in given.items()}
+        unknown = sorted(set(lowered) - set(names))
+        if unknown:
+            raise QueueValidationError(
+                f"{label}.profile.{j}.class_counts tem classes que não existem em classes: {', '.join(unknown)}.",
+                f"{label}.profile.{j}.class_counts")
+        row = []
+        for name in names:
+            v = lowered.get(name, 0)
+            if isinstance(v, bool) or not isinstance(v, Integral) or v < 0:
+                raise QueueValidationError(
+                    f"{label}.profile.{j}.class_counts.{name} deve ser um inteiro maior ou igual a 0.", f"{label}.profile.{j}.class_counts")
+            row.append(int(v))
+        if sum(row) != prof.counts[j]:
+            raise QueueValidationError(
+                f"{label}.profile.{j}: as contagens por classe somam {sum(row)}, mas count é {prof.counts[j]}.", f"{label}.profile.{j}.count")
+        table.append(tuple(row))
+    return ArrivalProfile(prof.starts, prof.rates, prof.end, prof.counts, tuple(table))
 
 
 def build_approach(
     label: str, name: str, *, lam: object | None, profile: object | None,
     headway: tuple[str, Mapping[str, object]], first_vehicle_time: object | None,
-    amber_usable: object | None, initial_queue: object | None,
+    amber_usable: object | None, initial_queue: object | None, classes: object | None = None,
+    first_vehicle_cv: object | None = None,
 ) -> Approach:
     prof = build_profile(label, lam, profile)
+    built_classes = build_classes(label, classes)
+    if prof.counts is not None and built_classes:
+        prof = _with_class_counts(label, prof, profile, built_classes)
+
     try:
         dist = build_distribution(headway[0], headway[1])
     except QueueValidationError as error:
@@ -228,11 +342,21 @@ def build_approach(
         if initial_queue > MAX_INITIAL_QUEUE:
             raise QueueValidationError(f"{label}.initial_queue passa do limite de {MAX_INITIAL_QUEUE} veículos.", f"{label}.initial_queue")
         n0 = int(initial_queue)
-    return Approach(name, prof, dist, ell, amber, n0, tuple(missing))
+    cv_ell = 0.0
+    if first_vehicle_cv is not None:
+        cv_ell = _real(f"{label}.first_vehicle_cv", first_vehicle_cv, nonnegative=True)
+        if cv_ell > MAX_FIRST_VEHICLE_CV:
+            raise QueueValidationError(
+                f"{label}.first_vehicle_cv deve ser no máximo {MAX_FIRST_VEHICLE_CV:g} (0 = ℓ constante).", f"{label}.first_vehicle_cv")
+    return Approach(name, prof, dist, ell, amber, n0, tuple(missing), built_classes, cv_ell)
 
 
-def build_intersection(signal: Signal, approaches: tuple[Approach, Approach]) -> Intersection:
+def build_intersection(signal: Signal, approaches: tuple[Approach, ...]) -> Intersection:
     """Confere as combinações entre sinal e aproximações (o amarelo utilizável cabe no amarelo, o verde efetivo > 0)."""
+    if len(approaches) != len(signal.phases):
+        raise QueueValidationError(
+            f"O plano tem {len(signal.phases)} fases e {len(approaches)} aproximações: deve haver uma aproximação por fase.",
+            "approaches")
     for i, (phase, app) in enumerate(zip(signal.phases, approaches)):
         key = f"approaches.{i}"
         if app.amber_usable > phase.amber:

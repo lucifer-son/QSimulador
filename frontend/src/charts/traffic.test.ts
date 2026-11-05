@@ -21,7 +21,7 @@ describe("gráficos do cruzamento", () => {
     expect(t[2].line.dash).toBe("solid");
     expect(t[5].line.dash).toBe("dash");              // não depende só da cor
     expect(t[1].fill).toBe("tonexty");
-    expect(t[0].y).toEqual(sim.series!.a1.ci_high);
+    expect(t[0].y).toEqual(sim.series!.a1!.ci_high);
     expect(approachColor(colors, "a1")).toBe(colors.accent);
     expect(approachColor(colors, "a2")).not.toBe(colors.accent);
   });
@@ -51,7 +51,7 @@ describe("gráficos do cruzamento", () => {
 
   it("validação: faixa simulada, média e os pontos observados por intervalo", () => {
     const v = fx.trafficVideoValidate as unknown as VideoValidation;
-    const a = v.approaches.a1;
+    const a = v.approaches.a1!;
     const q = traces(validationQueueChart(a, "A", "#378ADD", colors));
     expect(q.map((x) => x.name).filter(Boolean)).toEqual(["Faixa simulada", "Simulado (média)", "Observado"]);
     expect(q[3].mode).toBe("markers");

@@ -1,16 +1,16 @@
-import type {
-  ApproachKey, CompareResult, PlanRow, QueueSeries, SweepResult, ValidationApproach,
-} from "../api/traffic";
+import { keysOf, type ApproachKey, type CompareResult, type PlanRow, type QueueSeries, type SweepResult, type ValidationApproach } from "../api/traffic";
 import type { ThemeColors } from "../hooks/useThemeColors";
 
-/** Gráficos do cruzamento semaforizado (Fase 13.1): funções puras que devolvem { data, layout } para o Plotly. */
+/** Gráficos do cruzamento semaforizado (Fases 13.1 e 13.2): funções puras que devolvem { data, layout } para o Plotly. */
 
 export interface Chart { data: object[]; layout: object }
 
 const A1_FALLBACK = "#378ADD";
+const OTHER_COLORS: Record<Exclude<ApproachKey, "a1">, string> = { a2: "#D85A30", a3: "#1D9E75", a4: "#8B5CF6" };
+const DASH: Record<ApproachKey, string> = { a1: "solid", a2: "dash", a3: "dot", a4: "dashdot" };
 
-/** Cor de cada aproximação: o destaque do tema e uma segunda cor distinta (sem depender só de cor: formas e nomes). */
-export const approachColor = (colors: ThemeColors, key: ApproachKey): string => (key === "a1" ? colors.accent || A1_FALLBACK : "#D85A30");
+/** Cor de cada aproximação: o destaque do tema e outras cores distintas (sem depender só de cor: traços e nomes). */
+export const approachColor = (colors: ThemeColors, key: ApproachKey): string => (key === "a1" ? colors.accent || A1_FALLBACK : OTHER_COLORS[key]);
 
 function baseLayout(colors: ThemeColors, xTitle: string, yTitle: string, extra: object = {}): object {
   const axis = (title: string) => ({
@@ -21,6 +21,7 @@ function baseLayout(colors: ThemeColors, xTitle: string, yTitle: string, extra: 
     height: 340, margin: { l: 56, r: 16, t: 16, b: 52 },
     paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
     font: { color: colors.text, family: "inherit" },
+    hoverlabel: { bgcolor: colors.surface, bordercolor: colors.border, font: { color: colors.text, family: "inherit", size: 12 } },
     xaxis: axis(xTitle), yaxis: { ...axis(yTitle), rangemode: "tozero" },
     legend: { orientation: "h", y: -0.25, font: { size: 11 } },
     hovermode: "x unified",
@@ -36,16 +37,23 @@ const rgba = (hex: string, alpha: number): string => {
 };
 
 /** Fila de cada aproximação ao longo do tempo: média das réplicas e IC da média. */
-export function queueSeriesChart(series: QueueSeries, names: Record<ApproachKey, string>, colors: ThemeColors): Chart {
+export function queueSeriesChart(series: QueueSeries, names: Partial<Record<ApproachKey, string>>, colors: ThemeColors): Chart {
   const minutes = series.times.map((t) => t / 60);
   const data: object[] = [];
-  for (const key of ["a1", "a2"] as ApproachKey[]) {
+  const reference = series.a1?.mean;
+  for (const key of keysOf(series)) {
     const color = approachColor(colors, key);
-    const band = series[key];
+    const band = series[key]!;
     data.push(
       { x: minutes, y: band.ci_high, type: "scatter", mode: "lines", line: { width: 0 }, hoverinfo: "skip", showlegend: false },
       { x: minutes, y: band.ci_low, type: "scatter", mode: "lines", line: { width: 0 }, fill: "tonexty", fillcolor: rgba(color, 0.18), hoverinfo: "skip", showlegend: false },
-      { x: minutes, y: band.mean, type: "scatter", mode: "lines", name: names[key], line: { color, width: 2, dash: key === "a1" ? "solid" : "dash" } },
+      {
+        x: minutes, y: band.mean, type: "scatter", mode: "lines",
+        name: names[key] ?? `Aproximação ${key.slice(1)}`,
+        line: { color, width: 2, dash: DASH[key] },
+        customdata: minutes.map((_, i) => [band.ci_low[i], band.ci_high[i], reference ? band.mean[i] - reference[i] : null]),
+        hovertemplate: "Fila média: %{y:.2f} veículos<br>IC 95%: %{customdata[0]:.2f}–%{customdata[1]:.2f} veículos<br>Diferença vs. Aproximação 1: %{customdata[2]:+.2f} veículos<extra></extra>",
+      },
     );
   }
   return { data, layout: baseLayout(colors, "Tempo (min)", "Fila (veículos)") };
@@ -72,7 +80,8 @@ export function planDelayChart(result: CompareResult, colors: ThemeColors): Char
 /** Curva do atraso pela divisão do verde (ciclo fixo), com IC, a referência de Webster e o ponto de menor atraso. */
 export function sweepChart(result: SweepResult, colors: ThemeColors): Chart {
   const pts = result.points;
-  const x = pts.map((p) => p.green[0]);
+  const [fa, fb] = result.pair ?? [1, 2];
+  const x = pts.map((p) => p.green[fa - 1]);
   const mean = pts.map((p) => p.intersection.delay_censored?.mean ?? null);
   const hi = pts.map((p) => { const d = p.intersection.delay_censored; return d?.ci_high != null ? d.ci_high - d.mean : 0; });
   const lo = pts.map((p) => { const d = p.intersection.delay_censored; return d?.ci_low != null ? d.mean - d.ci_low : 0; });
@@ -83,10 +92,10 @@ export function sweepChart(result: SweepResult, colors: ThemeColors): Chart {
       { x, y: mean, type: "scatter", mode: "lines+markers", name: "Simulação (IC)", line: { color: accent, width: 2 }, marker: { size: 6 },
         error_y: { type: "data", symmetric: false, array: hi, arrayminus: lo, color: colors.textSecondary, thickness: 1.2, width: 3 } },
       { x, y: pts.map((p) => p.reference_delay), type: "scatter", mode: "lines", name: "Referência analítica (aprox.)", line: { color: colors.textMuted, width: 1.5, dash: "dot" } },
-      { x: [best.green[0]], y: [best.intersection.delay_censored?.mean ?? null], type: "scatter", mode: "markers", name: "Menor atraso",
+      { x: [best.green[fa - 1]], y: [best.intersection.delay_censored?.mean ?? null], type: "scatter", mode: "markers", name: "Menor atraso",
         marker: { symbol: "diamond", size: 13, color: colors.danger, line: { color: colors.text, width: 1 } } },
     ],
-    layout: baseLayout(colors, "Verde da fase 1 (s) — o da fase 2 é o resto do ciclo", "Atraso médio do cruzamento (s)", { hovermode: "closest" }),
+    layout: baseLayout(colors, `Verde da fase ${fa} (s) — o da fase ${fb} é o resto dos dois`, "Atraso médio do cruzamento (s)", { hovermode: "closest" }),
   };
 }
 

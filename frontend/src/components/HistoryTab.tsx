@@ -20,7 +20,7 @@ import { ScenariosView } from "./ScenariosView";
 import { SizingResultView } from "./SizingTab";
 import { SweepResult } from "./SweepPanel";
 import { RealDataResults } from "./RealDataTab";
-import { TrafficCompareView, TrafficSimulationView, TrafficSweepView, TrafficValidationView } from "./TrafficViews";
+import { TrafficCompareView, TrafficSimulationView, TrafficSweepView, TrafficValidationView, validationIds } from "./TrafficViews";
 
 const PAGE = 20;
 
@@ -64,8 +64,8 @@ function TrafficView({ snapshot }: { snapshot: TrafficSnapshot }) {
   if (snapshot.type === "simulate") return <TrafficSimulationView result={snapshot.result} />;
   if (snapshot.type === "compare") return <TrafficCompareView data={snapshot.result} />;
   if (snapshot.type === "sweep") return <TrafficSweepView data={snapshot.result} />;
-  const { a1, a2 } = snapshot.result.approaches;
-  return <TrafficValidationView result={snapshot.result} ids={{ a1: a1.approach_id, a2: a2.approach_id }} />;
+  const ids = validationIds(snapshot.result);
+  return <TrafficValidationView result={snapshot.result} ids={ids} />;
 }
 
 function ExperimentView({ snapshot }: { snapshot: ExperimentSnapshot }) {

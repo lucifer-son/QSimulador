@@ -10,7 +10,7 @@ from app.traffic.run import RunResult, Settings
 
 def approach_info(inter: Intersection, settings: Settings) -> list[dict]:
     out = []
-    for i, key in enumerate(APPROACH_KEYS):
+    for i, key in enumerate(APPROACH_KEYS[:len(inter.approaches)]):
         app = inter.approaches[i]
         out.append({
             "key": key, "name": app.name,
@@ -18,9 +18,11 @@ def approach_info(inter: Intersection, settings: Settings) -> list[dict]:
             "capacity": inter.capacity(i), "effective_green": inter.effective_green(i),
             "arrival_rate": app.profile.mean_rate(settings.simulation_time),
             "headway": app.headway.describe(),
-            "first_vehicle_time": app.first_vehicle_time, "amber_usable": app.amber_usable,
+            "first_vehicle_time": app.first_vehicle_time, "first_vehicle_cv": app.first_vehicle_cv, "amber_usable": app.amber_usable,
             "initial_queue": app.initial_queue, "not_informed": list(app.not_informed),
             "profile_blocks": len(app.profile.rates),
+            "classes": [{"name": c.name, "share": c.share, "factor": c.factor} for c in app.classes],
+            "mean_factor": app.mean_factor, "mean_headway": app.mean_headway,
         })
     return out
 
@@ -36,7 +38,7 @@ def simulate_report(inter: Intersection, settings: Settings, result: RunResult) 
         "alerts": alerts_of(inter, settings.simulation_time),
         "metrics": {
             "x": {m: asdict(s) if s else None for m, s in result.intersection.items()},
-            **{k: {m: asdict(s) if s else None for m, s in result.approaches[k].items()} for k in APPROACH_KEYS},
+            **{k: {m: asdict(s) if s else None for m, s in result.approaches[k].items()} for k in APPROACH_KEYS[:len(inter.approaches)]},
         },
         "reference": reference(inter, settings.simulation_time),
         "series": result.series,

@@ -461,16 +461,16 @@ curl.exe -N -X POST http://127.0.0.1:8000/api/analysis/fit `
 
 Na interface: no Laboratório, depois de calcular, a aba **Distribuições** mostra os três gráficos (o losango é a configuração atual; há escala logarítmica e a opção "Conferir com a simulação"). O menu **Ajustar distribuição** recebe a amostra colada (um valor por linha, vírgula decimal aceita) ou importada de um CSV ou TXT (primeira coluna; cabeçalho ignorado), mostra o histograma com as curvas das candidatas, a tabela (menor AIC marcado, p-valor ± erro de Monte Carlo) e a sugestão de modelo, e salva o ajuste no histórico (tipo `fit`; a amostra não é guardada, e a semente reproduz o p-valor).
 
-### Cruzamento semaforizado (Fase 13.1)
+### Cruzamento semaforizado (Fases 13.1 e 13.2)
 
-Simula um cruzamento de **ciclo fixo com duas fases** em que as duas aproximações dividem o mesmo ciclo: o verde de uma é o vermelho da outra. Tempos em **segundos** e taxas em **veículos por segundo** na API (a interface usa veículos por minuto).
+Simula um cruzamento de **ciclo fixo com 2 a 4 fases** (uma aproximação por fase) em que as aproximações dividem o mesmo ciclo: o verde de uma é o vermelho das outras. Tempos em **segundos** e taxas em **veículos por segundo** na API (a interface usa veículos por minuto).
 
 **O modelo**
 
-- Cada aproximação é uma fila FIFO única (as faixas são agregadas na linha de retenção). As duas só se acoplam pelo ciclo.
+- Cada aproximação é uma fila FIFO única (as faixas são agregadas na linha de retenção). As filas só se acoplam pelo ciclo. A aproximação i é atendida na fase i; para um cruzamento com mais de duas fases (conversão protegida, terceira via), cada movimento com verde próprio é uma aproximação (veja “Fase 13.2” abaixo).
 - Em cada verde, o 1º veículo da fila cruza **ℓ** segundos depois do início do verde e cada seguinte, um intervalo **h** depois do anterior (h segue uma das distribuições da Fase 9). A descarga vale até o fim do verde mais o **amarelo utilizável**. Quem chega ao verde aberto sem ninguém à frente cruza na hora.
 - As chegadas são de Poisson, com taxa constante (`lambda`) ou constante por blocos (`profile`: lista de `{duration, lambda}` a partir de t = 0). `offset` diz quantos segundos do ciclo já tinham passado em t = 0 (0 = o verde da fase 1 começa em t = 0).
-- **Premissas e limites:** sem conversões, pedestres, ônibus, bloqueio do cruzamento por fila que invade a outra aproximação, semáforo atuado nem coordenação entre cruzamentos.
+- **Premissas e limites:** movimentos protegidos (sem conversões permitidas em conflito), sem pedestres, bloqueio do cruzamento por fila que invade outra aproximação, semáforo atuado, chegadas em pelotão vindas de semáforos a montante nem coordenação entre cruzamentos. Motos e ônibus entram como **classes de veículos** com fator de equivalência em carros (Fase 13.2).
 - **Sem valor padrão silencioso:** o intervalo h é obrigatório (`approaches.i.headway`). ℓ (`first_vehicle_time`), o amarelo utilizável (`amber_usable`), a fila inicial (`initial_queue`) e o `offset`, se omitidos (ou `null`), valem 0 e o resultado traz um aviso `not_informed` para cada um. Meça-os no vídeo.
 
 **Simular** (um plano, com réplicas e IC):
@@ -483,7 +483,7 @@ curl.exe -X POST http://127.0.0.1:8000/api/traffic/simulate `
 
 Os valores acima são **hipotéticos**, só para conhecer a rota; não são medições de nenhum cruzamento.
 
-A resposta traz `plan`, `approaches` (grau de saturação x, capacidade, intervalo), `alerts`, `metrics` (`x` = cruzamento, `a1`, `a2`; cada métrica com `mean`, `std`, `ci_low`, `ci_high`, `n`), `reference` (aproximação analítica) e `series` (fila ao longo do tempo).
+A resposta traz `plan`, `approaches` (grau de saturação x, capacidade, intervalo), `alerts`, `metrics` (`x` = cruzamento, `a1` a `a4`; cada métrica com `mean`, `std`, `ci_low`, `ci_high`, `n`), `reference` (aproximação analítica) e `series` (fila ao longo do tempo).
 
 | Métrica | O que é |
 | --- | --- |
@@ -491,7 +491,8 @@ A resposta traz `plan`, `approaches` (grau de saturação x, capacidade, interva
 | `delay_censored` | Atraso médio **com os pendentes**: quem ainda espera em T entra contado só até T (limite inferior). Se a fila está crescendo, `delay` parece melhor do que a realidade; olhe sempre os dois. |
 | `queue_mean`, `queue_max`, `queue_end` | Fila média no tempo, máxima e ao fim (inclui a fila inicial). |
 | `throughput` | Veículos que cruzam por segundo. |
-| `stopped_fraction` | Fração dos veículos que esperou (atraso > 0). |
+| `throughput_ceq` | Vazão em carros equivalentes: cada veículo que cruza vale o fator da sua classe (igual a `throughput` sem classes). |
+| `stopped_fraction` | Fração dos veículos que **esperou** (atraso > 0). Inclui quem esperou só o intervalo do veículo da frente e quem ainda espera em T; **não** é a contagem visual de “veículos parados”. |
 | `overflow_cycles` | Fração dos ciclos que terminam o verde com fila (falha de ciclo). |
 | `arrivals`, `departures`, `pending` | Chegadas e saídas na janela de medição e pendentes ao fim. |
 
@@ -515,7 +516,7 @@ curl.exe -N -X POST http://127.0.0.1:8000/api/traffic/compare `
 
 Cada plano troca só as durações informadas (`green`, `amber`, `all_red`; `null` mantém a fase). Todos usam as **mesmas chegadas e os mesmos intervalos** (números aleatórios comuns), e cada diferença sai com IC t pareado e veredito `higher`, `lower` ou `inconclusive`. `inconclusive` não quer dizer igual: as réplicas feitas não bastam para distinguir. `bonferroni: true` corrige o nível pelo número de planos. Se o plano muda o ciclo, aparece `cycle_changed`: a diferença mistura a redistribuição do verde com a mudança da capacidade total.
 
-**Varrer o verde** (NDJSON com `start`, um `point` por divisão e `done`): mantém o ciclo (verde 1 + verde 2 constante) e informe o verde mínimo de cada fase e o passo. O verde mínimo é uma restrição de segurança e **não tem valor padrão**.
+**Varrer o verde** (NDJSON com `start`, um `point` por divisão e `done`): mantém o ciclo (soma dos dois verdes varridos constante) e informe o verde mínimo das duas fases varridas e o passo. Com mais de duas fases, `pair` (1 a 4, padrão `[1, 2]`) diz quais duas fases trocam verde; as demais não mudam. O verde mínimo é uma restrição de segurança e **não tem valor padrão**.
 
 ```powershell
 curl.exe -N -X POST http://127.0.0.1:8000/api/traffic/sweep `
@@ -546,11 +547,46 @@ curl.exe -X POST http://127.0.0.1:8000/api/traffic/video/estimate `
 
 A estimação devolve: o plano (verde, amarelo e todo-vermelho médios de cada fase, ciclo com desvio e `offset`; `not_fixed_time` se o ciclo variar); a taxa de chegada por intervalo e por bloco, com IC de Poisson; ℓ e h; e `suggested`, um corpo pronto para `/simulate` (o que não foi estimado vai como `null`). ℓ e h vêm de uma reta ajustada em todos os verdes saturados: o instante do n-ésimo veículo depois do início do verde = ℓ + (n − 1)·h, usando só os primeiros `core` veículos de cada verde e só verdes completos. Os critérios `max_headway` (padrão 4 s), `min_run` (5), `core` (8) e `profile_block` (900 s) **não são dados medidos**: definem o que conta como descarga saturada e voltam em `method`.
 
-`/video/validate` recebe os mesmos arquivos e o campo `config` (o corpo do `/simulate` sem as chegadas), simula o plano observado e compara, por intervalo, a fila no fim e as saídas simuladas com as observadas: viés, erro médio absoluto, RMSE e `coverage` (fração dos pontos observados dentro da faixa central das réplicas). **Não há teste de hipótese nem limite de aprovação**: os números dizem o quanto o modelo reproduz o observado, e a decisão é de quem analisa. Na validação, o **número** de chegadas de cada intervalo é o observado e só o instante dentro dele é sorteado (usar a contagem de cada minuto como taxa de um novo Poisson sortearia a contagem duas vezes e inflaria o atraso).
+`/video/validate` recebe os mesmos arquivos e o campo `config` (o corpo do `/simulate` sem as chegadas), simula o plano observado e compara, por intervalo, a fila no fim e as saídas simuladas com as observadas: viés, erro médio absoluto, RMSE e `coverage` (fração dos pontos observados dentro da faixa central das réplicas). **Não há limite de aprovação**: os números dizem o quanto o modelo reproduz o observado, e a decisão é de quem analisa. Desde a Fase 13.2 a resposta traz também testes de hipótese (veja abaixo). Na validação, o **número** de chegadas de cada intervalo é o observado e só o instante dentro dele é sorteado (usar a contagem de cada minuto como taxa de um novo Poisson sortearia a contagem duas vezes e inflaria o atraso).
 
 Limites: ciclo de até 600 s, tempo simulado de até 24 h, até 200 blocos de chegada, 10 planos, 40 pontos de varredura, fila inicial de até 500 veículos e 1.000.000 de veículos esperados somando réplicas e planos. Arquivo acima de 10 MiB: HTTP 413.
 
 Na interface, a aba **Cruzamento** tem quatro modos (Simular, Comparar planos, Varrer o verde e Dados do vídeo). O botão "Carregar exemplo ilustrativo" usa valores hipotéticos; os campos medidos no vídeo começam vazios. Em Dados do vídeo, "Usar no formulário" leva o plano, o offset, o perfil por blocos e o que foi medido para o formulário, e "Validar o modelo com as contagens" mostra a fila e as saídas simuladas sobre as observadas. Os resultados podem ser salvos no histórico (tipo `traffic`) e exportados em CSV.
+
+### Fase 13.2: mais fases, classes de veículos, testes de hipótese e sessões
+
+A Fase 13.2 fecha as limitações apontadas na avaliação da 13.1. **Nada disso muda os resultados de quem usa duas fases sem classes**: as sementes de antes dão os mesmos números.
+
+**2 a 4 fases.** `phases` e `approaches` têm o mesmo tamanho (2 a 4), e a aproximação i é atendida na fase i. As respostas ganham `a3` e `a4` (métricas, referência, série, saturação). Em `/compare`, cada plano traz um item por fase em `phases` (`null` mantém a fase). No `/video/estimate` e no `/video/validate`, `approach_ids` lista de 2 a 4 aproximações **na ordem das fases**; se os verdes do vídeo não seguirem essa ordem, aparece o aviso `phase_order`, e se as fases não somarem o ciclo medido, `cycle_mismatch` (uma fase do vídeo está sem aproximação).
+
+**Classes de veículos (carro, moto, ônibus...).** Em cada aproximação, `classes` é uma lista de `{name, share, factor}`: a parcela da demanda (somam 1) e a **equivalência em carros**, que **não tem valor padrão**: quem conhece o cruzamento informa. O `headway` passa a ser o intervalo de **um carro** (fator 1); o veículo de uma classe deixa a linha ocupada por h × fator. Com classes, a capacidade usa o intervalo médio da mistura, e `throughput_ceq` mostra a vazão em carros equivalentes.
+
+No vídeo, a coluna opcional `vehicle_class` vai nas contagens (**uma linha por intervalo, aproximação e classe**; informe 0 quando não houve veículo) e, se quiser, nos cruzamentos. Os fatores vão no campo `class_factors` (JSON `{"carro": 1, "moto": 0.35, "ônibus": 2.2}`); sem ele, a API recusa os arquivos e nomeia as classes. Com classes, ℓ e h saem **por carro equivalente**: a reta de descarga usa o fator acumulado dos veículos que passaram antes. Sem `vehicle_class` nos cruzamentos, usa-se o fator médio das contagens (e a resposta avisa).
+
+**Reproduzir as contagens observadas.** Em `profile`, cada bloco pode trazer `count` (inteiro) no lugar de `lambda`: o número de chegadas do bloco é fixo e só o instante é sorteado (todos os blocos ou nenhum). Com classes, `class_counts` (`{nome: n}`) dá a contagem de cada classe. Vale para `/simulate`, `/compare` e `/sweep`: os planos alternativos enfrentam exatamente as chegadas filmadas. A resposta de `/video/estimate` traz o corpo pronto em `suggested.replay`.
+
+**ℓ variável.** `first_vehicle_cv` (0 a 3; vazio = constante) é o CV de ℓ entre ciclos (lognormal em torno de ℓ). A estimação do vídeo sugere o valor medido (`first_vehicle_time.cv`).
+
+**Amarelo utilizável como intervalo.** A estimação devolve `value` (o maior amarelo com cruzamento observado, um limite inferior) e `upper` (value + h): o valor real fica entre os dois.
+
+**Capacidade ajustada.** `reference.aX.capacity_adjusted` e `vehicles_per_cycle` usam a teoria de renovação: g_e / h̄ + (CV² − 1) / 2 veículos por ciclo (com h determinístico, ⌊(janela − ℓ) / h⌋ + 1). A capacidade nominal (HCM) continua sendo a de x e de Webster; a ajustada mostra o quanto ela é otimista com h variável.
+
+**Testes de hipótese na validação.** `/video/validate` devolve, por aproximação, `tests` com estatística, p-valor, p ajustado por Holm e decisão:
+
+| Teste (`id`) | O que testa |
+| --- | --- |
+| `gof_queue`, `gof_departures` | Aderência da fila e das saídas por intervalo (Monte Carlo): o observado é mais um sorteio do modelo? |
+| `bias_queue`, `bias_departures` | Viés com sinal (observado − média simulada), com mais poder que a aderência |
+| `ks_delay`, `mw_delay` | Só com `trajectories`: Kolmogorov–Smirnov e Mann–Whitney entre o atraso observado e o simulado |
+| `tost_delay`, `tost_departures` | **Equivalência**: só roda se você informar `tolerance_delay` (s) e `tolerance_departures` (fração do total observado). Sem tolerância padrão |
+
+Como ler: “rejeitado” indica que o modelo não reproduz aquele aspecto; “não rejeitado” **não prova** que o modelo está certo (pode faltar poder); só “equivalente” afirma que a diferença cabe na tolerância. A amostra de atrasos observada pode excluir os veículos mais lentos. O p-valor de Monte Carlo só vai até 1/(R + 1) e o Holm o multiplica pelo número de testes, então a validação roda **199 réplicas** (acima do teto de 100 do resto do sistema) quando o tamanho do trabalho permite, e devolve em `settings.replications` quantas rodou (`requested_replications` guarda o que você pediu). A validação também deixou de usar uma taxa fictícia para checar o tamanho do trabalho: sessões longas (mais de 4,6 h com 30 réplicas) não são mais recusadas.
+
+`POST /api/traffic/video/validate/export.csv` aceita o mesmo multipart e devolve o CSV (resumo dos erros, intervalo a intervalo e testes). Mande a `seed` da resposta para o CSV bater com a tela.
+
+**Duas sessões lado a lado (manhã × tarde).** `POST /api/traffic/video/sessions/compare` recebe duas respostas de `/video/estimate` (`a`, `b`, `label_a`, `label_b`) e devolve uma tabela com ciclo, fases, taxa de chegada (teste binomial exato, com razão e IC), ℓ, h e amarelo utilizável, com a diferença e um p-valor quando dá para calcular. A tabela é descritiva: os p-valores não são corrigidos entre linhas, e o teste das chegadas supõe Poisson. `/video/sessions/compare/export.csv` devolve a mesma tabela em CSV. Na interface, use “Guardar como sessão A/B” na aba Dados do vídeo.
+
+**O que continua fora do modelo:** chegadas em pelotão vindas de semáforos a montante, bloqueio do cruzamento por fila de outra via, semáforo atuado, pedestres e conversões em conflito. Eles ficam documentados como limites, e o `cycle_mismatch` avisa quando o vídeo contradiz as premissas de fases.
 
 ### Erros da API
 

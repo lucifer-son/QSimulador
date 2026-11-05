@@ -7,6 +7,7 @@ export interface ThemeColors {
   border: string;
   accent: string;
   danger: string;
+  surface: string;
 }
 
 const VARS: Record<keyof ThemeColors, string> = {
@@ -16,6 +17,7 @@ const VARS: Record<keyof ThemeColors, string> = {
   border: "--border",
   accent: "--chart-accent",
   danger: "--chart-danger",
+  surface: "--surface-2",
 };
 
 function read(): ThemeColors {

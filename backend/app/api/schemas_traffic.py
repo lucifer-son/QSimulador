@@ -1,4 +1,4 @@
-"""Esquemas da API do cruzamento semaforizado (/api/traffic, Fase 13.1).
+"""Esquemas da API do cruzamento semaforizado (/api/traffic, Fases 13.1 e 13.2).
 
 Tempos em segundos, taxas em veículos por segundo. Os resultados são documentados de forma resumida
 (`dict`); o formato completo está descrito em docs/como-executar.md e nos exemplos das rotas.
@@ -32,7 +32,17 @@ class BlockIn(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     duration: StrictFloat = Field(description="Duração do bloco (s).")
-    lam: StrictFloat = Field(alias="lambda", description="Taxa de chegada no bloco (veículos/s). Pode ser 0.")
+    lam: StrictFloat | None = Field(default=None, alias="lambda", description="Taxa de chegada no bloco (veículos/s). Pode ser 0. Omitida quando o bloco traz `count`.")
+    count: StrictInt | None = Field(
+        default=None, description="Reproduz uma sessão: nº fixo de chegadas no bloco (só o instante é sorteado). Todos os blocos ou nenhum.")
+    class_counts: dict[str, StrictInt] | None = Field(
+        default=None, description="Com `count` e `classes`: chegadas de cada classe no bloco (nome → nº; a soma é `count`).")
+
+
+class ClassIn(BaseModel):
+    name: str = Field(description="Nome da classe (carro, moto, ônibus...).")
+    share: StrictFloat = Field(description="Parcela da demanda (as parcelas somam 1).")
+    factor: StrictFloat = Field(description="Equivalência em carros: quanto de linha de retenção o veículo ocupa em relação a um carro. Sem valor padrão.")
 
 
 class ApproachIn(BaseModel):
@@ -44,25 +54,31 @@ class ApproachIn(BaseModel):
     headway: ServiceSpec = Field(description="Intervalo entre veículos que cruzam a linha de retenção (s), medido no vídeo. Sem valor padrão.")
     first_vehicle_time: StrictFloat | None = Field(
         default=None, description="ℓ: segundos do início do verde até o 1º veículo da fila cruzar. Não informado → 0, com aviso.")
+    first_vehicle_cv: StrictFloat | None = Field(
+        default=None, description="CV de ℓ entre ciclos (a partida varia de um verde para outro). Não informado ou 0 → ℓ constante.")
     amber_usable: StrictFloat | None = Field(default=None, description="Segundos do amarelo em que ainda se cruza. Não informado → 0, com aviso.")
     initial_queue: StrictInt | None = Field(default=None, description="Veículos já esperando em t = 0. Não informado → 0, com aviso.")
+    classes: list[ClassIn] | None = Field(
+        default=None, description="Classes de veículos (até 8). `headway` passa a ser o intervalo de um carro; cada veículo ocupa h · fator da sua classe.")
 
     def spec(self) -> dict:
         return {
             "name": self.name, "lam": self.lam,
-            "profile": None if self.profile is None else [{"duration": b.duration, "lam": b.lam} for b in self.profile],
+            "profile": None if self.profile is None else [
+                {"duration": b.duration, "lam": b.lam, "count": b.count, "class_counts": b.class_counts} for b in self.profile],
+            "classes": None if self.classes is None else [{"name": c.name, "share": c.share, "factor": c.factor} for c in self.classes],
             "headway": (self.headway.distribution, self.headway.service_values()),
-            "first_vehicle_time": self.first_vehicle_time, "amber_usable": self.amber_usable, "initial_queue": self.initial_queue,
+            "first_vehicle_time": self.first_vehicle_time, "first_vehicle_cv": self.first_vehicle_cv, "amber_usable": self.amber_usable, "initial_queue": self.initial_queue,
         }
 
 
 class CrossingIn(BaseModel):
-    """O cruzamento: ciclo de duas fases e as duas aproximações."""
+    """O cruzamento: ciclo de 2 a 4 fases e uma aproximação por fase."""
 
-    phases: list[PhaseIn] = Field(description="Exatamente 2 fases: a da aproximação 1 e a da aproximação 2.")
+    phases: list[PhaseIn] = Field(description="De 2 a 4 fases em sequência: a fase i atende a aproximação i.")
     offset: StrictFloat | None = Field(
         default=None, description="Segundos do ciclo já decorridos em t = 0 (0 = o verde da fase 1 começa em t = 0). Não informado → 0, com aviso.")
-    approaches: list[ApproachIn] = Field(description="Exatamente 2 aproximações.")
+    approaches: list[ApproachIn] = Field(description="Uma aproximação por fase (2 a 4).")
 
     def spec(self) -> dict:
         return {"phases": [p.model_dump() for p in self.phases], "offset": self.offset, "approaches": [a.spec() for a in self.approaches]}
@@ -82,7 +98,7 @@ class SimulateRequest(CrossingIn, RunIn):
 
 class PlanIn(BaseModel):
     name: str | None = Field(default=None, description="Nome exibido (até 60 caracteres). Padrão: Plano n.")
-    phases: list[PhasePatch | None] = Field(description="2 itens: o que trocar na fase 1 e na fase 2 (null mantém a fase).")
+    phases: list[PhasePatch | None] = Field(description="Um item por fase: o que trocar nela (null mantém a fase).")
 
 
 class CompareRequest(CrossingIn, RunIn):
@@ -92,7 +108,8 @@ class CompareRequest(CrossingIn, RunIn):
 
 
 class SweepRequest(CrossingIn, RunIn):
-    min_green: list[StrictFloat] = Field(description="Verde mínimo de cada fase (s), definido por quem conhece a segurança do cruzamento. Sem valor padrão.")
+    min_green: list[StrictFloat] = Field(description="Verde mínimo das duas fases varridas (s), definido por quem conhece a segurança do cruzamento. Sem valor padrão.")
+    pair: list[StrictInt] | None = Field(default=None, description="As duas fases (1 a 4) cujo verde é redistribuído. Padrão: 1 e 2.")
     step: StrictFloat = Field(description="Passo da varredura (s). Até 40 pontos.")
 
 
@@ -145,3 +162,25 @@ class VideoValidationOut(BaseModel):
     approaches: dict[str, Any]
     settings: dict[str, Any]
     notes: list[str]
+
+
+class SessionsCompareRequest(BaseModel):
+    """Duas respostas de /video/estimate (por exemplo, manhã e tarde)."""
+
+    a: dict[str, Any] = Field(description="Resposta de /video/estimate da primeira sessão.")
+    b: dict[str, Any] = Field(description="Resposta de /video/estimate da segunda sessão.")
+    label_a: str = Field(default="Sessão A", max_length=40)
+    label_b: str = Field(default="Sessão B", max_length=40)
+    confidence_level: StrictFloat = Field(default=0.95, description="Nível dos ICs da razão de taxas.")
+
+
+class SessionsCompareOut(BaseModel):
+    """Linhas de comparação (grupo, grandeza, valores, diferença, p-valor), as sessões e observações."""
+
+    model_config = ConfigDict(extra="allow")
+
+    labels: list[str]
+    level: float
+    rows: list[dict[str, Any]]
+    notes: list[str]
+    sessions: list[dict[str, Any]]

@@ -4,7 +4,7 @@ Laboratório interativo de modelagem, simulação e análise de sistemas de fila
 
 Este documento especifica os **requisitos funcionais (RF)** e **não funcionais (RNF)** do sistema e os relaciona aos [Casos de Uso](casos-de-uso.md) e às [Histórias de Usuário](historias-de-usuario.md). Para instruções de execução, veja [`como-executar.md`](como-executar.md).
 
-**Versão:** 1.11 (Fase 13.1: Cruzamento semaforizado)
+**Versão:** 1.12 (Fase 13.2: Cruzamento com 2 a 4 fases, classes de veículos e testes de hipótese)
 
 ---
 
@@ -24,6 +24,7 @@ Este documento especifica os **requisitos funcionais (RF)** e **não funcionais 
 | 1.9 | Fase 12: incluídos RF-64 a RF-71 (comparação de cenários por sobrescrita de λ, μ, c, K, modelo e variabilidade do serviço, com números aleatórios comuns, IC da diferença pareada, veredito, streaming, alertas de instabilidade, exportação em CSV e histórico do tipo `scenarios`), que correspondem aos RFC-17 a RFC-21 do [roadmap competitivo](roadmap-competitivo.md); incluída a seção 4.14. A rota de exportação é `POST` (o `GET` proposto no roadmap não carrega a lista de cenários). |
 | 1.10 | Fase 13: incluídos RF-72 a RF-82 (P(n) analítica; P(Wq > t) por fórmula fechada no M/M/c e por histograma de simulação nos demais modelos; sensibilidade Wq × λ; ajuste por máxima verossimilhança de cinco distribuições com AIC e p-valor de aderência por Monte Carlo, decisão D-02; sugestão de modelo pelo CV integrada à aba Dados reais; API, interface e histórico do tipo `fit`), que correspondem aos RFC-22 a RFC-26 do [roadmap competitivo](roadmap-competitivo.md); incluída a seção 4.15 e o UC-15. O histograma de espera usa um simulador FIFO próprio (os motores SimPy só guardam a média), e a sensibilidade reaproveita a varredura de λ da Fase 6. |
 | 1.11 | Fase 13.1 (cruzamento semaforizado, fase de aplicação do seminário de Modelagem e Simulação): incluídos RF-83 a RF-95 (cruzamento de ciclo fixo com duas aproximações e fila FIFO acopladas só pelo ciclo; chegadas por blocos; parâmetros medidos no vídeo sem valor padrão silencioso e com avisos; atraso com e sem os pendentes; série da fila; referência de Webster rotulada como aproximação; comparação de planos com números aleatórios comuns e IC pareado; varredura da divisão do verde; leitura das planilhas do protocolo; estimação de plano, chegadas, ℓ e h por reta de descarga; validação simulado × observado; rotas `/api/traffic`; aba Cruzamento e histórico do tipo `traffic`), que não correspondem a RFC do [roadmap competitivo](roadmap-competitivo.md) (não é lacuna do concorrente); incluída a seção 4.16 e o UC-16. Correção: o cabeçalho trazia a versão 2.0 por engano; a versão do sistema na Fase 13 era a 1.10. |
+| 1.12 | Fase 13.2 (fecha as limitações da avaliação da Fase 13.1): incluídos RF-96 a RF-104 (2 a 4 fases, uma aproximação por fase; classes de veículos com equivalência em carros sem valor padrão, no modelo e na coluna `vehicle_class` do vídeo; reprodução das contagens observadas em `/simulate`, `/compare` e `/sweep`; ℓ variável entre ciclos; amarelo utilizável como intervalo e capacidade ajustada pela renovação; testes de hipótese na validação com p-valor ajustado por Holm e equivalência TOST com tolerância informada pelo usuário; exportação CSV da validação; comparação de duas sessões lado a lado). Correções: a validação deixou de recusar sessões longas por usar uma taxa fictícia, e `stopped_fraction` passou a ser descrita como “fração que esperou”. RF-83, RF-85, RF-92, RF-93 e RF-94 passam a valer com as extensões do RF-96 a RF-104. |
 
 ---
 
@@ -62,7 +63,7 @@ Este documento especifica os **requisitos funcionais (RF)** e **não funcionais 
 O sistema permite que o usuário **defina** um modelo de filas, **calcule** suas métricas analiticamente, **simule** seu comportamento por eventos discretos, **compare** teoria e simulação, **visualize** os resultados e, nas fases futuras, **analise** modelos mais complexos, **execute** experimentos, **importe** medições do JMeter e **persista** resultados.
 
 **Fora do escopo:**
-- redes de filas (várias estações interligadas), salvo o cruzamento semaforizado de duas aproximações da Fase 13.1, que tem ciclo compartilhado mas não encaminha clientes de uma fila para a outra;
+- redes de filas (várias estações interligadas), salvo o cruzamento semaforizado de 2 a 4 aproximações das Fases 13.1 e 13.2, que tem ciclo compartilhado mas não encaminha clientes de uma fila para a outra;
 - distribuições de chegada e serviço diferentes da exponencial na versão inicial;
 - autenticação e múltiplos usuários;
 - simulação em tempo real distribuída.
@@ -254,7 +255,7 @@ As rotas são `POST /api/models/erlangb/calculate`, `/simulate`, `/compare` e `/
 | RF-81 | O sistema deve expor `POST /api/analysis/distribution`, `/sensitivity` e `/fit`; o ajuste responde em NDJSON (`start`, uma `candidate` por candidata, `done`) e para o trabalho quando o cliente fecha a conexão. O limite da amostra é o do envio de CSV da Fase 7 (10 MiB: corpo maior dá 413 `file_too_large`, e no máximo metade desse número de bytes em valores). Erros de validação saem como 422 com o campo, antes do primeiro byte do fluxo. | M | T | UC-15 | US-35 | ✅ |
 | RF-82 | O sistema deve mostrar, no Laboratório, a aba Distribuições (P(n), P(Wq > t) e Wq × λ com o ponto atual) nos modelos aplicáveis, o painel Ajustar distribuição (colar ou importar a amostra, histograma com as curvas ajustadas e tabela de candidatas) e a sugestão por CV na aba Dados reais; e permitir salvar o ajuste no histórico como experimento do tipo `fit`, sem alterar o esquema do banco e sem guardar a amostra. | S | T | UC-09, UC-15 | US-35 | ✅ |
 
-### 4.16 Cruzamento semaforizado (Fase 13.1)
+### 4.16 Cruzamento semaforizado (Fases 13.1 e 13.2)
 
 | ID | Requisito | Prior. | Verif. | UC | US | Status |
 |----|-----------|--------|--------|----|----|--------|
@@ -271,6 +272,15 @@ As rotas são `POST /api/models/erlangb/calculate`, `/simulate`, `/compare` e `/
 | RF-93 | O sistema deve validar o modelo contra o vídeo: simular o plano observado com o número de chegadas de cada intervalo igual ao observado (só o instante dentro do intervalo é sorteado) e comparar, por intervalo, a fila no fim e as saídas com as observadas, devolvendo viés, erro médio absoluto, RMSE e a cobertura da faixa simulada (percentis entre réplicas), o total de saídas e, havendo veículos acompanhados, o atraso observado com IC. Intervalos sem dado utilizável ficam de fora e são contados. Não há teste de hipótese nem limite de aprovação. | M | T | UC-16 | US-39 | ✅ |
 | RF-94 | O sistema deve expor `POST /api/traffic/simulate`, `/compare`, `/sweep` (os dois últimos em NDJSON, que para o trabalho quando o cliente fecha a conexão), `/export.csv`, `/compare/export.csv`, `/sweep/export.csv`, `/video/estimate` e `/video/validate` (multipart), com erros 422 que identificam o campo (por exemplo `approaches.1.headway.cv`) e 413 para arquivo acima de 10 MiB. | M | T | UC-16 | US-36 a US-39 | ✅ |
 | RF-95 | O sistema deve mostrar a aba Cruzamento, com os modos Simular, Comparar planos, Varrer o verde e Dados do vídeo; formulário sem valores medidos preenchidos (o exemplo é rotulado como hipotético); erros da API nos campos; gráficos da fila, do atraso por plano, da curva do verde e da validação; exportação em CSV; “Usar no formulário” para as estimativas do vídeo; e salvar e reabrir os resultados no histórico (tipo `traffic`). | M | T, D | UC-16 | US-36 a US-39 | ✅ |
+| RF-96 | O sistema deve aceitar de 2 a 4 fases em sequência, com uma aproximação por fase (a fase i atende a aproximação i), em `/simulate`, `/compare` (um item por fase em cada plano), `/sweep` (com `pair`, as duas fases cujo verde é redistribuído) e nas respostas (`a1` a `a4`), mantendo os resultados das sementes de duas fases. | M | T | UC-16 | US-40 | ✅ |
+| RF-97 | O sistema deve aceitar classes de veículos por aproximação (nome, parcela da demanda somando 1 e equivalência em carros sem valor padrão): o veículo deixa a linha ocupada por h × fator, a capacidade usa o intervalo médio da mistura e a vazão em carros equivalentes (`throughput_ceq`) é informada. | M | T | UC-16 | US-40 | ✅ |
+| RF-98 | O sistema deve ler a coluna opcional `vehicle_class` nas contagens e nos cruzamentos do vídeo, exigir `class_factors` quando ela existir, recusar classe faltando em algum intervalo e estimar ℓ e h por carro equivalente (fator acumulado na reta de descarga), com 2 a 4 aproximações em `approach_ids` e os avisos `phase_order` e `cycle_mismatch`. | M | T | UC-16 | US-40 | ✅ |
+| RF-99 | O sistema deve aceitar, no perfil de chegadas, contagens fixas por bloco (`count`, e `class_counts` por classe) para que os planos alternativos enfrentem exatamente as chegadas observadas, e devolver o corpo pronto em `suggested.replay`. | M | T | UC-16 | US-41 | ✅ |
+| RF-100 | O sistema deve aceitar o CV de ℓ entre ciclos (`first_vehicle_cv`), estimá-lo no vídeo, devolver o amarelo utilizável como intervalo (limite inferior e `upper`) e a capacidade ajustada pela renovação na referência. | S | T | UC-16 | US-40 | ✅ |
+| RF-101 | O sistema deve devolver, na validação, testes de hipótese por aproximação (aderência e viés da fila e das saídas por Monte Carlo, KS e Mann–Whitney do atraso) com p-valor ajustado por Holm, e a equivalência TOST somente quando o usuário informar a tolerância (`tolerance_delay`, `tolerance_departures`), sem tolerância padrão. | M | T | UC-16 | US-39 | ✅ |
+| RF-102 | O sistema deve rodar ao menos 199 réplicas na validação (se o tamanho do trabalho permitir), informando quantas rodou, e calcular o tamanho do trabalho pelas contagens reais, sem recusar sessões longas por uma taxa fictícia. | M | T | UC-16 | US-39 | ✅ |
+| RF-103 | O sistema deve expor `POST /api/traffic/video/validate/export.csv` (resumo, intervalos e testes) e `POST /api/traffic/video/sessions/compare` com `/export.csv` (duas sessões lado a lado: ciclo, fases, chegadas com teste binomial exato, ℓ, h e amarelo utilizável). | M | T | UC-16 | US-39, US-41 | ✅ |
+| RF-104 | O sistema deve mostrar na aba Cruzamento: adicionar e remover fases, editor de classes, CV de ℓ, “Usar reproduzindo as contagens”, fatores e tolerâncias do vídeo, tabela de testes de hipótese, exportação CSV da validação e “Guardar como sessão A/B” com a comparação lado a lado. | M | T, D | UC-16 | US-40, US-41 | ✅ |
 
 ### 4.10 API
 
@@ -458,6 +468,7 @@ Restrições de validação por parâmetro. Valores marcados como **(proposto)**
 | 12 | Comparação de cenários | RF-64 a RF-71 |
 | 13 | Distribuições e ajuste de amostras | RF-72 a RF-82 |
 | 13.1 | Cruzamento semaforizado (fase de aplicação) | RF-83 a RF-95 |
+| 13.2 | Cruzamento: 2 a 4 fases, classes de veículos, testes de hipótese e sessões | RF-96 a RF-104 |
 | Transversal | Qualidade, desempenho, segurança, observabilidade | RNF-05, RNF-06, RNF-08 a RNF-12, RNF-14, RNF-16, RNF-18, RNF-19, RNF-21 a RNF-23, RNF-27 a RNF-32 |
 
 ---
@@ -481,7 +492,7 @@ Restrições de validação por parâmetro. Valores marcados como **(proposto)**
 | UC-13 | RF-59 a RF-63 |
 | UC-14 | RF-64 a RF-71 |
 | UC-15 | RF-72 a RF-82 |
-| UC-16 | RF-83 a RF-95 |
+| UC-16 | RF-83 a RF-104 |
 
 ---
 

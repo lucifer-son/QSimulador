@@ -460,17 +460,17 @@ flowchart LR
 | Campo | Descrição |
 |-------|-----------|
 | **Ator principal** | Usuário, Cliente de API |
-| **Objetivo** | Medir o efeito dos tempos do semáforo (verde e vermelho) sobre as filas, o atraso e a vazão de um cruzamento com duas aproximações que dividem o mesmo ciclo, e conferir se o modelo reproduz o que foi observado em vídeo. |
-| **Pré-condições** | Para simular: o plano (verde, amarelo e todo-vermelho de cada fase), a chegada de cada aproximação e o intervalo h entre veículos na descarga. Para estimar e validar: as planilhas do protocolo de coleta (eventos semafóricos e contagens; cruzamentos da linha de retenção para estimar ℓ, h e o amarelo utilizável). |
+| **Objetivo** | Medir o efeito dos tempos do semáforo (verde e vermelho) sobre as filas, o atraso e a vazão de um cruzamento com 2 a 4 aproximações (uma por fase) que dividem o mesmo ciclo, com classes de veículos (carro, moto, ônibus), e conferir se o modelo reproduz o que foi observado em vídeo, inclusive por testes de hipótese. |
+| **Pré-condições** | Para simular: o plano (verde, amarelo e todo-vermelho de cada fase), a chegada de cada aproximação e o intervalo h entre veículos na descarga; com classes, o fator de equivalência em carros de cada uma (sem valor padrão). Para estimar e validar: as planilhas do protocolo de coleta (eventos semafóricos e contagens; cruzamentos da linha de retenção para estimar ℓ, h e o amarelo utilizável). |
 | **Pós-condições** | Resultados com IC (atraso com e sem os pendentes, fila, vazão, ciclos com fila), série da fila, referência analítica rotulada como aproximação, avisos de parâmetros não informados e de saturação; para planos e varredura, as diferenças pareadas e o veredito; para o vídeo, as estimativas e os erros do modelo contra o observado. Os resultados podem ser exportados em CSV e salvos no histórico (tipo `traffic`). |
 
 **Fluxo principal**
-1. Na aba Cruzamento, o usuário preenche o semáforo e as duas aproximações com o que mediu no vídeo (ou envia as planilhas em Dados do vídeo e usa “Usar no formulário”).
+1. Na aba Cruzamento, o usuário preenche o semáforo (de 2 a 4 fases) e as aproximações, com classes de veículos se for o caso, com o que mediu no vídeo (ou envia as planilhas em Dados do vídeo e usa “Usar no formulário”).
 2. Em Simular, executa; o sistema mostra o grau de saturação de cada aproximação, o atraso, a fila ao longo do tempo e a conferência com a fórmula de Webster.
-3. Em Comparar planos, define planos alternativos (por exemplo, mais verde para a via mais carregada); o sistema simula todos com os mesmos veículos e mostra a diferença com IC pareado e o veredito.
-4. Em Varrer o verde, informa o verde mínimo de cada fase e o passo; o sistema mantém o ciclo, mostra a curva do atraso, o ponto de menor atraso e os pontos que não se distinguem dele.
-5. Em Dados do vídeo, estima o plano, as chegadas, ℓ e h e valida o modelo: a fila e as saídas simuladas aparecem sobre as observadas, com viés, erros e cobertura.
-6. Salva os resultados no histórico ou exporta o CSV.
+3. Em Comparar planos, define planos alternativos (por exemplo, mais verde para a via mais carregada); o sistema simula todos com os mesmos veículos (ou com exatamente as chegadas filmadas, se o usuário usar “reproduzindo as contagens”) e mostra a diferença com IC pareado e o veredito.
+4. Em Varrer o verde, informa as duas fases varridas, o verde mínimo de cada uma e o passo; o sistema mantém o ciclo, mostra a curva do atraso, o ponto de menor atraso e os pontos que não se distinguem dele.
+5. Em Dados do vídeo, estima o plano, as chegadas, ℓ e h (por carro equivalente, se houver classes) e valida o modelo: a fila e as saídas simuladas aparecem sobre as observadas, com viés, erros, cobertura e testes de hipótese (a equivalência só roda com a tolerância informada). Pode guardar duas sessões (manhã e tarde) e compará-las lado a lado.
+6. Salva os resultados no histórico ou exporta o CSV (inclusive o da validação e o da comparação de sessões).
 
 **Fluxos alternativos**
 - **Parâmetro medido não informado (ℓ, amarelo utilizável, fila inicial, offset):** vale 0 e o resultado traz um aviso por parâmetro; o intervalo h não tem alternativa e é obrigatório.
@@ -479,6 +479,8 @@ flowchart LR
 - **Planilha inválida (coluna ausente, estado desconhecido, lacuna entre intervalos, célula obrigatória vazia):** a leitura é recusada com a tabela, a coluna e a linha; nada é preenchido por suposição.
 - **Sem o CSV de cruzamentos:** o plano e as chegadas são estimados, mas ℓ, h e o amarelo utilizável voltam sem estimativa e seguem como “não informado”.
 - **Plano do vídeo que não é de tempo fixo (ciclo variando):** a estimação avisa e o modelo usa as médias.
+- **Vídeo com `vehicle_class` sem `class_factors`, classe faltando em um intervalo ou fator inválido:** a leitura é recusada nomeando as classes e o intervalo.
+- **Verdes fora da ordem de `approach_ids` ou fases que não somam o ciclo:** a estimação avisa (`phase_order`, `cycle_mismatch`).
 - **Verde mínimo ausente na varredura, soma dos mínimos maior que o verde do ciclo, mais de 40 pontos, arquivo acima de 10 MiB:** erro identificando o campo (413 para o tamanho).
 
 ---
@@ -500,7 +502,7 @@ flowchart LR
 | UC-13 | Fase 11 — Dimensionamento | Módulo de dimensionamento (Erlang C, M/M/c/K exato, cauda do M/G/c), rotas `/api/sizing`, aba Dimensionamento |
 | UC-14 | Fase 12 — Comparação de cenários | Módulo de cenários (números aleatórios comuns, IC t pareado, veredito), rota `/api/scenarios` em NDJSON, exportação CSV, aba Cenários |
 | UC-15 | Fase 13 — Distribuições e ajuste | Módulo de distribuições (P(n) e cauda da espera), simulador FIFO de esperas, curva Wq × λ sobre a varredura da Fase 6, ajuste por máxima verossimilhança com bootstrap paramétrico, rotas `/api/analysis` (ajuste em NDJSON), aba Distribuições e painel Ajustar distribuição |
-| UC-16 | Fase 13.1 — Cruzamento semaforizado | Módulo `app/traffic` (plano, motor por recursão por veículo com números aleatórios comuns, métricas, referência de Webster, comparação de planos e varredura, leitura e estimação das planilhas do vídeo, validação), rotas `/api/traffic` (NDJSON e multipart), exportação CSV, aba Cruzamento e histórico `traffic` |
+| UC-16 | Fases 13.1 e 13.2 — Cruzamento semaforizado | Módulo `app/traffic` (plano, motor por recursão por veículo com números aleatórios comuns, métricas, referência de Webster, comparação de planos e varredura, leitura e estimação das planilhas do vídeo, validação), rotas `/api/traffic` (NDJSON e multipart), exportação CSV, aba Cruzamento e histórico `traffic` |
 
 ---
 

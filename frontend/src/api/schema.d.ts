@@ -812,9 +812,66 @@ export interface paths {
         put?: never;
         /**
          * Video Validate
-         * @description Simula o plano observado com as chegadas do vídeo e compara com a fila e as saídas observadas, intervalo a intervalo. As chegadas usam as contagens observadas (número fixo por intervalo). A resposta traz erros (viés, MAE, RMSE) e a cobertura da faixa simulada; não há teste de hipótese nem limite de aprovação. signal_events: eventos semafóricos (timestamp, approach_id, signal_state). counts: contagens por intervalo (interval_start, interval_end, approach_id, arrivals, departures, queue_count, queue_visible). crossings (opcional): um cruzamento da linha de retenção por linha (crossing_time, approach_id). trajectories (opcional): veículos acompanhados.
+         * @description Simula o plano observado com as chegadas do vídeo e compara com a fila e as saídas observadas, intervalo a intervalo. As chegadas usam as contagens observadas (número fixo por intervalo, por classe quando houver). A resposta traz erros (viés, MAE, RMSE), a cobertura da faixa simulada e, em `tests`, testes de hipótese (aderência por Monte Carlo, KS e Mann-Whitney do atraso e, se você informar `tolerance_delay` e `tolerance_departures`, a equivalência TOST), com p-valor ajustado por Holm. Não há tolerância padrão nem limite de aprovação. signal_events: eventos semafóricos (timestamp, approach_id, signal_state). counts: contagens por intervalo (interval_start, interval_end, approach_id, arrivals, departures, queue_count, queue_visible). crossings (opcional): um cruzamento da linha de retenção por linha (crossing_time, approach_id). trajectories (opcional): veículos acompanhados.
          */
         post: operations["video_validate_api_traffic_video_validate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/traffic/video/validate/export.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Video Validate Csv
+         * @description Os mesmos parâmetros de /video/validate; devolve o CSV com o resumo dos erros, o intervalo a intervalo e os testes. Refaz o cálculo com a mesma semente: informe `seed` para o CSV bater com a tela.
+         */
+        post: operations["video_validate_csv_api_traffic_video_validate_export_csv_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/traffic/video/sessions/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Video Sessions Compare
+         * @description Compara duas sessões (por exemplo, manhã e tarde) lado a lado: ciclo, fases, taxa de chegada (teste binomial exato), ℓ, h e amarelo utilizável, a partir de duas respostas de /video/estimate. A tabela é descritiva: os p-valores não são corrigidos entre linhas.
+         */
+        post: operations["video_sessions_compare_api_traffic_video_sessions_compare_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/traffic/video/sessions/compare/export.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Video Sessions Compare Csv */
+        post: operations["video_sessions_compare_csv_api_traffic_video_sessions_compare_export_csv_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1816,6 +1873,11 @@ export interface components {
              */
             first_vehicle_time?: number | null;
             /**
+             * First Vehicle Cv
+             * @description CV de ℓ entre ciclos (a partida varia de um verde para outro). Não informado ou 0 → ℓ constante.
+             */
+            first_vehicle_cv?: number | null;
+            /**
              * Amber Usable
              * @description Segundos do amarelo em que ainda se cruza. Não informado → 0, com aviso.
              */
@@ -1825,6 +1887,11 @@ export interface components {
              * @description Veículos já esperando em t = 0. Não informado → 0, com aviso.
              */
             initial_queue?: number | null;
+            /**
+             * Classes
+             * @description Classes de veículos (até 8). `headway` passa a ser o intervalo de um carro; cada veículo ocupa h · fator da sua classe.
+             */
+            classes?: components["schemas"]["ClassIn"][] | null;
         };
         /** BlockIn */
         BlockIn: {
@@ -1835,9 +1902,21 @@ export interface components {
             duration: number;
             /**
              * Lambda
-             * @description Taxa de chegada no bloco (veículos/s). Pode ser 0.
+             * @description Taxa de chegada no bloco (veículos/s). Pode ser 0. Omitida quando o bloco traz `count`.
              */
-            lambda: number;
+            lambda?: number | null;
+            /**
+             * Count
+             * @description Reproduz uma sessão: nº fixo de chegadas no bloco (só o instante é sorteado). Todos os blocos ou nenhum.
+             */
+            count?: number | null;
+            /**
+             * Class Counts
+             * @description Com `count` e `classes`: chegadas de cada classe no bloco (nome → nº; a soma é `count`).
+             */
+            class_counts?: {
+                [key: string]: number;
+            } | null;
         };
         /** Body_analyze_csv_api_realdata_analyze_post */
         Body_analyze_csv_api_realdata_analyze_post: {
@@ -1932,9 +2011,14 @@ export interface components {
             session_id?: string | null;
             /**
              * Approach Ids
-             * @description As duas aproximações, separadas por vírgula (a 1ª é a da fase 1).
+             * @description De 2 a 4 aproximações, separadas por vírgula, na ordem das fases (a 1ª é a da fase 1).
              */
             approach_ids?: string | null;
+            /**
+             * Class Factors
+             * @description JSON nome da classe → fator de equivalência em carros. Obrigatório se as contagens tiverem `vehicle_class`; sem valor padrão.
+             */
+            class_factors?: string | null;
             /**
              * Max Headway
              * @description Intervalo máximo (s) entre veículos para contar como descarga saturada.
@@ -1984,6 +2068,8 @@ export interface components {
             session_id?: string | null;
             /** Approach Ids */
             approach_ids?: string | null;
+            /** Class Factors */
+            class_factors?: string | null;
             /**
              * Replications
              * @default 30
@@ -1996,6 +2082,69 @@ export interface components {
              * @default 0.95
              */
             confidence_level: number;
+            /**
+             * Tolerance Delay
+             * @description Margem (s) do teste de equivalência do atraso médio. Sem valor padrão.
+             */
+            tolerance_delay?: number | null;
+            /**
+             * Tolerance Departures
+             * @description Margem (fração do total observado, ex.: 0,05) do teste de equivalência das saídas. Sem valor padrão.
+             */
+            tolerance_departures?: number | null;
+        };
+        /** Body_video_validate_csv_api_traffic_video_validate_export_csv_post */
+        Body_video_validate_csv_api_traffic_video_validate_export_csv_post: {
+            /** Signal Events */
+            signal_events: string;
+            /** Counts */
+            counts: string;
+            /** Config */
+            config: string;
+            /** Crossings */
+            crossings?: string | null;
+            /** Trajectories */
+            trajectories?: string | null;
+            /** Session Id */
+            session_id?: string | null;
+            /** Approach Ids */
+            approach_ids?: string | null;
+            /** Class Factors */
+            class_factors?: string | null;
+            /**
+             * Replications
+             * @default 30
+             */
+            replications: number;
+            /** Seed */
+            seed?: number | null;
+            /**
+             * Confidence Level
+             * @default 0.95
+             */
+            confidence_level: number;
+            /** Tolerance Delay */
+            tolerance_delay?: number | null;
+            /** Tolerance Departures */
+            tolerance_departures?: number | null;
+        };
+        /** ClassIn */
+        ClassIn: {
+            /**
+             * Name
+             * @description Nome da classe (carro, moto, ônibus...).
+             */
+            name: string;
+            /**
+             * Share
+             * @description Parcela da demanda (as parcelas somam 1).
+             */
+            share: number;
+            /**
+             * Factor
+             * @description Equivalência em carros: quanto de linha de retenção o veículo ocupa em relação a um carro. Sem valor padrão.
+             */
+            factor: number;
         };
         /** CompareResponse */
         CompareResponse: {
@@ -3682,7 +3831,7 @@ export interface components {
             name?: string | null;
             /**
              * Phases
-             * @description 2 itens: o que trocar na fase 1 e na fase 2 (null mantém a fase).
+             * @description Um item por fase: o que trocar nela (null mantém a fase).
              */
             phases: (components["schemas"]["PhasePatch"] | null)[];
         };
@@ -4753,6 +4902,64 @@ export interface components {
              */
             servers?: number | null;
         };
+        /**
+         * SessionsCompareOut
+         * @description Linhas de comparação (grupo, grandeza, valores, diferença, p-valor), as sessões e observações.
+         */
+        SessionsCompareOut: {
+            /** Labels */
+            labels: string[];
+            /** Level */
+            level: number;
+            /** Rows */
+            rows: {
+                [key: string]: unknown;
+            }[];
+            /** Notes */
+            notes: string[];
+            /** Sessions */
+            sessions: {
+                [key: string]: unknown;
+            }[];
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * SessionsCompareRequest
+         * @description Duas respostas de /video/estimate (por exemplo, manhã e tarde).
+         */
+        SessionsCompareRequest: {
+            /**
+             * A
+             * @description Resposta de /video/estimate da primeira sessão.
+             */
+            a: {
+                [key: string]: unknown;
+            };
+            /**
+             * B
+             * @description Resposta de /video/estimate da segunda sessão.
+             */
+            b: {
+                [key: string]: unknown;
+            };
+            /**
+             * Label A
+             * @default Sessão A
+             */
+            label_a: string;
+            /**
+             * Label B
+             * @default Sessão B
+             */
+            label_b: string;
+            /**
+             * Confidence Level
+             * @description Nível dos ICs da razão de taxas.
+             * @default 0.95
+             */
+            confidence_level: number;
+        };
         /** SimulateRequest */
         SimulateRequest: {
             /**
@@ -4785,7 +4992,7 @@ export interface components {
             confidence_level: number;
             /**
              * Phases
-             * @description Exatamente 2 fases: a da aproximação 1 e a da aproximação 2.
+             * @description De 2 a 4 fases em sequência: a fase i atende a aproximação i.
              */
             phases: components["schemas"]["PhaseIn"][];
             /**
@@ -4795,7 +5002,7 @@ export interface components {
             offset?: number | null;
             /**
              * Approaches
-             * @description Exatamente 2 aproximações.
+             * @description Uma aproximação por fase (2 a 4).
              */
             approaches: components["schemas"]["ApproachIn"][];
             /**
@@ -5838,7 +6045,7 @@ export interface components {
             confidence_level: number;
             /**
              * Phases
-             * @description Exatamente 2 fases: a da aproximação 1 e a da aproximação 2.
+             * @description De 2 a 4 fases em sequência: a fase i atende a aproximação i.
              */
             phases: components["schemas"]["PhaseIn"][];
             /**
@@ -5848,7 +6055,7 @@ export interface components {
             offset?: number | null;
             /**
              * Approaches
-             * @description Exatamente 2 aproximações.
+             * @description Uma aproximação por fase (2 a 4).
              */
             approaches: components["schemas"]["ApproachIn"][];
             /**
@@ -5897,7 +6104,7 @@ export interface components {
             confidence_level: number;
             /**
              * Phases
-             * @description Exatamente 2 fases: a da aproximação 1 e a da aproximação 2.
+             * @description De 2 a 4 fases em sequência: a fase i atende a aproximação i.
              */
             phases: components["schemas"]["PhaseIn"][];
             /**
@@ -5907,14 +6114,19 @@ export interface components {
             offset?: number | null;
             /**
              * Approaches
-             * @description Exatamente 2 aproximações.
+             * @description Uma aproximação por fase (2 a 4).
              */
             approaches: components["schemas"]["ApproachIn"][];
             /**
              * Min Green
-             * @description Verde mínimo de cada fase (s), definido por quem conhece a segurança do cruzamento. Sem valor padrão.
+             * @description Verde mínimo das duas fases varridas (s), definido por quem conhece a segurança do cruzamento. Sem valor padrão.
              */
             min_green: number[];
+            /**
+             * Pair
+             * @description As duas fases (1 a 4) cujo verde é redistribuído. Padrão: 1 e 2.
+             */
+            pair?: number[] | null;
             /**
              * Step
              * @description Passo da varredura (s). Até 40 pontos.
@@ -7242,6 +7454,114 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Parâmetros ou arquivos inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    video_validate_csv_api_traffic_video_validate_export_csv_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_video_validate_csv_api_traffic_video_validate_export_csv_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": unknown;
+                };
+            };
+            /** @description Arquivo acima do limite */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Parâmetros ou arquivos inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    video_sessions_compare_api_traffic_video_sessions_compare_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SessionsCompareRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionsCompareOut"];
+                };
+            };
+            /** @description Parâmetros ou arquivos inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    video_sessions_compare_csv_api_traffic_video_sessions_compare_export_csv_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SessionsCompareRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": unknown;
                 };
             };
             /** @description Parâmetros ou arquivos inválidos */

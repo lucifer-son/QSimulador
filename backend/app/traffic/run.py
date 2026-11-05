@@ -96,15 +96,16 @@ def grid_of(settings: Settings) -> np.ndarray:
 
 def run_plan(inter: Intersection, settings: Settings, *, with_series: bool = True) -> RunResult:
     reps = settings.replications
-    raw: dict[str, list[float]] = {f"{k}.{m}": [] for k in APPROACH_KEYS for m in APPROACH_METRICS}
+    keys = APPROACH_KEYS[:len(inter.approaches)]
+    raw: dict[str, list[float]] = {f"{k}.{m}": [] for k in keys for m in APPROACH_METRICS}
     raw.update({f"x.{m}": [] for m in INTERSECTION_METRICS})
     grid = grid_of(settings) if with_series else None
-    queues = [np.empty((reps, len(grid))) for _ in range(2)] if with_series else None
+    queues = [np.empty((reps, len(grid))) for _ in keys] if with_series else None
 
     for r in range(reps):
         runs = simulate_replication(inter, settings.simulation_time, settings.seed, r)
         samples, inter_vals = replication_metrics(inter, runs, settings.warmup_time, settings.simulation_time)
-        for key, sample in zip(APPROACH_KEYS, samples):
+        for key, sample in zip(keys, samples):
             for m in APPROACH_METRICS:
                 raw[f"{key}.{m}"].append(sample.values[m])
         for m in INTERSECTION_METRICS:
@@ -118,14 +119,14 @@ def run_plan(inter: Intersection, settings: Settings, *, with_series: bool = Tru
         raise InsufficientSampleError(
             "Nenhum veículo chegou na janela de medição. Aumente simulation_time ou a taxa de chegada.", "simulation_time")
     level = settings.confidence_level
-    approaches = {k: {m: _summary(arrays[f"{k}.{m}"], level) for m in APPROACH_METRICS} for k in APPROACH_KEYS}
+    approaches = {k: {m: _summary(arrays[f"{k}.{m}"], level) for m in APPROACH_METRICS} for k in keys}
     intersection = {m: _summary(arrays[f"x.{m}"], level) for m in INTERSECTION_METRICS}
 
     series = None
     if with_series:
         series = {"times": grid.tolist()}
         t_crit = float(stats.t.ppf((1 + level) / 2, df=reps - 1))
-        for key, q in zip(APPROACH_KEYS, queues):
+        for key, q in zip(keys, queues):
             mean = q.mean(axis=0)
             half = t_crit * q.std(axis=0, ddof=1) / math.sqrt(reps)
             series[key] = {"mean": mean.tolist(), "ci_low": np.maximum(mean - half, 0).tolist(), "ci_high": (mean + half).tolist()}

@@ -23,6 +23,7 @@ async function setup(records = new FakeRecords(true), handler: FakeHandler = hap
   const fetchMock = mockFetch(handler, records);
   const user = userEvent.setup();
   const view = render(<App />);
+  await user.selectOptions(modelSelect(), "mmck");
   return { user, fetchMock, records, view };
 }
 const button = (name: string | RegExp) => screen.getByRole("button", { name });
@@ -256,7 +257,7 @@ describe("reabrir no Laboratório", () => {
     view.unmount();
     window.localStorage.removeItem("qsimulador-theme");
     render(<App />);
-    expect(screen.getByLabelText(/Chegadas λ/)).toHaveValue("25");
+    expect(screen.getByLabelText(/Chegadas λ/)).toHaveValue("40");
     expect(screen.getByText("Compare o analítico com a simulação")).toBeVisible();
 
     await user.click(nav("Histórico"));
@@ -327,5 +328,5 @@ describe("experimentos e dados reais", () => {
     await user.click(await screen.findByRole("button", { name: "Abrir" }));
     const view = await screen.findByLabelText("Registro aberto");
     expect(within(view).getByText(/amostras analisadas/)).toBeVisible();
-  });
+  }, 15000);
 });

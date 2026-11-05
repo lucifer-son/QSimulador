@@ -6,6 +6,7 @@ tem variância menor do que a de duas simulações independentes. O IC da difere
 Student com R − 1 graus de liberdade sobre os d_i. Veredito: "higher"/"lower" quando o IC exclui 0
 e "inconclusive" quando contém 0 (não significa igual: as réplicas feitas não bastam para distinguir).
 
+Com 3 ou 4 fases, a varredura redistribui o verde entre duas fases (`pair`) e deixa as demais como estão.
 Os ICs são individuais; a correção de Bonferroni (opcional) divide α pelo número de planos.
 O módulo não depende da API: `prepare_*` valida tudo e `iter_*` gera os eventos na ordem em que
 ficam prontos (start → um por plano/ponto → done, ou error).
@@ -37,7 +38,7 @@ STATUS_OK, STATUS_ERROR = "ok", "error"
 BETTER = {
     "delay": "lower", "delay_censored": "lower", "queue_mean": "lower", "queue_max": "lower",
     "queue_end": "lower", "throughput": "higher", "stopped_fraction": "lower",
-    "overflow_cycles": "lower", "pending": "lower", "departures": "higher",
+    "overflow_cycles": "lower", "pending": "lower", "departures": "higher", "throughput_ceq": "higher",
 }
 COMPARED_APPROACH = tuple(m for m in APPROACH_METRICS if m != "arrivals")
 COMPARED_INTERSECTION = tuple(m for m in INTERSECTION_METRICS if m != "arrivals")
@@ -75,12 +76,14 @@ class PlanSpec:
     """Um plano alternativo: a base com algumas durações trocadas (segundos, valores absolutos)."""
 
     name: str | None
-    phases: tuple[dict | None, dict | None]     # por fase: green / amber / all_red a trocar
+    phases: tuple[dict | None, ...]     # por fase: green / amber / all_red a trocar
 
 
 def apply_plan(base: Intersection, spec: PlanSpec, index: int) -> Intersection:
-    if not isinstance(spec.phases, (tuple, list)) or len(spec.phases) != 2:
-        raise QueueValidationError("phases do plano deve ter 2 itens (use null para manter a fase).", f"scenarios.{index}.phases")
+    n = len(base.signal.phases)
+    if not isinstance(spec.phases, (tuple, list)) or len(spec.phases) != n:
+        raise QueueValidationError(
+            f"phases do plano deve ter {n} itens, um por fase (use null para manter a fase).", f"scenarios.{index}.phases")
     built = []
     for i, change in enumerate(spec.phases):
         phase = base.signal.phases[i]
@@ -90,14 +93,14 @@ def apply_plan(base: Intersection, spec: PlanSpec, index: int) -> Intersection:
         label = f"scenarios.{index}.phases.{i}"
         from app.traffic.plan import build_phase
         built.append(build_phase(label, values))
-    cycle = built[0].total + built[1].total
+    cycle = sum(p.total for p in built)
     from app.traffic.plan import MAX_CYCLE
     if cycle > MAX_CYCLE:
         raise QueueValidationError(f"O ciclo do plano ({cycle:g} s) passa do limite de {MAX_CYCLE:g} s.", f"scenarios.{index}.phases")
     if base.signal.offset >= cycle:
         raise QueueValidationError(
             f"O ciclo do plano ({cycle:g} s) é menor que o offset ({base.signal.offset:g} s).", f"scenarios.{index}.phases")
-    signal = Signal((built[0], built[1]), base.signal.offset, base.signal.offset_informed)
+    signal = Signal(tuple(built), base.signal.offset, base.signal.offset_informed)
     try:
         return build_intersection(signal, base.approaches)
     except QueueValidationError as error:
@@ -148,13 +151,13 @@ def _row(index: int, name: str, inter: Intersection, settings: Settings, result:
         "index": index, "role": "base" if index == 0 else "plan", "name": name,
         "status": STATUS_OK if result is not None else STATUS_ERROR, "message": message,
         "phases": _phases_dict(inter), "cycle": inter.signal.cycle,
-        "saturation": {k: inter.saturation(i, settings.simulation_time) for i, k in enumerate(APPROACH_KEYS)},
+        "saturation": {k: inter.saturation(i, settings.simulation_time) for i, k in enumerate(APPROACH_KEYS[:len(inter.approaches)])},
         "alerts": alerts, "reference": reference(inter, settings.simulation_time), "metrics": {},
     }
     if result is not None:
         row["metrics"] = {
             "x": _metric_block(result, base, "x", COMPARED_INTERSECTION, level),
-            **{k: _metric_block(result, base, k, COMPARED_APPROACH, level) for k in APPROACH_KEYS},
+            **{k: _metric_block(result, base, k, COMPARED_APPROACH, level) for k in APPROACH_KEYS[:len(inter.approaches)]},
         }
     return _finite(row)
 
@@ -248,22 +251,31 @@ def iter_compare(plan: ComparePlan) -> Iterator[dict]:
 @dataclass(frozen=True)
 class SweepPlan:
     base: Intersection
-    greens: tuple[tuple[float, float], ...]     # (verde 1, verde 2) de cada ponto, com o ciclo fixo
+    greens: tuple[tuple[float, ...], ...]     # os verdes de todas as fases em cada ponto, com o ciclo fixo
     settings: Settings
     green_total: float
+    pair: tuple[int, int] = (0, 1)            # fases (0-based) cujo verde é redistribuído
 
 
 def prepare_sweep(
     base: Intersection, *, min_green: object, step: object, simulation_time: object, replications: object = 10,
-    warmup_time: object = 0.0, seed: object = None, confidence_level: object = 0.95,
+    warmup_time: object = 0.0, seed: object = None, confidence_level: object = 0.95, pair: object = None,
 ) -> SweepPlan:
-    """Mantém o ciclo e redistribui o verde: g1 + g2 = verde total da base; amarelo e todo-vermelho não mudam."""
+    """Mantém o ciclo e redistribui o verde entre duas fases (`pair`, 1-based; padrão 1 e 2): a soma dos dois
+    verdes é a da base; amarelo, todo-vermelho e as demais fases não mudam."""
     from app.traffic.plan import _real
+    n = len(base.signal.phases)
+    if pair is None:
+        pair = (1, 2)
+    if (not isinstance(pair, (list, tuple)) or len(pair) != 2 or any(isinstance(x, bool) or not isinstance(x, int) for x in pair)
+            or len(set(pair)) != 2 or any(not 1 <= x <= n for x in pair)):
+        raise QueueValidationError(f"pair deve ter dois números de fase diferentes entre 1 e {n}.", "pair")
+    ia, ib = pair[0] - 1, pair[1] - 1
     if not isinstance(min_green, (list, tuple)) or len(min_green) != 2:
-        raise QueueValidationError("min_green deve ter 2 valores (verde mínimo de cada fase, em segundos).", "min_green")
+        raise QueueValidationError("min_green deve ter 2 valores (verde mínimo das duas fases varridas, em segundos).", "min_green")
     g_min = [_real(f"min_green.{i}", v, positive=True) for i, v in enumerate(min_green)]
     st = _real("step", step, positive=True)
-    total = base.signal.phases[0].green + base.signal.phases[1].green
+    total = base.signal.phases[ia].green + base.signal.phases[ib].green
     if g_min[0] + g_min[1] > total + 1e-9:
         raise QueueValidationError(
             f"A soma dos verdes mínimos ({g_min[0] + g_min[1]:g} s) passa do verde total do ciclo ({total:g} s).", "min_green")
@@ -275,24 +287,26 @@ def prepare_sweep(
     for j in range(count):
         g1 = g_min[0] + j * st
         g2 = total - g1
-        candidate = _with_greens(base, g1, g2)
+        candidate = _with_greens(base, g1, g2, ia, ib)
         try:
             build_intersection(candidate.signal, candidate.approaches)
         except QueueValidationError:
             continue          # o verde efetivo ficaria ≤ 0: o ponto não existe
-        greens.append((g1, g2))
+        greens.append(tuple(p.green for p in candidate.signal.phases))
     if not greens:
         raise QueueValidationError("Nenhum ponto da varredura tem verde efetivo positivo.", "min_green")
     settings = prepare_settings(
         base, simulation_time=simulation_time, replications=replications, warmup_time=warmup_time, seed=seed,
         confidence_level=confidence_level, plans=len(greens))
-    return SweepPlan(base, tuple(greens), settings, total)
+    return SweepPlan(base, tuple(greens), settings, total, (ia, ib))
 
 
-def _with_greens(base: Intersection, g1: float, g2: float) -> Intersection:
-    p1, p2 = base.signal.phases
-    signal = Signal((Phase(g1, p1.amber, p1.all_red), Phase(g2, p2.amber, p2.all_red)),
-                    base.signal.offset, base.signal.offset_informed)
+def _with_greens(base: Intersection, g1: float, g2: float, ia: int = 0, ib: int = 1) -> Intersection:
+    phases = list(base.signal.phases)
+    for idx, g in ((ia, g1), (ib, g2)):
+        p = phases[idx]
+        phases[idx] = Phase(g, p.amber, p.all_red)
+    signal = Signal(tuple(phases), base.signal.offset, base.signal.offset_informed)
     return Intersection(signal, base.approaches)
 
 
@@ -300,10 +314,12 @@ def iter_sweep(plan: SweepPlan) -> Iterator[dict]:
     s = plan.settings
     total = len(plan.greens)
     yield {"type": "start", "total": total, "cycle": plan.base.signal.cycle, "green_total": plan.green_total,
-           "settings": settings_dict(s)}
+           "pair": [plan.pair[0] + 1, plan.pair[1] + 1], "settings": settings_dict(s)}
     points, results = [], []
-    for j, (g1, g2) in enumerate(plan.greens):
-        inter = _with_greens(plan.base, g1, g2)
+    keys = APPROACH_KEYS[:len(plan.base.approaches)]
+    ia, ib = plan.pair
+    for j, greens_j in enumerate(plan.greens):
+        inter = _with_greens(plan.base, greens_j[ia], greens_j[ib], ia, ib)
         try:
             result = run_plan(inter, s, with_series=False)
         except InsufficientSampleError as error:
@@ -311,11 +327,10 @@ def iter_sweep(plan: SweepPlan) -> Iterator[dict]:
             return
         results.append(result)
         point = {
-            "index": j, "green": [g1, g2],
-            "saturation": {k: inter.saturation(i, s.simulation_time) for i, k in enumerate(APPROACH_KEYS)},
+            "index": j, "green": list(greens_j),
+            "saturation": {k: inter.saturation(i, s.simulation_time) for i, k in enumerate(keys)},
             "intersection": {m: asdict(v) if v else None for m, v in result.intersection.items()},
-            "a1": {m: asdict(v) if v else None for m, v in result.approaches["a1"].items()},
-            "a2": {m: asdict(v) if v else None for m, v in result.approaches["a2"].items()},
+            **{k: {m: asdict(v) if v else None for m, v in result.approaches[k].items()} for k in keys},
             "reference_delay": reference(inter, s.simulation_time)["delay_censored"],
         }
         point = _finite(point)
@@ -337,7 +352,7 @@ def iter_sweep(plan: SweepPlan) -> Iterator[dict]:
             if comparison else {"verdict": "unknown", "diff": None})
     yield {"type": "done", "result": {
         "settings": settings_dict(s), "cycle": plan.base.signal.cycle, "green_total": plan.green_total,
-        "best_index": best, "points": points,
+        "best_index": best, "points": points, "pair": [plan.pair[0] + 1, plan.pair[1] + 1],
         "webster_cycle": reference(plan.base, s.simulation_time)["webster_cycle"],
         "note": ("O melhor ponto é o de menor atraso médio com pendentes. \"indistinguishable\" significa que o IC pareado da "
                  "diferença para o melhor contém 0 com as réplicas feitas: não há evidência de que sejam diferentes."),

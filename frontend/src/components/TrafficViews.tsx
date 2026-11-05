@@ -1,14 +1,16 @@
 import { IconAlertTriangle, IconCheck, IconInfoCircle, IconX } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
-import type {
-  ApproachInfo, ApproachKey, CompareMetric, CompareResult, PlanRow, Scope, SweepResult, TrafficAlert, TrafficReference,
-  TrafficResult, ValidationApproach, VideoValidation,
+import {
+  keysOf,
+  type ApproachInfo, type ApproachKey, type CompareMetric, type CompareResult, type PlanRow, type Scope, type SessionsComparison,
+  type SweepResult, type TrafficAlert, type TrafficReference, type TrafficResult, type ValidationApproach, type ValidationTest,
+  type VideoValidation,
 } from "../api/traffic";
 import {
   approachColor, planDelayChart, queueSeriesChart, sweepChart, validationDeparturesChart, validationQueueChart,
 } from "../charts/traffic";
 import {
-  alertTone, COMPARE_METRICS, formatDelta, formatMetricValue, formatSaturation, formatSeconds, formatSummary,
+  alertTone, COMPARE_METRICS, DECISION_TEXT, formatDelta, formatMetricValue, formatSaturation, formatSeconds, formatSummary,
   HEADLINE_METRICS, METRICS, NOT_INFORMED_LABEL, phaseText, SCOPE_LABEL, VERDICT_TEXT, verdictTone,
 } from "../domain/traffic";
 import { useThemeColors } from "../hooks/useThemeColors";
@@ -60,6 +62,9 @@ function ApproachCards({ approaches }: { approaches: ApproachInfo[] }) {
           <div className="card-value"><SaturationTag x={a.saturation} /></div>
           <div className="card-sub">capacidade {num(a.capacity * 60, 1)} veíc./min · chegada {num(a.arrival_rate * 60, 1)} veíc./min</div>
           <div className="card-sub">intervalo {a.headway.label}, média {num(a.headway.mean, 2)} s{a.headway.cv > 0 ? `, CV ${num(a.headway.cv, 2)}` : ""}</div>
+          {(a.classes?.length ?? 0) > 0 && (
+            <div className="card-sub">classes: {a.classes!.map((c) => `${c.name} ${num(c.share * 100, 0)}% (×${num(c.factor, 2)})`).join(", ")}</div>
+          )}
           {a.not_informed.length > 0 && (
             <div className="card-sub">sem medição: {a.not_informed.map((n) => NOT_INFORMED_LABEL[n] ?? n).join(", ")}</div>
           )}
@@ -70,9 +75,9 @@ function ApproachCards({ approaches }: { approaches: ApproachInfo[] }) {
 }
 
 function ReferenceTable({ reference, result }: { reference: TrafficReference; result: TrafficResult }) {
-  const rows = (["a1", "a2"] as ApproachKey[]).map((k) => {
+  const rows = keysOf(reference).map((k) => {
     const sim = result.metrics[k].delay_censored;
-    const ref = reference[k];
+    const ref = reference[k]!;
     const inside = sim && sim.ci_low != null && sim.ci_high != null ? ref.delay_censored >= sim.ci_low && ref.delay_censored <= sim.ci_high : null;
     return { k, sim, ref, inside };
   });
@@ -121,17 +126,17 @@ function ReferenceTable({ reference, result }: { reference: TrafficReference; re
 
 export function TrafficSimulationView({ result }: { result: TrafficResult }) {
   const colors = useThemeColors();
-  const names = useMemo(() => ({
-    a1: result.approaches.find((a) => a.key === "a1")?.name ?? "Aproximação 1",
-    a2: result.approaches.find((a) => a.key === "a2")?.name ?? "Aproximação 2",
-  }), [result.approaches]);
+  const names = useMemo(() => Object.fromEntries(result.approaches.map((a) => [a.key, a.name])) as Partial<Record<ApproachKey, string>>, [result.approaches]);
+  const scopes = useMemo(() => [...result.approaches.map((a) => a.key), "x"] as Scope[], [result.approaches]);
+  const hasClasses = result.approaches.some((a) => (a.classes?.length ?? 0) > 0);
+  const headline = HEADLINE_METRICS.filter((m) => m !== "throughput_ceq" || hasClasses);
   const chart = useMemo(() => (result.series ? queueSeriesChart(result.series, names, colors) : null), [result.series, names, colors]);
   const x = result.metrics.x;
   const s = result.settings;
   return (
     <>
       <p className="sub">
-        Ciclo de {num(result.plan.cycle, 0)} s ({result.plan.phases.map(phaseText).join(" | ")}), {s.replications} réplicas de {num(s.simulation_time / 60, 0)} min,
+        Ciclo de {num(result.plan.cycle, 0)} s, {result.plan.phases.length} fases ({result.plan.phases.map(phaseText).join(" | ")}), {s.replications} réplicas de {num(s.simulation_time / 60, 0)} min,
         semente {s.seed}. Intervalos de {pct(s.confidence_level)} de confiança.
       </p>
       <AlertList alerts={result.alerts} />
@@ -168,16 +173,16 @@ export function TrafficSimulationView({ result }: { result: TrafficResult }) {
             <thead>
               <tr>
                 <th scope="col">Métrica</th>
-                {(["a1", "a2", "x"] as Scope[]).map((k) => (
-                  <th key={k} scope="col" className="num">{k === "x" ? "Cruzamento" : names[k]}</th>
+                {scopes.map((k) => (
+                  <th key={k} scope="col" className="num">{k === "x" ? "Cruzamento" : names[k as ApproachKey] ?? SCOPE_LABEL[k]}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {HEADLINE_METRICS.map((m) => (
+              {headline.map((m) => (
                 <tr key={m}>
                   <th scope="row" title={METRICS[m].hint}>{METRICS[m].label} <span className="cell-sub">{METRICS[m].unit}</span></th>
-                  {(["a1", "a2", "x"] as Scope[]).map((k) => (
+                  {scopes.map((k) => (
                     <td key={k} className="num">{k === "x" && (m === "queue_end" || m === "queue_max" || m === "stopped_fraction" || m === "overflow_cycles") ? "—" : formatSummary(m, result.metrics[k][m])}</td>
                   ))}
                 </tr>
@@ -220,13 +225,15 @@ function VerdictTag({ metric, name }: { metric: CompareMetric | undefined; name:
 type RowMetrics = Record<Scope, Record<string, CompareMetric>>;
 const metricsOfRow = (row: PlanRow): RowMetrics | null => (row.status === "ok" ? (row.metrics as RowMetrics) : null);
 
-export function TrafficCompareView({ data, names }: { data: Pick<CompareResult, "settings" | "multiple_comparison"> & { base: PlanRow | null; plans: PlanRow[] }; names?: Record<ApproachKey, string> }) {
+export function TrafficCompareView({ data, names }: { data: Pick<CompareResult, "settings" | "multiple_comparison"> & { base: PlanRow | null; plans: PlanRow[] }; names?: Partial<Record<ApproachKey, string>> }) {
   const colors = useThemeColors();
   const [metric, setMetric] = useState("delay_censored");
   const rows = useMemo(() => [...(data.base ? [data.base] : []), ...data.plans], [data.base, data.plans]);
   const chart = useMemo(() => (data.base ? planDelayChart({ settings: data.settings, multiple_comparison: data.multiple_comparison, base: data.base, plans: data.plans }, colors) : null), [data, colors]);
   const level = pct(data.multiple_comparison.confidence_level);
   const label = (k: ApproachKey) => names?.[k] ?? SCOPE_LABEL[k];
+  const keys = keysOf(data.base?.saturation ?? data.plans[0]?.saturation ?? { a1: 0, a2: 0 });
+  const scopes = ["x", ...keys] as Scope[];
   return (
     <>
       <div className={data.multiple_comparison.correction === "none" && data.multiple_comparison.comparisons > 1 ? "banner banner-warning" : "banner banner-info"} role="note">
@@ -251,8 +258,8 @@ export function TrafficCompareView({ data, names }: { data: Pick<CompareResult, 
           <caption className="sr-only">Planos semafóricos comparados com a referência: {METRICS[metric].label}</caption>
           <thead>
             <tr>
-              <th scope="col">Plano</th><th scope="col" className="num">Ciclo</th><th scope="col" className="num">x₁ / x₂</th>
-              {(["x", "a1", "a2"] as Scope[]).map((k) => (
+              <th scope="col">Plano</th><th scope="col" className="num">Ciclo</th><th scope="col" className="num">{keys.map((_, i) => `x${i + 1}`).join(" / ")}</th>
+              {scopes.map((k) => (
                 <th key={k} scope="col" className="num">{k === "x" ? "Cruzamento" : label(k)}<div className="cell-sub">Δ vs referência ({level})</div></th>
               ))}
             </tr>
@@ -264,12 +271,12 @@ export function TrafficCompareView({ data, names }: { data: Pick<CompareResult, 
                 <tr key={row.index} className={row.status === "error" ? "row-bad" : undefined}>
                   <th scope="row">
                     {row.name}
-                    <div className="cell-sub">{row.role === "base" ? "referência · " : ""}verde {num(row.phases[0].green, 0)} / {num(row.phases[1].green, 0)} s</div>
+                    <div className="cell-sub">{row.role === "base" ? "referência · " : ""}verde {row.phases.map((p) => num(p.green, 0)).join(" / ")} s</div>
                     {row.status === "error" && <div className="cell-sub">{row.message ?? "sem amostra"}</div>}
                   </th>
                   <td className="num">{num(row.cycle, 0)} s</td>
-                  <td className="num">{formatSaturation(row.saturation.a1)} / {formatSaturation(row.saturation.a2)}</td>
-                  {(["x", "a1", "a2"] as Scope[]).map((k) => {
+                  <td className="num">{keys.map((k) => formatSaturation(row.saturation[k] ?? 0)).join(" / ")}</td>
+                  {scopes.map((k) => {
                     const cell = m?.[k]?.[metric];
                     return (
                       <td key={k} className="num">
@@ -303,26 +310,28 @@ const SWEEP_TAG: Record<string, { text: string; cls: string }> = {
   unknown: { text: "sem comparação", cls: "tag" },
 };
 
-export function TrafficSweepView({ data, names }: { data: SweepResult; names?: Record<ApproachKey, string> }) {
+export function TrafficSweepView({ data, names }: { data: SweepResult; names?: Partial<Record<ApproachKey, string>> }) {
   const colors = useThemeColors();
   const chart = useMemo(() => sweepChart(data, colors), [data, colors]);
   const best = data.points[data.best_index];
   const indist = data.points.filter((p) => p.vs_best.verdict === "indistinguishable");
   const label = (k: ApproachKey) => names?.[k] ?? SCOPE_LABEL[k];
+  const keys = keysOf(best);
+  const [fa, fb] = data.pair ?? [1, 2];
   return (
     <>
       <p className="sub">
-        Ciclo fixo de {num(data.cycle, 0)} s, verde total de {num(data.green_total, 0)} s redistribuído entre as fases (amarelo e todo-vermelho não mudam).
+        Ciclo fixo de {num(data.cycle, 0)} s, verde de {num(data.green_total, 0)} s redistribuído entre as fases {fa} e {fb} (amarelo, todo-vermelho e as demais fases não mudam).
         {" "}{data.settings.replications} réplicas por ponto, semente {data.settings.seed}.
       </p>
       <div className="banner banner-success" role="note">
         <IconCheck size={18} aria-hidden="true" />
         <div>
-          Menor atraso médio: verde {num(best.green[0], 1)} s / {num(best.green[1], 1)} s, com {formatSeconds(best.intersection.delay_censored?.mean)} por veículo.
+          Menor atraso médio: verde {num(best.green[fa - 1], 1)} s / {num(best.green[fb - 1], 1)} s (fases {fa} e {fb}), com {formatSeconds(best.intersection.delay_censored?.mean)} por veículo.
           {indist.length > 0 && (
             <div className="banner-detail">
               {indist.length === 1 ? "Outro ponto não se distingue" : `Outros ${indist.length} pontos não se distinguem`} dele com as réplicas feitas
-              (verde da fase 1: {indist.map((p) => num(p.green[0], 1)).join(", ")} s): a curva é plana nessa região.
+              (verde da fase {fa}: {indist.map((p) => num(p.green[fa - 1], 1)).join(", ")} s): a curva é plana nessa região.
             </div>
           )}
         </div>
@@ -336,21 +345,21 @@ export function TrafficSweepView({ data, names }: { data: SweepResult; names?: R
           <caption className="sr-only">Pontos da varredura da divisão do verde</caption>
           <thead>
             <tr>
-              <th scope="col" className="num">Verde 1 / 2 (s)</th><th scope="col" className="num">x₁ / x₂</th>
+              <th scope="col" className="num">Verde {data.points[0]?.green.map((_, i) => i + 1).join(" / ")} (s)</th>
+              <th scope="col" className="num">{keys.map((_, i) => `x${i + 1}`).join(" / ")}</th>
               <th scope="col" className="num">Atraso do cruzamento (s)</th>
-              <th scope="col" className="num">{label("a1")} (s)</th><th scope="col" className="num">{label("a2")} (s)</th>
-              <th scope="col" className="num">Ciclos com fila (1 / 2)</th><th scope="col">Contra o melhor</th>
+              {keys.map((k) => <th key={k} scope="col" className="num">{label(k)} (s)</th>)}
+              <th scope="col" className="num">Ciclos com fila ({keys.map((_, i) => i + 1).join(" / ")})</th><th scope="col">Contra o melhor</th>
             </tr>
           </thead>
           <tbody>
             {data.points.map((p) => (
-              <tr key={p.index} className={p.index === data.best_index ? "row-best" : p.saturation.a1 >= 1 || p.saturation.a2 >= 1 ? "row-warn" : undefined}>
-                <th scope="row" className="num">{num(p.green[0], 1)} / {num(p.green[1], 1)}</th>
-                <td className="num">{formatSaturation(p.saturation.a1)} / {formatSaturation(p.saturation.a2)}</td>
+              <tr key={p.index} className={p.index === data.best_index ? "row-best" : keys.some((k) => (p.saturation[k] ?? 0) >= 1) ? "row-warn" : undefined}>
+                <th scope="row" className="num">{p.green.map((g) => num(g, 1)).join(" / ")}</th>
+                <td className="num">{keys.map((k) => formatSaturation(p.saturation[k] ?? 0)).join(" / ")}</td>
                 <td className="num">{formatSummary("delay_censored", p.intersection.delay_censored)}</td>
-                <td className="num">{formatMetricValue("delay_censored", p.a1.delay_censored?.mean)}</td>
-                <td className="num">{formatMetricValue("delay_censored", p.a2.delay_censored?.mean)}</td>
-                <td className="num">{formatMetricValue("overflow_cycles", p.a1.overflow_cycles?.mean)}% / {formatMetricValue("overflow_cycles", p.a2.overflow_cycles?.mean)}%</td>
+                {keys.map((k) => <td key={k} className="num">{formatMetricValue("delay_censored", p[k]?.delay_censored?.mean)}</td>)}
+                <td className="num">{keys.map((k) => `${formatMetricValue("overflow_cycles", p[k]?.overflow_cycles?.mean)}%`).join(" / ")}</td>
                 <td><span className={(SWEEP_TAG[p.vs_best.verdict] ?? SWEEP_TAG.unknown).cls}>{(SWEEP_TAG[p.vs_best.verdict] ?? SWEEP_TAG.unknown).text}</span></td>
               </tr>
             ))}
@@ -381,18 +390,58 @@ function ErrorsRow({ label, e, unit }: { label: string; e: { n: number; bias: nu
   );
 }
 
-function ValidationApproachView({ k, a, ids }: { k: ApproachKey; a: ValidationApproach; ids: Record<ApproachKey, string> }) {
+export type ValidationIds = Partial<Record<ApproachKey, string>>;
+/** O nome (approach_id) de cada aproximação de uma validação. */
+export const validationIds = (r: VideoValidation): ValidationIds =>
+  Object.fromEntries(keysOf(r.approaches).map((k) => [k, r.approaches[k]!.approach_id])) as ValidationIds;
+
+const fmtP = (p: number | null | undefined) => (p === null || p === undefined ? "—" : p < 0.001 ? "< 0,001" : num(p, 3));
+
+function TestsTable({ tests, who }: { tests: ValidationTest[]; who: string }) {
+  if (tests.length === 0) return null;
+  return (
+    <div className="table-wrap">
+      <table className="table">
+        <caption className="sr-only">Testes de hipótese da validação em {who}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Teste</th><th scope="col" className="num">Estatística</th><th scope="col" className="num">p-valor</th>
+            <th scope="col" className="num">p ajustado (Holm)</th><th scope="col">Decisão (α = {num(tests[0].alpha, 2)})</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tests.map((t) => {
+            const good = t.decision === "equivalent";
+            const bad = t.decision === "rejected";
+            return (
+              <tr key={t.id}>
+                <th scope="row" title={`H0: ${t.h0}`}>{t.name}{t.note && <div className="cell-sub">{t.note}</div>}</th>
+                <td className="num">{t.statistic === null ? "—" : num(t.statistic, 3)}</td>
+                <td className="num">{fmtP(t.p_value)}</td>
+                <td className="num">{fmtP(t.p_adjusted)}</td>
+                <td><span className={good ? "tag tag-ok" : bad ? "tag tag-bad" : "tag"}>{DECISION_TEXT[t.decision] ?? t.decision}</span></td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ValidationApproachView({ k, a, ids }: { k: ApproachKey; a: ValidationApproach; ids: ValidationIds }) {
   const colors = useThemeColors();
   const color = approachColor(colors, k);
-  const queue = useMemo(() => validationQueueChart(a, ids[k], color, colors), [a, ids, k, color, colors]);
-  const deps = useMemo(() => validationDeparturesChart(a, ids[k], color, colors), [a, ids, k, color, colors]);
+  const who = ids[k] ?? `Aproximação ${k.slice(1)}`;
+  const queue = useMemo(() => validationQueueChart(a, who, color, colors), [a, who, color, colors]);
+  const deps = useMemo(() => validationDeparturesChart(a, who, color, colors), [a, who, color, colors]);
   const t = a.departures_total;
   return (
     <section className="block" aria-labelledby={`val-${k}`}>
-      <h3 id={`val-${k}`}>{ids[k]}</h3>
+      <h3 id={`val-${k}`}>{who}</h3>
       <div className="table-wrap">
         <table className="table">
-          <caption className="sr-only">Erros da simulação contra o observado em {ids[k]}</caption>
+          <caption className="sr-only">Erros da simulação contra o observado em {who}</caption>
           <thead>
             <tr>
               <th scope="col">Comparação</th><th scope="col" className="num">Intervalos</th><th scope="col" className="num">Viés</th>
@@ -410,13 +459,19 @@ function ValidationApproachView({ k, a, ids }: { k: ApproachKey; a: ValidationAp
         {t.relative_error !== null && t.relative_error !== undefined ? `, erro relativo ${num(t.relative_error * 100, 1)}%` : ""}.
         {a.delay && <> Atraso: observado {formatSeconds(a.delay.observed_mean)} em {a.delay.observed_n} veículos acompanhados, simulado {formatSeconds(a.delay.simulated_mean)}. {a.delay.note}</>}
       </p>
-      <PlotlyChart data={queue.data} layout={queue.layout} label={`Fila observada e simulada em ${ids[k]}`} />
-      <PlotlyChart data={deps.data} layout={deps.layout} label={`Saídas por intervalo, observadas e simuladas, em ${ids[k]}`} />
+      {a.tests && a.tests.length > 0 && (
+        <>
+          <h4 className="group-title">Testes de hipótese</h4>
+          <TestsTable tests={a.tests} who={who} />
+        </>
+      )}
+      <PlotlyChart data={queue.data} layout={queue.layout} label={`Fila observada e simulada em ${who}`} />
+      <PlotlyChart data={deps.data} layout={deps.layout} label={`Saídas por intervalo, observadas e simuladas, em ${who}`} />
     </section>
   );
 }
 
-export function TrafficValidationView({ result, ids }: { result: VideoValidation; ids: Record<ApproachKey, string> }) {
+export function TrafficValidationView({ result, ids }: { result: VideoValidation; ids: ValidationIds }) {
   const s = result.settings;
   return (
     <>
@@ -427,7 +482,56 @@ export function TrafficValidationView({ result, ids }: { result: VideoValidation
         </div>
       </div>
       {result.notes.length > 0 && <ul className="scn-alerts" aria-label="Observações da validação">{result.notes.map((n) => <li key={n} className="alert-warn">{n}</li>)}</ul>}
-      {(["a1", "a2"] as ApproachKey[]).map((k) => <ValidationApproachView key={k} k={k} a={result.approaches[k]} ids={ids} />)}
+      {keysOf(result.approaches).map((k) => <ValidationApproachView key={k} k={k} a={result.approaches[k]!} ids={ids} />)}
+    </>
+  );
+}
+
+// ---------- duas sessões lado a lado ----------
+
+export function TrafficSessionsView({ data }: { data: SessionsComparison }) {
+  const [la, lb] = data.labels;
+  const groups = Array.from(new Set(data.rows.map((r) => r.group)));
+  return (
+    <>
+      <div className="banner banner-info" role="note">
+        <IconInfoCircle size={18} aria-hidden="true" />
+        <div>
+          Tabela descritiva: os p-valores apontam onde olhar primeiro e não são corrigidos entre linhas. A taxa de chegada usa o teste binomial exato
+          (supõe chegadas de Poisson); ℓ e h usam um teste z aproximado a partir dos ICs.
+        </div>
+      </div>
+      {data.notes.length > 0 && <ul className="scn-alerts" aria-label="Observações da comparação">{data.notes.map((n) => <li key={n} className="alert-warn">{n}</li>)}</ul>}
+      <div className="table-wrap">
+        <table className="table">
+          <caption className="sr-only">Comparação das sessões {la} e {lb}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Grandeza</th><th scope="col" className="num">{la}</th><th scope="col" className="num">{lb}</th>
+              <th scope="col" className="num">Diferença ({lb} − {la})</th><th scope="col" className="num">Razão ({lb}/{la}) [IC]</th><th scope="col" className="num">p-valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            {groups.flatMap((g) => [
+              <tr key={`g-${g}`}><th scope="rowgroup" colSpan={6} className="group-row">{g}</th></tr>,
+              ...data.rows.filter((r) => r.group === g).map((r) => {
+                const rate = r.unit === "veíc/s";
+                const scale = (v: number | null) => (v === null ? "—" : num(rate ? v * 60 : v, rate ? 2 : 2));
+                const unit = rate ? "veíc./min" : r.unit;
+                return (
+                  <tr key={`${g}-${r.name}`}>
+                    <th scope="row" title={r.note ?? undefined}>{r.name} <span className="cell-sub">{unit}</span></th>
+                    <td className="num">{scale(r.a)}</td><td className="num">{scale(r.b)}</td>
+                    <td className="num">{r.difference === null ? "—" : num(rate ? r.difference * 60 : r.difference, 2)}</td>
+                    <td className="num">{r.ratio === null ? "—" : `${num(r.ratio, 2)}${r.ratio_ci ? ` [${num(r.ratio_ci[0], 2)}; ${num(r.ratio_ci[1], 2)}]` : ""}`}</td>
+                    <td className="num">{r.p_value === null ? "—" : <span className={r.p_value < 0.05 ? "tag tag-warn" : "tag"}>{fmtP(r.p_value)}</span>}</td>
+                  </tr>
+                );
+              }),
+            ])}
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }

@@ -182,6 +182,25 @@ Perto de x ≈ 1 o fluido subestima, porque ignora a aleatoriedade da chegada e 
 
 O plano e o offset são recuperados exatamente nas três sementes. Em 5 das 6 estimativas o IC de h contém 2,0 s (na semente 14, via 2, h = 1,941 s erra 3,0%).
 
+## 11. Cruzamento semaforizado (Fase 13.2)
+
+Valores conferidos pelos testes de `tests/test_traffic_phase13_2.py`. Como o vídeo sintético sai do mesmo motor que o recupera, eles provam que o código funciona, não que o modelo representa um cruzamento real.
+
+| Caso | Valor de referência |
+| --- | --- |
+| 4 fases (30/20/14/25 s, amarelo 3 s, todo-vermelho 2 s): ciclo e início de cada verde | 109 s; 0, 35, 60 e 79 s |
+| Capacidade com h determinístico (h = 2 s, ℓ = 2,5 s, verde 34 s, amarelo utilizável 1 s) | ⌊(34 + 1 − 2,5) / 2⌋ + 1 = 17 veículos por ciclo (`vehicles_per_cycle`) |
+| Capacidade ajustada com h lognormal (CV 0,35) | g_e / h̄ + (CV² − 1) / 2 veículos por ciclo, abaixo da capacidade nominal |
+| Mistura carro 70% (×1), moto 20% (×0,35), ônibus 10% (×2,2) | fator médio 0,99; intervalo médio por veículo 1,98 s com h = 2 s |
+| Reprodução de contagens: blocos de 600 s com 70 (50, 14, 6) e 40 (30, 8, 2) | 110 chegadas, 80 carros, 22 motos e 8 ônibus, sem variação entre réplicas |
+| Lei de Little com 4 aproximações | L = λ·W dentro de 3% (nas medições, de 1,000 a 1,015) |
+| Vazão sob saturação forte contra a capacidade | dentro de 4% (nas medições, de 0,977 a 1,006 da nominal conforme a distribuição de h) |
+| ℓ variável: média e CV dos ℓ por ciclo (média 2,5 s, CV 0,4) | média dentro de 3% e CV dentro de 6% |
+| Holm (p = 0,01; 0,04; 0,03) | p ajustados 0,03; 0,06; 0,06 |
+| Aderência de Monte Carlo com o modelo certo (200 sorteios) | menos de 12% dos p-valores abaixo de 0,05 (nominal 5%) |
+| Vídeo sintético de 3 fases (34/22/16 s, todo-vermelho 2 s) com classes | plano recuperado exatamente (ciclo 87 s); h por carro equivalente dentro de 0,12 s de 2,0 s; ℓ dentro de 0,5 s de 2,5 s |
+| Validação do modelo certo × h 30% maior (2 fases saturadas, 199 réplicas) | modelo certo (3 fases com classes): aderência da fila não rejeitada e total de saídas equivalente com tolerância de 5%; modelo com h 30% maior: algum teste rejeitado após o ajuste de Holm |
+
 ## 8. Propriedades que valem como teste (sem número fixo)
 
 | Propriedade | Aplicação |

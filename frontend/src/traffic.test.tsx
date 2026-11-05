@@ -186,7 +186,7 @@ describe("dados do vídeo", () => {
   it("pede os dois arquivos obrigatórios antes de chamar a API", async () => {
     const { user, fetchMock } = await openVideo();
     expect(screen.getByText("Com cabeçalho: timestamp, approach_id, signal_state")).toBeInTheDocument();
-    expect(screen.getByText("Com cabeçalho: interval_start, interval_end, approach_id, arrivals, departures, queue_count")).toBeInTheDocument();
+    expect(screen.getByText("Com cabeçalho: interval_start, interval_end, approach_id, arrivals, departures, queue_count (e vehicle_class, se contou por classe)")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Estimar com o vídeo" }));
     expect(screen.getByText("Escolha o CSV dos eventos semafóricos.")).toBeInTheDocument();
     expect(callsTo(fetchMock, "/video/estimate")).toHaveLength(0);
@@ -278,7 +278,7 @@ describe("resultados reabertos do histórico (as mesmas telas)", () => {
 
   it("validação", () => {
     const result = fx.trafficVideoValidate as unknown as VideoValidation;
-    render(<TrafficValidationView result={result} ids={{ a1: result.approaches.a1.approach_id, a2: result.approaches.a2.approach_id }} />);
+    render(<TrafficValidationView result={result} ids={{ a1: result.approaches.a1!.approach_id, a2: result.approaches.a2!.approach_id }} />);
     expect(screen.getAllByRole("table")).toHaveLength(2);
   });
 });

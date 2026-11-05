@@ -45,7 +45,7 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 | E12 — Dimensionamento e cobertura dos experimentos | US-32, US-33 | Fase 11 |
 | E13 — Comparação de cenários | US-34 | Fase 12 |
 | E14 — Distribuições e ajuste de amostras | US-35 | Fase 13 |
-| E15 — Cruzamento semaforizado | US-36 a US-39 | Fase 13.1 |
+| E15 — Cruzamento semaforizado | US-36 a US-41 | Fases 13.1 e 13.2 |
 
 ---
 
@@ -388,6 +388,23 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 - **Dado** filas parcialmente visíveis ou intervalos sem contagem, **quando** valido, **então** esses intervalos ficam fora da comparação e aparecem contados em uma observação.
 - **Dado** o resultado da validação, **quando** o leio, **então** a tela diz que não há limite de aprovação e que a faixa é a variação do próprio processo, não um IC da média.
 
+#### US-40 — Estudar um cruzamento com mais de duas fases e com motos e ônibus ✅ · M · UC-16
+> Como **estudante**, quero simular um cruzamento de 2 a 4 fases em que cada classe de veículo (carro, moto, ônibus) ocupa a linha de retenção de acordo com a sua equivalência em carros, para representar o cruzamento que filmei sem ignorar fases nem misturar motos e ônibus com carros.
+
+**Critérios de aceitação**
+- **Dado** um cruzamento com 4 fases, **quando** simulo, **então** a resposta traz as 4 aproximações (métricas, série, referência e saturação), a Lei de Little vale dentro de 3% em cada uma e as sementes de duas fases dão os mesmos resultados de antes.
+- **Dado** classes com parcelas que não somam 1, ou sem fator, **quando** simulo, **então** a API recusa e aponta o campo; não existe fator padrão.
+- **Dado** um vídeo com a coluna `vehicle_class`, **quando** estimo sem `class_factors`, **então** a API recusa e nomeia as classes; com os fatores, ℓ e h saem por carro equivalente (3 fases sintéticas: h entre 1,95 e 1,99 s para 2,0 s verdadeiro).
+- **Dado** que o vídeo tem verdes fora da ordem de `approach_ids` ou fases que não somam o ciclo, **quando** estimo, **então** aparecem os avisos `phase_order` e `cycle_mismatch`.
+
+#### US-41 — Reproduzir o que foi filmado e comparar manhã com tarde ✅ · M · UC-16
+> Como **estudante**, quero que os planos alternativos enfrentem exatamente as chegadas que filmei e comparar duas sessões lado a lado, para que a diferença entre planos e entre horários não venha do sorteio das chegadas.
+
+**Critérios de aceitação**
+- **Dado** o corpo `suggested.replay`, **quando** simulo, **então** o número de chegadas (e por classe) de cada bloco é exatamente o observado, sem variação entre réplicas.
+- **Dado** duas sessões estimadas, **quando** comparo, **então** a tabela traz ciclo, fases, taxa de chegada (razão com IC e p-valor binomial exato), ℓ e h, e diz que os p-valores não são corrigidos entre linhas.
+- **Dado** a validação com tolerâncias informadas, **quando** leio os testes, **então** a equivalência aparece como “equivalente” ou “não demonstrada”; sem tolerância, o teste fica “não avaliado” e pede a tolerância.
+
 ---
 
 ## 4. Rastreabilidade com os casos de uso
@@ -409,7 +426,7 @@ Este documento complementa os [Casos de Uso](casos-de-uso.md): cada história in
 | UC-13 — Dimensionamento | US-32 |
 | UC-14 — Comparação de cenários | US-34 |
 | UC-15 — Distribuições e ajuste de amostras | US-35 |
-| UC-16 — Cruzamento semaforizado | US-36, US-37, US-38, US-39 |
+| UC-16 — Cruzamento semaforizado | US-36, US-37, US-38, US-39, US-40, US-41 |
 | Transversais (API, qualidade, Docker) | US-25, US-26, US-27, US-28 |
 
 ---

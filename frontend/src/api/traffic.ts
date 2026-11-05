@@ -1,13 +1,16 @@
 import { ApiError, apiErrorFrom, fetchApi, send } from "./client";
 
 /**
- * Cruzamento semaforizado (Fase 13.1). Tempos em segundos e taxas em veículos por segundo, como na API.
+ * Cruzamento semaforizado (Fases 13.1 e 13.2: 2 a 4 aproximações, classes de veículos). Tempos em segundos e taxas em veículos por segundo, como na API.
  * Os tipos abaixo descrevem o que a tela usa; o contrato completo está em /docs da API.
  */
 
 export interface Summary { mean: number; std?: number | null; ci_low?: number | null; ci_high?: number | null; n: number }
 export type MetricMap = Record<string, Summary | null>;
-export type ApproachKey = "a1" | "a2";
+export type ApproachKey = "a1" | "a2" | "a3" | "a4";
+export const APPROACH_KEYS: ApproachKey[] = ["a1", "a2", "a3", "a4"];
+/** As chaves de aproximação que existem em um objeto da API (de 2 a 4). */
+export const keysOf = (obj: object | null | undefined): ApproachKey[] => APPROACH_KEYS.filter((k) => obj != null && k in obj);
 export type Scope = "x" | ApproachKey;
 
 export interface TrafficAlert {
@@ -19,22 +22,23 @@ export interface TrafficSettings {
 }
 export interface Phase { green: number; amber: number; all_red: number }
 export interface HeadwayInfo { distribution: string; label: string; mean: number; cv: number; std: number }
+export interface VehicleClassInfo { name: string; share: number; factor: number }
 export interface ApproachInfo {
   key: ApproachKey; name: string; saturation: number; capacity: number; effective_green: number; arrival_rate: number;
-  headway: HeadwayInfo; first_vehicle_time: number; amber_usable: number; initial_queue: number;
+  headway: HeadwayInfo; first_vehicle_time: number; first_vehicle_cv?: number; amber_usable: number; initial_queue: number;
   not_informed: string[]; profile_blocks: number;
+  classes?: VehicleClassInfo[]; mean_factor?: number; mean_headway?: number;
 }
 export interface ApproachReference {
-  kind: "webster" | "fluid"; exact: boolean; saturation: number; capacity: number; arrival_rate: number;
+  kind: "webster" | "fluid"; exact: boolean; saturation: number; capacity: number; capacity_adjusted?: number; arrival_rate: number;
   uniform_delay: number; delay: number; delay_censored: number; queue_end: number | null; queue_mean: number;
 }
 export interface WebsterCycle { exact: boolean; cycle: number; critical_ratio_sum: number; lost_time: number }
-export interface TrafficReference {
-  a1: ApproachReference; a2: ApproachReference; delay: number | null; delay_censored: number | null;
-  webster_cycle: WebsterCycle | null;
-}
+export type TrafficReference = { [K in ApproachKey]?: ApproachReference } & {
+  delay: number | null; delay_censored: number | null; webster_cycle: WebsterCycle | null;
+};
 export interface Band { mean: number[]; ci_low: number[]; ci_high: number[] }
-export interface QueueSeries { times: number[]; a1: Band; a2: Band }
+export type QueueSeries = { times: number[] } & { [K in ApproachKey]?: Band };
 
 export interface TrafficResult {
   settings: TrafficSettings;
@@ -55,7 +59,7 @@ export interface CompareMetric {
 }
 export interface PlanRow {
   index: number; role: "base" | "plan"; name: string; status: "ok" | "error"; message: string | null;
-  phases: Phase[]; cycle: number; saturation: Record<ApproachKey, number>; alerts: TrafficAlert[];
+  phases: Phase[]; cycle: number; saturation: Partial<Record<ApproachKey, number>>; alerts: TrafficAlert[];
   reference: TrafficReference; metrics: Record<Scope, Record<string, CompareMetric>> | Record<string, never>;
   series?: QueueSeries | null;
 }
@@ -67,14 +71,14 @@ export interface CompareResult {
 // ---------- varredura do verde ----------
 
 export type SweepVerdict = "best" | "worse" | "better" | "indistinguishable" | "unknown";
-export interface SweepPoint {
-  index: number; green: [number, number]; saturation: Record<ApproachKey, number>;
-  intersection: MetricMap; a1: MetricMap; a2: MetricMap; reference_delay: number | null;
+export type SweepPoint = {
+  index: number; green: number[]; saturation: Partial<Record<ApproachKey, number>>;
+  intersection: MetricMap; reference_delay: number | null;
   vs_best: { verdict: SweepVerdict; diff: Summary | null };
-}
+} & { [K in ApproachKey]?: MetricMap };
 export interface SweepResult {
   settings: TrafficSettings; cycle: number; green_total: number; best_index: number; points: SweepPoint[];
-  webster_cycle: WebsterCycle | null; note: string;
+  pair?: [number, number]; webster_cycle: WebsterCycle | null; note: string;
 }
 
 export interface TrafficEvent {
@@ -86,22 +90,26 @@ export interface TrafficEvent {
 
 // ---------- dados do vídeo ----------
 
+export interface SuggestedBlock { duration: number; lambda?: number; count?: number; class_counts?: Record<string, number> }
 export interface SuggestedApproach {
-  name: string; profile: { duration: number; lambda: number }[];
+  name: string; profile: SuggestedBlock[];
   headway: { distribution: string; mean: number; cv?: number; k?: number } | null;
-  first_vehicle_time: number | null; amber_usable: number | null; initial_queue: number | null;
+  first_vehicle_time: number | null; first_vehicle_cv?: number | null; amber_usable: number | null; initial_queue: number | null;
+  classes?: VehicleClassInfo[];
 }
 export interface SuggestedBody {
   phases: { green: number | null; amber: number | null; all_red: number | null }[]; offset: number;
   approaches: SuggestedApproach[]; simulation_time: number;
+  /** O mesmo corpo com as contagens observadas (`count`, por classe) em vez de taxas: reproduz o que foi filmado. */
+  replay?: Omit<SuggestedBody, "replay">;
 }
 export interface Stat { mean: number; std?: number | null; min?: number; max?: number; n: number }
 export interface VideoWarning { code: string; level: string; message: string }
 export interface DischargeEstimate {
   approach_id: string; saturated_cycles: number; crossings_in_red: number; notes: string[];
-  first_vehicle_time: (Stat & { ci_low: number; ci_high: number; first_crossing_mean: number }) | null;
+  first_vehicle_time: (Stat & { ci_low: number; ci_high: number; first_crossing_mean: number; cv?: number | null }) | null;
   headway: { n: number; mean: number; ci_low: number; ci_high: number; std: number; cv: number; suggestion: SuggestedApproach["headway"] } | null;
-  amber_usable: { value: number; n: number; pressured_cycles: number } | null;
+  amber_usable: { value: number; n: number; pressured_cycles: number; upper?: number; note?: string } | null;
 }
 export interface VideoEstimate {
   session_id: string | null; horizon: number; approach_ids: string[];
@@ -109,11 +117,12 @@ export interface VideoEstimate {
   signal: {
     phases: SuggestedBody["phases"]; offset: number; offset_source: string; cycle: Stat; warnings: VideoWarning[];
   };
-  arrivals: Record<ApproachKey, {
+  arrivals: Partial<Record<ApproachKey, {
     approach_id: string; mean_rate: number; mean_rate_ci: [number, number]; arrivals: number; initial_queue: number | null;
     blocks: { start: number; duration: number; arrivals: number; lam: number; ci_low: number; ci_high: number }[];
-  }>;
-  discharge: Record<ApproachKey, DischargeEstimate> | null;
+    classes?: (VehicleClassInfo & { arrivals: number })[]; mean_factor?: number;
+  }>>;
+  discharge: Partial<Record<ApproachKey, DischargeEstimate>> | null;
   suggested: SuggestedBody;
   notes: string[];
 }
@@ -126,6 +135,7 @@ export interface ValidationInterval {
 }
 export interface ValidationApproach {
   approach_id: string; intervals: ValidationInterval[]; queue: ValidationErrors | null; departures: ValidationErrors | null;
+  tests?: ValidationTest[];
   departures_total: { observed: number | null; mean: number; low: number; high: number; relative_error: number | null };
   excluded: { queue: number; departures: number };
   delay: {
@@ -133,10 +143,27 @@ export interface ValidationApproach {
     simulated_low: number; simulated_high: number; note: string;
   } | null;
 }
+export type TestDecision = "rejected" | "not_rejected" | "not_evaluated" | "equivalent" | "not_shown";
+export interface ValidationTest {
+  id: string; name: string; h0: string; statistic: number | null; p_value: number | null; p_adjusted: number | null;
+  alpha: number; decision: TestDecision; note: string | null; kind?: string; equivalent?: boolean | null;
+}
 export interface VideoValidation {
-  approaches: Record<ApproachKey, ValidationApproach>;
-  settings: { simulation_time: number; replications: number; seed: number; band_level: number; note: string };
+  approaches: Partial<Record<ApproachKey, ValidationApproach>>;
+  settings: {
+    simulation_time: number; replications: number; seed: number; band_level: number; note: string; alpha?: number;
+    tolerance_delay?: number | null; tolerance_departures?: number | null; classes?: string[];
+  };
   notes: string[];
+}
+
+export interface SessionRow {
+  group: string; name: string; unit: string; a: number | null; b: number | null; difference: number | null;
+  ratio: number | null; ratio_ci: [number, number] | null; p_value: number | null; note: string | null;
+}
+export interface SessionsComparison {
+  labels: [string, string]; level: number; rows: SessionRow[]; notes: string[];
+  sessions: { label: string; session_id: string | null; horizon: number | null }[];
 }
 
 // ---------- chamadas ----------
@@ -208,4 +235,23 @@ export function estimateVideo(form: FormData, signal?: AbortSignal): Promise<Vid
 
 export function validateVideo(form: FormData, signal?: AbortSignal): Promise<VideoValidation> {
   return send<VideoValidation>("/api/traffic/video/validate", { method: "POST", body: form }, signal);
+}
+
+/** Refaz a validação com os mesmos arquivos e parâmetros e devolve o CSV (resumo, intervalos e testes). */
+export async function exportValidationCsv(form: FormData, signal?: AbortSignal): Promise<Blob> {
+  const response = await fetchApi("/api/traffic/video/validate/export.csv", { method: "POST", body: form }, signal);
+  if (!response.ok) throw await apiErrorFrom(response);
+  return response.blob();
+}
+
+export interface SessionsCompareBody { a: VideoEstimate; b: VideoEstimate; label_a: string; label_b: string }
+
+export function compareSessions(body: SessionsCompareBody, signal?: AbortSignal): Promise<SessionsComparison> {
+  return send<SessionsComparison>("/api/traffic/video/sessions/compare", JSON_POST(body), signal);
+}
+
+export async function exportSessionsCsv(body: SessionsCompareBody, signal?: AbortSignal): Promise<Blob> {
+  const response = await fetchApi("/api/traffic/video/sessions/compare/export.csv", JSON_POST(body), signal);
+  if (!response.ok) throw await apiErrorFrom(response);
+  return response.blob();
 }

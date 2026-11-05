@@ -3,9 +3,9 @@ import type { VideoEstimate } from "../api/traffic";
 import { fixtures as fx } from "../test/helpers";
 import { parseTrafficRecord, trafficRecord } from "./records";
 import {
-  applyEstimate, blankPlan, blankSweep, blankTraffic, buildComparisonBody, buildSweepBody, buildTrafficBody,
-  exampleTraffic, formatDelta, formatMetricValue, formatSummary, trafficErrors, trafficFieldKey, verdictTone,
-  type TrafficText,
+  applyEstimate, blankClass, blankPlan, blankSweep, blankTraffic, buildComparisonBody, buildSweepBody, buildTrafficBody,
+  exampleTraffic, formatDelta, formatMetricValue, formatSummary, parseClassFactors, resizePhases, trafficErrors, trafficFieldKey,
+  verdictTone, type TrafficText,
 } from "./traffic";
 
 const body = (f: TrafficText) => {
@@ -51,8 +51,8 @@ describe("buildTrafficBody", () => {
 
   it("recusa números inválidos e negativos, com a mensagem do campo", () => {
     const f = exampleTraffic();
-    f.green1 = "abc";
-    f.amber1 = "-1";
+    f.phases[0].green = "abc";
+    f.phases[0].amber = "-1";
     f.approaches[0].initialQueue = "2,5";
     f.replications = "0";
     const built = buildTrafficBody(f);
@@ -75,7 +75,7 @@ describe("buildTrafficBody", () => {
 
 describe("planos e varredura", () => {
   it("monta os planos só com o que foi trocado e exige ao menos uma troca", () => {
-    const plan = { ...blankPlan(7, "Mais verde"), green1: "38", green2: "22" };
+    const plan = { ...blankPlan(7, "Mais verde"), phases: [{ green: "38", amber: "", allRed: "" }, { green: "22", amber: "", allRed: "" }] };
     const built = buildComparisonBody(exampleTraffic(), [plan], true);
     expect(built.ok).toBe(true);
     if (!built.ok) return;
@@ -94,7 +94,7 @@ describe("planos e varredura", () => {
     const missing = buildSweepBody(exampleTraffic(), blankSweep());
     expect(missing.ok).toBe(false);
     if (!missing.ok) expect(Object.keys(missing.errors)).toEqual(expect.arrayContaining(["minGreen1", "minGreen2"]));
-    const ok = buildSweepBody(exampleTraffic(), { minGreen1: "10", minGreen2: "10", step: "5" });
+    const ok = buildSweepBody(exampleTraffic(), { ...blankSweep(), minGreen1: "10", minGreen2: "10", step: "5" });
     expect(ok.ok && ok.body.min_green).toEqual([10, 10]);
   });
 });
@@ -139,9 +139,9 @@ describe("estimativas do vídeo → formulário", () => {
 
   it("preenche plano, offset, perfil em blocos e o que foi medido", () => {
     const f = applyEstimate(blankTraffic(), estimate);
-    expect(f.green1).toBe("30");
-    expect(f.amber1).toBe("3");
-    expect(f.allRed2).toBe("2");
+    expect(f.phases[0].green).toBe("30");
+    expect(f.phases[0].amber).toBe("3");
+    expect(f.phases[1].allRed).toBe("2");
     expect(f.offset).toBe("17");
     const a = f.approaches[0];
     expect(a.profile).toHaveLength(4);
@@ -188,5 +188,124 @@ describe("registros do histórico", () => {
     expect(parseTrafficRecord({ ...record("simulate", fx.trafficSimulate), params: { origin: "lab" } })).toBeNull();
     expect(parseTrafficRecord(record("simulate", { foo: 1 }))).toBeNull();
     expect(parseTrafficRecord(record("outro", fx.trafficSimulate))).toBeNull();
+  });
+});
+
+describe("Fase 13.2: 2 a 4 fases", () => {
+  it("resizePhases acrescenta e remove fase e aproximação juntas, entre 2 e 4", () => {
+    const f3 = resizePhases(exampleTraffic(), 3);
+    expect(f3.phases).toHaveLength(3);
+    expect(f3.approaches.map((a) => a.name)).toEqual(["Aproximação 1", "Aproximação 2", "Aproximação 3"]);
+    expect(f3.phases[2]).toEqual({ green: "", amber: "", allRed: "" });
+    expect(resizePhases(f3, 9).phases).toHaveLength(4);
+    expect(resizePhases(f3, 1).phases).toHaveLength(2);
+    expect(resizePhases(f3, 2).approaches).toHaveLength(2);
+  });
+
+  it("monta o corpo com 3 fases e aponta o campo que falta", () => {
+    const f = resizePhases(exampleTraffic(), 3);
+    const built = buildTrafficBody(f);
+    expect(built.ok).toBe(false);
+    if (!built.ok) expect(Object.keys(built.errors)).toEqual(expect.arrayContaining(["green3", "a3.rate", "a3.headwayMean"]));
+    const ok = {
+      ...f, phases: [...f.phases.slice(0, 2), { green: "18", amber: "3", allRed: "2" }],
+      approaches: [...f.approaches.slice(0, 2), { ...f.approaches[0], name: "Esquerda" }],
+    };
+    const b = body(ok);
+    expect(b.phases).toHaveLength(3);
+    expect(b.approaches.map((a: any) => a.name)).toEqual(["Aproximação 1", "Aproximação 2", "Esquerda"]);
+  });
+
+  it("os planos trocam só o que mudou, uma entrada por fase; a varredura escolhe o par de fases", () => {
+    const f = resizePhases(exampleTraffic(), 3);
+    f.phases[2] = { green: "18", amber: "3", allRed: "2" };
+    f.approaches[2] = { ...f.approaches[0], name: "C" };
+    const plan = { ...blankPlan(1, "P", 3), phases: [{ green: "", amber: "", allRed: "" }, { green: "", amber: "", allRed: "" }, { green: "22", amber: "", allRed: "" }] };
+    const built = buildComparisonBody(f, [plan], false);
+    expect(built.ok).toBe(true);
+    if (built.ok) expect((built.body.scenarios as any[])[0].phases).toEqual([null, null, { green: 22, amber: undefined, all_red: undefined }]);
+    const sw = buildSweepBody(f, { ...blankSweep(), pair1: "2", pair2: "3", minGreen1: "10", minGreen2: "8" });
+    expect(sw.ok && sw.body.pair).toEqual([2, 3]);
+    const bad = buildSweepBody(f, { ...blankSweep(), pair1: "2", pair2: "2", minGreen1: "10", minGreen2: "8" });
+    expect(!bad.ok && bad.errors.pair2).toMatch(/diferentes/);
+    const out = buildSweepBody(f, { ...blankSweep(), pair1: "1", pair2: "5", minGreen1: "10", minGreen2: "8" });
+    expect(!out.ok && out.errors.pair2).toMatch(/entre 1 e 3/);
+    const classic = buildSweepBody(exampleTraffic(), { ...blankSweep(), minGreen1: "10", minGreen2: "10" });
+    expect(classic.ok && classic.body.pair).toBeUndefined();
+  });
+
+  it("traduz os campos da API para as fases 3 e 4, as classes e o CV de ℓ", () => {
+    expect(trafficFieldKey("phases.2.green")).toBe("green3");
+    expect(trafficFieldKey("phases.3.all_red")).toBe("allRed4");
+    expect(trafficFieldKey("approaches.2.first_vehicle_cv")).toBe("a3.firstVehicleCv");
+    expect(trafficFieldKey("approaches.0.classes.1.share")).toBe("a1.class.1.share");
+    expect(trafficFieldKey("approaches.0.classes")).toBe("a1.class.0.share");
+    expect(trafficFieldKey("scenarios.0.phases.2.green", [7])).toBe("plan.7.green3");
+    expect(trafficFieldKey("pair")).toBe("pair1");
+  });
+});
+
+describe("Fase 13.2: classes de veículos", () => {
+  const withClasses = () => {
+    const f = exampleTraffic();
+    f.approaches[0] = {
+      ...f.approaches[0],
+      classes: [{ name: "carro", share: "0,7", factor: "1" }, { name: "moto", share: "0,2", factor: "0,35" }, { name: "ônibus", share: "0,1", factor: "2,2" }],
+      firstVehicleCv: "0,3",
+    };
+    return f;
+  };
+
+  it("manda as classes e o CV de ℓ para a API, com vírgula decimal", () => {
+    const b = body(withClasses());
+    expect(b.approaches[0].classes).toEqual([
+      { name: "carro", share: 0.7, factor: 1 }, { name: "moto", share: 0.2, factor: 0.35 }, { name: "ônibus", share: 0.1, factor: 2.2 },
+    ]);
+    expect(b.approaches[0].first_vehicle_cv).toBeCloseTo(0.3);
+    expect(b.approaches[1].classes).toBeUndefined();
+  });
+
+  it("exige nome, parcela e fator: não há valor padrão", () => {
+    const f = exampleTraffic();
+    f.approaches[0].classes = [blankClass()];
+    const built = buildTrafficBody(f);
+    expect(built.ok).toBe(false);
+    if (!built.ok) expect(Object.keys(built.errors)).toEqual(expect.arrayContaining(["a1.class.0.name", "a1.class.0.share", "a1.class.0.factor"]));
+    f.approaches[0].classes = [{ name: "moto", share: "1", factor: "0" }];
+    const zero = buildTrafficBody(f);
+    expect(!zero.ok && zero.errors["a1.class.0.factor"]).toMatch(/maior que zero/);
+  });
+
+  it("parseClassFactors lê nome=fator com vírgula decimal e recusa o resto", () => {
+    expect(parseClassFactors("")).toBeNull();
+    expect(parseClassFactors("carro=1; moto=0,35\nônibus = 2.2")).toEqual({ carro: 1, moto: 0.35, ônibus: 2.2 });
+    expect(parseClassFactors("moto=0")).toMatch(/Fator inválido/);
+    expect(parseClassFactors("moto")).toMatch(/nome=fator/);
+    expect(parseClassFactors("moto=abc")).toMatch(/Fator inválido/);
+  });
+
+  const estimate = fx.trafficVideoEstimateClasses as unknown as VideoEstimate;
+
+  it("o vídeo com 3 aproximações e classes preenche o formulário inteiro", () => {
+    const f = applyEstimate(blankTraffic(), estimate);
+    expect(f.phases).toHaveLength(3);
+    expect(f.approaches.map((a) => a.name)).toEqual(["N", "L", "E"]);
+    expect(f.approaches[0].classes.map((c) => c.name)).toEqual(["carro", "moto", "ônibus"]);
+    expect(f.approaches[0].classes[1].factor).toBe("0.35");
+    expect(f.approaches[0].profile![0].count).toBeUndefined();
+    expect(f.approaches[0].firstVehicleCv).not.toBe("");
+  });
+
+  it("reproduzir as contagens leva `count` e `class_counts` do vídeo no corpo", () => {
+    const f = applyEstimate(blankTraffic(), estimate, true);
+    const block = f.approaches[0].profile![0];
+    expect(block.count).toBeDefined();
+    expect(Object.keys(block.classCounts!)).toEqual(["carro", "moto", "ônibus"]);
+    const full = { ...f, approaches: f.approaches.map((a) => ({ ...a, amberUsable: a.amberUsable || "0", initialQueue: a.initialQueue || "0" })) };
+    const b = body(full);
+    const sent = b.approaches[0].profile[0];
+    expect(sent.count).toBe(Number(block.count));
+    expect(sent.lambda).toBeUndefined();
+    expect(Object.values(sent.class_counts).reduce((x: number, y: any) => x + y, 0)).toBe(sent.count);
   });
 });

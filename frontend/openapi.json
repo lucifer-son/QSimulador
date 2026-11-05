@@ -1624,7 +1624,7 @@
           "Cruzamento semaforizado"
         ],
         "summary": "Video Validate",
-        "description": "Simula o plano observado com as chegadas do vídeo e compara com a fila e as saídas observadas, intervalo a intervalo. As chegadas usam as contagens observadas (número fixo por intervalo). A resposta traz erros (viés, MAE, RMSE) e a cobertura da faixa simulada; não há teste de hipótese nem limite de aprovação. signal_events: eventos semafóricos (timestamp, approach_id, signal_state). counts: contagens por intervalo (interval_start, interval_end, approach_id, arrivals, departures, queue_count, queue_visible). crossings (opcional): um cruzamento da linha de retenção por linha (crossing_time, approach_id). trajectories (opcional): veículos acompanhados.",
+        "description": "Simula o plano observado com as chegadas do vídeo e compara com a fila e as saídas observadas, intervalo a intervalo. As chegadas usam as contagens observadas (número fixo por intervalo, por classe quando houver). A resposta traz erros (viés, MAE, RMSE), a cobertura da faixa simulada e, em `tests`, testes de hipótese (aderência por Monte Carlo, KS e Mann-Whitney do atraso e, se você informar `tolerance_delay` e `tolerance_departures`, a equivalência TOST), com p-valor ajustado por Holm. Não há tolerância padrão nem limite de aprovação. signal_events: eventos semafóricos (timestamp, approach_id, signal_state). counts: contagens por intervalo (interval_start, interval_end, approach_id, arrivals, departures, queue_count, queue_visible). crossings (opcional): um cruzamento da linha de retenção por linha (crossing_time, approach_id). trajectories (opcional): veículos acompanhados.",
         "operationId": "video_validate_api_traffic_video_validate_post",
         "requestBody": {
           "content": {
@@ -1659,6 +1659,133 @@
           },
           "413": {
             "description": "Arquivo acima do limite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/traffic/video/validate/export.csv": {
+      "post": {
+        "tags": [
+          "Cruzamento semaforizado"
+        ],
+        "summary": "Video Validate Csv",
+        "description": "Os mesmos parâmetros de /video/validate; devolve o CSV com o resumo dos erros, o intervalo a intervalo e os testes. Refaz o cálculo com a mesma semente: informe `seed` para o CSV bater com a tela.",
+        "operationId": "video_validate_csv_api_traffic_video_validate_export_csv_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_video_validate_csv_api_traffic_video_validate_export_csv_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/csv": {}
+            }
+          },
+          "422": {
+            "description": "Parâmetros ou arquivos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Arquivo acima do limite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/traffic/video/sessions/compare": {
+      "post": {
+        "tags": [
+          "Cruzamento semaforizado"
+        ],
+        "summary": "Video Sessions Compare",
+        "description": "Compara duas sessões (por exemplo, manhã e tarde) lado a lado: ciclo, fases, taxa de chegada (teste binomial exato), ℓ, h e amarelo utilizável, a partir de duas respostas de /video/estimate. A tabela é descritiva: os p-valores não são corrigidos entre linhas.",
+        "operationId": "video_sessions_compare_api_traffic_video_sessions_compare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionsCompareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionsCompareOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Parâmetros ou arquivos inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/traffic/video/sessions/compare/export.csv": {
+      "post": {
+        "tags": [
+          "Cruzamento semaforizado"
+        ],
+        "summary": "Video Sessions Compare Csv",
+        "operationId": "video_sessions_compare_csv_api_traffic_video_sessions_compare_export_csv_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionsCompareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/csv": {}
+            }
+          },
+          "422": {
+            "description": "Parâmetros ou arquivos inválidos",
             "content": {
               "application/json": {
                 "schema": {
@@ -4426,6 +4553,18 @@
             "title": "First Vehicle Time",
             "description": "ℓ: segundos do início do verde até o 1º veículo da fila cruzar. Não informado → 0, com aviso."
           },
+          "first_vehicle_cv": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Vehicle Cv",
+            "description": "CV de ℓ entre ciclos (a partida varia de um verde para outro). Não informado ou 0 → ℓ constante."
+          },
           "amber_usable": {
             "anyOf": [
               {
@@ -4449,6 +4588,21 @@
             ],
             "title": "Initial Queue",
             "description": "Veículos já esperando em t = 0. Não informado → 0, com aviso."
+          },
+          "classes": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ClassIn"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Classes",
+            "description": "Classes de veículos (até 8). `headway` passa a ser o intervalo de um carro; cada veículo ocupa h · fator da sua classe."
           }
         },
         "type": "object",
@@ -4465,15 +4619,48 @@
             "description": "Duração do bloco (s)."
           },
           "lambda": {
-            "type": "number",
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Lambda",
-            "description": "Taxa de chegada no bloco (veículos/s). Pode ser 0."
+            "description": "Taxa de chegada no bloco (veículos/s). Pode ser 0. Omitida quando o bloco traz `count`."
+          },
+          "count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Count",
+            "description": "Reproduz uma sessão: nº fixo de chegadas no bloco (só o instante é sorteado). Todos os blocos ou nenhum."
+          },
+          "class_counts": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Class Counts",
+            "description": "Com `count` e `classes`: chegadas de cada classe no bloco (nome → nº; a soma é `count`)."
           }
         },
         "type": "object",
         "required": [
-          "duration",
-          "lambda"
+          "duration"
         ],
         "title": "BlockIn"
       },
@@ -4652,7 +4839,19 @@
               }
             ],
             "title": "Approach Ids",
-            "description": "As duas aproximações, separadas por vírgula (a 1ª é a da fase 1)."
+            "description": "De 2 a 4 aproximações, separadas por vírgula, na ordem das fases (a 1ª é a da fase 1)."
+          },
+          "class_factors": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Class Factors",
+            "description": "JSON nome da classe → fator de equivalência em carros. Obrigatório se as contagens tiverem `vehicle_class`; sem valor padrão."
           },
           "max_headway": {
             "type": "number",
@@ -4754,6 +4953,17 @@
             ],
             "title": "Approach Ids"
           },
+          "class_factors": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Class Factors"
+          },
           "replications": {
             "type": "integer",
             "title": "Replications",
@@ -4774,6 +4984,30 @@
             "type": "number",
             "title": "Confidence Level",
             "default": 0.95
+          },
+          "tolerance_delay": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tolerance Delay",
+            "description": "Margem (s) do teste de equivalência do atraso médio. Sem valor padrão."
+          },
+          "tolerance_departures": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tolerance Departures",
+            "description": "Margem (fração do total observado, ex.: 0,05) do teste de equivalência das saídas. Sem valor padrão."
           }
         },
         "type": "object",
@@ -4783,6 +5017,157 @@
           "config"
         ],
         "title": "Body_video_validate_api_traffic_video_validate_post"
+      },
+      "Body_video_validate_csv_api_traffic_video_validate_export_csv_post": {
+        "properties": {
+          "signal_events": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "Signal Events"
+          },
+          "counts": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "Counts"
+          },
+          "config": {
+            "type": "string",
+            "title": "Config"
+          },
+          "crossings": {
+            "anyOf": [
+              {
+                "type": "string",
+                "contentMediaType": "application/octet-stream"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crossings"
+          },
+          "trajectories": {
+            "anyOf": [
+              {
+                "type": "string",
+                "contentMediaType": "application/octet-stream"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trajectories"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "approach_ids": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approach Ids"
+          },
+          "class_factors": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Class Factors"
+          },
+          "replications": {
+            "type": "integer",
+            "title": "Replications",
+            "default": 30
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level",
+            "default": 0.95
+          },
+          "tolerance_delay": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tolerance Delay"
+          },
+          "tolerance_departures": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tolerance Departures"
+          }
+        },
+        "type": "object",
+        "required": [
+          "signal_events",
+          "counts",
+          "config"
+        ],
+        "title": "Body_video_validate_csv_api_traffic_video_validate_export_csv_post"
+      },
+      "ClassIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Nome da classe (carro, moto, ônibus...)."
+          },
+          "share": {
+            "type": "number",
+            "title": "Share",
+            "description": "Parcela da demanda (as parcelas somam 1)."
+          },
+          "factor": {
+            "type": "number",
+            "title": "Factor",
+            "description": "Equivalência em carros: quanto de linha de retenção o veículo ocupa em relação a um carro. Sem valor padrão."
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "share",
+          "factor"
+        ],
+        "title": "ClassIn"
       },
       "CompareResponse": {
         "properties": {
@@ -8218,7 +8603,7 @@
             },
             "type": "array",
             "title": "Phases",
-            "description": "2 itens: o que trocar na fase 1 e na fase 2 (null mantém a fase)."
+            "description": "Um item por fase: o que trocar nela (null mantém a fase)."
           }
         },
         "type": "object",
@@ -10706,6 +11091,96 @@
         ],
         "title": "ServicesComparisonResponse"
       },
+      "SessionsCompareOut": {
+        "properties": {
+          "labels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Labels"
+          },
+          "level": {
+            "type": "number",
+            "title": "Level"
+          },
+          "rows": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          },
+          "sessions": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Sessions"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "labels",
+          "level",
+          "rows",
+          "notes",
+          "sessions"
+        ],
+        "title": "SessionsCompareOut",
+        "description": "Linhas de comparação (grupo, grandeza, valores, diferença, p-valor), as sessões e observações."
+      },
+      "SessionsCompareRequest": {
+        "properties": {
+          "a": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "A",
+            "description": "Resposta de /video/estimate da primeira sessão."
+          },
+          "b": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "B",
+            "description": "Resposta de /video/estimate da segunda sessão."
+          },
+          "label_a": {
+            "type": "string",
+            "maxLength": 40,
+            "title": "Label A",
+            "default": "Sessão A"
+          },
+          "label_b": {
+            "type": "string",
+            "maxLength": 40,
+            "title": "Label B",
+            "default": "Sessão B"
+          },
+          "confidence_level": {
+            "type": "number",
+            "title": "Confidence Level",
+            "description": "Nível dos ICs da razão de taxas.",
+            "default": 0.95
+          }
+        },
+        "type": "object",
+        "required": [
+          "a",
+          "b"
+        ],
+        "title": "SessionsCompareRequest",
+        "description": "Duas respostas de /video/estimate (por exemplo, manhã e tarde)."
+      },
       "SimulateRequest": {
         "properties": {
           "simulation_time": {
@@ -10749,7 +11224,7 @@
             },
             "type": "array",
             "title": "Phases",
-            "description": "Exatamente 2 fases: a da aproximação 1 e a da aproximação 2."
+            "description": "De 2 a 4 fases em sequência: a fase i atende a aproximação i."
           },
           "offset": {
             "anyOf": [
@@ -10769,7 +11244,7 @@
             },
             "type": "array",
             "title": "Approaches",
-            "description": "Exatamente 2 aproximações."
+            "description": "Uma aproximação por fase (2 a 4)."
           },
           "series_step": {
             "anyOf": [
@@ -13164,7 +13639,7 @@
             },
             "type": "array",
             "title": "Phases",
-            "description": "Exatamente 2 fases: a da aproximação 1 e a da aproximação 2."
+            "description": "De 2 a 4 fases em sequência: a fase i atende a aproximação i."
           },
           "offset": {
             "anyOf": [
@@ -13184,7 +13659,7 @@
             },
             "type": "array",
             "title": "Approaches",
-            "description": "Exatamente 2 aproximações."
+            "description": "Uma aproximação por fase (2 a 4)."
           },
           "scenarios": {
             "items": {
@@ -13264,7 +13739,7 @@
             },
             "type": "array",
             "title": "Phases",
-            "description": "Exatamente 2 fases: a da aproximação 1 e a da aproximação 2."
+            "description": "De 2 a 4 fases em sequência: a fase i atende a aproximação i."
           },
           "offset": {
             "anyOf": [
@@ -13284,7 +13759,7 @@
             },
             "type": "array",
             "title": "Approaches",
-            "description": "Exatamente 2 aproximações."
+            "description": "Uma aproximação por fase (2 a 4)."
           },
           "min_green": {
             "items": {
@@ -13292,7 +13767,22 @@
             },
             "type": "array",
             "title": "Min Green",
-            "description": "Verde mínimo de cada fase (s), definido por quem conhece a segurança do cruzamento. Sem valor padrão."
+            "description": "Verde mínimo das duas fases varridas (s), definido por quem conhece a segurança do cruzamento. Sem valor padrão."
+          },
+          "pair": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pair",
+            "description": "As duas fases (1 a 4) cujo verde é redistribuído. Padrão: 1 e 2."
           },
           "step": {
             "type": "number",

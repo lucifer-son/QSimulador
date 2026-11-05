@@ -9,6 +9,10 @@ Janela de medição [w, T): w é o warm-up (0 para reproduzir uma gravação). D
   ainda esperavam em T, contados só até T (limite inferior do atraso verdadeiro). Se a fila cresce,
   o primeiro número parece melhor do que a realidade; por isso os dois são sempre mostrados.
 - **fila**: veículos que chegaram e ainda não cruzaram (inclui a fila inicial).
+- **vazão em carros equivalentes** (`throughput_ceq`): igual à vazão sem classes; com classes, cada veículo
+  que cruza vale o fator da sua classe.
+- **fração que esperou** (`stopped_fraction`): veículos com atraso > 0 (inclui quem esperou só o intervalo h do
+  veículo da frente, e quem ainda espera em T). Não é a contagem visual de "veículos parados".
 - **ciclos com fila**: fração dos ciclos com o fim do verde dentro da janela em que sobrou fila
   ao fim do verde utilizável (falha de ciclo).
 """
@@ -22,10 +26,10 @@ from app.traffic.engine import FREE_EPS, ApproachRun
 from app.traffic.plan import Intersection
 
 APPROACH_METRICS = (
-    "delay", "delay_censored", "queue_mean", "queue_max", "queue_end", "throughput",
+    "delay", "delay_censored", "queue_mean", "queue_max", "queue_end", "throughput", "throughput_ceq",
     "stopped_fraction", "overflow_cycles", "arrivals", "departures", "pending",
 )
-INTERSECTION_METRICS = ("delay", "delay_censored", "throughput", "queue_mean", "arrivals", "departures", "pending")
+INTERSECTION_METRICS = ("delay", "delay_censored", "throughput", "throughput_ceq", "queue_mean", "arrivals", "departures", "pending")
 
 
 @dataclass(frozen=True)
@@ -95,14 +99,16 @@ def approach_sample(inter: Intersection, index: int, run: ApproachRun, w: float,
     else:
         overflow = math.nan
 
-    deps_window = int(((run.departures >= w) & (run.departures < horizon)).sum())
+    in_window = (run.departures >= w) & (run.departures < horizon)
+    deps_window = int(in_window.sum())
+    ceq_window = float(run.factors[in_window].sum()) if run.factors is not None else float(deps_window)
     span = horizon - w
     nan = math.nan
     values = {
         "delay": delay_sum / n_done if n_done else nan,
         "delay_censored": cens_sum / n_meas if n_meas else nan,
         "queue_mean": q_mean, "queue_max": q_max, "queue_end": float(q_end),
-        "throughput": deps_window / span,
+        "throughput": deps_window / span, "throughput_ceq": ceq_window / span,
         "stopped_fraction": stopped / n_meas if n_meas else nan,
         "overflow_cycles": overflow,
         "arrivals": float(n_meas), "departures": float(deps_window), "pending": float(n_pend),
@@ -110,7 +116,7 @@ def approach_sample(inter: Intersection, index: int, run: ApproachRun, w: float,
     return ApproachSample(values, delay_sum, cens_sum, n_meas)
 
 
-def intersection_values(samples: tuple[ApproachSample, ApproachSample], w: float, horizon: float) -> dict[str, float]:
+def intersection_values(samples: tuple[ApproachSample, ...], w: float, horizon: float) -> dict[str, float]:
     """Métricas do cruzamento: atrasos ponderados pelos veículos medidos de cada aproximação."""
     nan = math.nan
     done = sum(s.values["arrivals"] - s.values["pending"] for s in samples)
@@ -119,6 +125,7 @@ def intersection_values(samples: tuple[ApproachSample, ApproachSample], w: float
         "delay": sum(s.delay_sum for s in samples) / done if done else nan,
         "delay_censored": sum(s.delay_censored_sum for s in samples) / meas if meas else nan,
         "throughput": sum(s.values["throughput"] for s in samples),
+        "throughput_ceq": sum(s.values["throughput_ceq"] for s in samples),
         "queue_mean": sum(s.values["queue_mean"] for s in samples),
         "arrivals": sum(s.values["arrivals"] for s in samples),
         "departures": sum(s.values["departures"] for s in samples),
@@ -126,6 +133,6 @@ def intersection_values(samples: tuple[ApproachSample, ApproachSample], w: float
     }
 
 
-def replication_metrics(inter: Intersection, runs: tuple[ApproachRun, ApproachRun], w: float, horizon: float):
+def replication_metrics(inter: Intersection, runs: tuple[ApproachRun, ...], w: float, horizon: float):
     samples = tuple(approach_sample(inter, i, run, w, horizon) for i, run in enumerate(runs))
     return samples, intersection_values(samples, w, horizon)

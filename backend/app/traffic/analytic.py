@@ -18,14 +18,19 @@ cruzar e h̄ o intervalo médio; ℓ − h̄ é o tempo perdido de partida do HC
   só até T (limite inferior), a referência também traz o atraso com o mesmo corte,
   média de min(w(t), T − t) em [0, T], e a fila final esperada (q − c) T.
 - Ciclo ótimo de Webster: C₀ = (1,5 L + 5) / (1 − Y), com L o tempo perdido total por ciclo e
-  Y a soma das razões q / s das duas aproximações (só existe se Y < 1).
+  Y a soma das razões q / s das aproximações críticas (uma por fase) (só existe se Y < 1).
+
+- Capacidade ajustada pela renovação (`capacity_adjusted`): com h de CV c, o nº esperado de veículos que cruzam
+  por ciclo é g_e / h̄ + (c² − 1) / 2 (teoria de renovação; com h determinístico, ⌊(janela − ℓ) / h⌋ + 1).
+  A capacidade nominal (HCM) continua sendo a usada em x e em Webster; a ajustada mostra o quanto ela é otimista.
+- Com classes de veículos, h̄ é o intervalo médio por veículo da mistura (h · fator médio de carros equivalentes).
 
 Tudo em segundos. Em perfis de chegada por blocos, usa-se a taxa média no horizonte.
 """
 
 import math
 
-from app.traffic.plan import Intersection
+from app.traffic.plan import APPROACH_KEYS, Intersection
 
 
 def approach_reference(inter: Intersection, index: int, horizon: float) -> dict:
@@ -34,7 +39,8 @@ def approach_reference(inter: Intersection, index: int, horizon: float) -> dict:
     g_eff = inter.effective_green(index)
     ratio = g_eff / cycle
     q = app.profile.mean_rate(horizon)
-    s = 1.0 / app.headway.mean
+    h_bar = app.mean_headway
+    s = 1.0 / h_bar
     capacity = s * ratio
     x = q / capacity
 
@@ -54,9 +60,17 @@ def approach_reference(inter: Intersection, index: int, horizon: float) -> dict:
         queue_end = (q - capacity) * horizon
         random_term, correction = None, None
         kind = "fluid"
+    cv = app.headway_cv
+    if cv < 0.01:      # h determinístico: a contagem é inteira
+        window = inter.signal.phases[index].green + app.amber_usable
+        per_cycle = float(math.floor((window - app.first_vehicle_time) / h_bar + 1e-9) + 1)
+    else:
+        per_cycle = g_eff / h_bar + (cv * cv - 1.0) / 2.0
+    capacity_adjusted = max(per_cycle, 0.0) / cycle
     return {
         "kind": kind, "exact": False,
-        "effective_green": g_eff, "capacity": capacity, "saturation": x, "arrival_rate": q,
+        "effective_green": g_eff, "capacity": capacity, "capacity_adjusted": capacity_adjusted,
+        "vehicles_per_cycle": per_cycle, "saturation": x, "arrival_rate": q,
         "uniform_delay": uniform, "random_delay": random_term, "correction": correction,
         "delay": delay, "delay_censored": delay_censored, "queue_end": queue_end,
         "queue_mean": q * delay_censored,           # lei de Little: Lq = λ · Wq (com o atraso cortado em T)
@@ -69,8 +83,8 @@ def webster_cycle(inter: Intersection, horizon: float) -> dict | None:
     lost = 0.0
     for i, app in enumerate(inter.approaches):
         phase = inter.signal.phases[i]
-        y_sum += app.profile.mean_rate(horizon) * app.headway.mean
-        lost += (app.first_vehicle_time - app.headway.mean) + phase.amber + phase.all_red - app.amber_usable
+        y_sum += app.profile.mean_rate(horizon) * app.mean_headway
+        lost += (app.first_vehicle_time - app.mean_headway) + phase.amber + phase.all_red - app.amber_usable
     lost = max(lost, 0.0)
     if y_sum >= 1:
         return None
@@ -81,11 +95,11 @@ def webster_cycle(inter: Intersection, horizon: float) -> dict | None:
 
 
 def reference(inter: Intersection, horizon: float) -> dict:
-    refs = [approach_reference(inter, i, horizon) for i in range(2)]
+    refs = [approach_reference(inter, i, horizon) for i in range(len(inter.approaches))]
     flows = [r["arrival_rate"] for r in refs]
     total_q = sum(flows)
     def weighted(name: str) -> float:
         return sum(r[name] * r["arrival_rate"] for r in refs) / total_q if total_q > 0 else math.nan
 
-    return {"a1": refs[0], "a2": refs[1], "delay": weighted("delay"), "delay_censored": weighted("delay_censored"),
-            "webster_cycle": webster_cycle(inter, horizon)}
+    return {**{key: ref for key, ref in zip(APPROACH_KEYS, refs)}, "delay": weighted("delay"),
+            "delay_censored": weighted("delay_censored"), "webster_cycle": webster_cycle(inter, horizon)}

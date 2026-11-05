@@ -2,8 +2,8 @@ import { IconAlertCircle, IconChartLine, IconDownload, IconPlus } from "@tabler/
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { ApiError } from "../api/client";
 import {
-  estimateVideo, exportTrafficCsv, simulateTraffic, streamTraffic, validateVideo,
-  type ApproachKey, type CompareResult, type PlanRow, type SweepPoint, type SweepResult, type TrafficCsvPath,
+  compareSessions, estimateVideo, exportSessionsCsv, exportTrafficCsv, exportValidationCsv, simulateTraffic, streamTraffic, validateVideo,
+  type ApproachKey, type CompareResult, type PlanRow, type SessionsComparison, type SweepPoint, type SweepResult, type TrafficCsvPath,
   type TrafficResult, type VideoEstimate, type VideoValidation,
 } from "../api/traffic";
 import { trafficRecord, TRAFFIC_TITLE, type TrafficSnapshot } from "../domain/records";
@@ -21,7 +21,9 @@ import { PlansPanel, SweepPanel } from "./TrafficPanels";
 import {
   blankVideoFiles, blankVideoParams, videoForm, VideoEstimateView, VideoPanel, type VideoFiles, type VideoParams,
 } from "./TrafficVideo";
-import { Progress, TrafficCompareView, TrafficSimulationView, TrafficSweepView, TrafficValidationView } from "./TrafficViews";
+import {
+  Progress, TrafficCompareView, TrafficSessionsView, TrafficSimulationView, TrafficSweepView, TrafficValidationView, validationIds,
+} from "./TrafficViews";
 
 type Mode = "simulate" | "compare" | "sweep" | "video";
 const MODES: { key: Mode; label: string }[] = [
@@ -72,8 +74,9 @@ function Idle({ title, text, children }: { title: string; text: string; children
 interface Props { active: boolean }
 
 /**
- * Fase 13.1: cruzamento semaforizado com duas aproximações que dividem o mesmo ciclo. Simula um plano, compara planos
- * (com IC pareado), varre a divisão do verde e estima/valida os parâmetros a partir das planilhas do vídeo.
+ * Fases 13.1 e 13.2: cruzamento semaforizado com 2 a 4 aproximações (uma por fase) que dividem o mesmo ciclo, com classes de
+ * veículos. Simula um plano, compara planos (com IC pareado, inclusive com as contagens observadas), varre a divisão do verde
+ * e estima/valida os parâmetros a partir das planilhas do vídeo, com testes de hipótese e duas sessões lado a lado.
  */
 export function TrafficTab({ active }: Props) {
   const [mode, setMode] = useState<Mode | "">("");
@@ -87,6 +90,8 @@ export function TrafficTab({ active }: Props) {
   const [params, setParams] = useState<VideoParams>(blankVideoParams);
   const [videoMessage, setVideoMessage] = useState<string | null>(null);
   const [csv, setCsv] = useState<{ busy: boolean; error: string | null }>({ busy: false, error: null });
+  const [saved, setSaved] = useState<{ a: VideoEstimate | null; b: VideoEstimate | null; labelA: string; labelB: string }>({ a: null, b: null, labelA: "manhã", labelB: "tarde" });
+  const [sessions, setSessions] = useState<{ busy: boolean; error: string | null; result: SessionsComparison | null }>({ busy: false, error: null, result: null });
 
   const simulate = useExperiment<TrafficResult>();
   const compare = useTrafficStream<CompareResult, PlanRow>();
@@ -94,9 +99,11 @@ export function TrafficTab({ active }: Props) {
   const estimate = useExperiment<VideoEstimate>();
   const validation = useExperiment<VideoValidation>();
   const requests = useRef<Partial<Record<"simulate" | "compare" | "sweep" | "validation", unknown>>>({});
+  const validationBody = useRef<FormData | null>(null);
 
-  const names = (k: ApproachKey) => form.approaches[k === "a1" ? 0 : 1].name.trim() || (k === "a1" ? "Aproximação 1" : "Aproximação 2");
-  const nameMap = { a1: names("a1"), a2: names("a2") };
+  const nameMap: Partial<Record<ApproachKey, string>> = Object.fromEntries(
+    form.approaches.map((a, i) => [`a${i + 1}`, a.name.trim() || `Aproximação ${i + 1}`]),
+  );
 
   // Erros da API (422) viram mensagens nos campos; editar o formulário não reabre os antigos.
   const states = [simulate.state, compare.state, sweepRun.state, estimate.state, validation.state];
@@ -110,10 +117,13 @@ export function TrafficTab({ active }: Props) {
   const clearError = useCallback((key: string) => setErrors(({ [key]: _gone, ...rest }) => rest), []);
   const edit = (next: TrafficText) => {
     // limpa o erro dos campos que mudaram
-    const changed = (Object.keys(next) as (keyof TrafficText)[]).filter((k) => k !== "approaches" && next[k] !== form[k]);
+    const changed = (Object.keys(next) as (keyof TrafficText)[]).filter((k) => k !== "approaches" && k !== "phases" && next[k] !== form[k]);
     changed.forEach((k) => clearError(String(k)));
+    next.phases.forEach((p, i) => (Object.keys(p) as (keyof typeof p)[]).forEach((k) => {
+      if (p[k] !== form.phases[i]?.[k]) setErrors(({ [`${k}${i + 1}`]: _g, ...rest }) => rest);
+    }));
     next.approaches.forEach((a, i) => (Object.keys(a) as (keyof typeof a)[]).forEach((k) => {
-      if (a[k] !== form.approaches[i][k]) setErrors(({ [`a${i + 1}.${k}`]: _g, ...rest }) => rest);
+      if (a[k] !== form.approaches[i]?.[k]) setErrors((prev) => Object.fromEntries(Object.entries(prev).filter(([key]) => key !== `a${i + 1}.${k}` && !(k === "classes" && key.startsWith(`a${i + 1}.class.`)))));
     }));
     setForm(next);
   };
@@ -177,7 +187,7 @@ export function TrafficTab({ active }: Props) {
   };
 
   const runValidation = () => {
-    const body = videoForm(files, params);
+    const body = videoForm(files, params, true);
     if (typeof body === "string") { setVideoMessage(body); return; }
     const built = buildTrafficBody(form);
     if (!built.ok) {
@@ -194,13 +204,47 @@ export function TrafficTab({ active }: Props) {
     body.append("replications", String(built.body.replications ?? 30));
     if (built.body.seed !== undefined && built.body.seed !== null) body.append("seed", String(built.body.seed));
     requests.current.validation = config;
+    validationBody.current = body;
     void validation.run((signal) => validateVideo(body, signal));
   };
 
-  const applyToForm = (est: VideoEstimate) => {
-    setForm((current) => applyEstimate(current, est));
+  /** Baixa o CSV da validação: refaz o cálculo com os mesmos arquivos e a semente que a API usou. */
+  const exportValidation = async (seed: number) => {
+    const body = validationBody.current;
+    if (!body) return;
+    setCsv({ busy: true, error: null });
+    try {
+      body.set("seed", String(seed));
+      downloadBlob(await exportValidationCsv(body), "cruzamento-validacao.csv");
+      setCsv({ busy: false, error: null });
+    } catch (e) {
+      setCsv({ busy: false, error: e instanceof ApiError ? e.message : "Não foi possível exportar o CSV." });
+    }
+  };
+
+  const applyToForm = (est: VideoEstimate, replay = false) => {
+    setForm((current) => applyEstimate(current, est, replay));
     setErrors({});
-    setMode("simulate");
+    setMode(replay ? "compare" : "simulate");
+  };
+
+  const sessionsBody = () => (saved.a && saved.b ? { a: saved.a, b: saved.b, label_a: saved.labelA.trim() || "Sessão A", label_b: saved.labelB.trim() || "Sessão B" } : null);
+  const runSessions = async () => {
+    const body = sessionsBody();
+    if (!body) return;
+    setSessions({ busy: true, error: null, result: null });
+    try {
+      setSessions({ busy: false, error: null, result: await compareSessions(body) });
+    } catch (e) {
+      setSessions({ busy: false, error: e instanceof ApiError ? e.message : "Não foi possível comparar as sessões.", result: null });
+    }
+  };
+  const exportSessions = async () => {
+    const body = sessionsBody();
+    if (!body) return;
+    try { downloadBlob(await exportSessionsCsv(body), "cruzamento-sessoes.csv"); } catch (e) {
+      setSessions((s) => ({ ...s, error: e instanceof ApiError ? e.message : "Não foi possível exportar o CSV." }));
+    }
   };
 
   const exportCsv = async (kind: "simulate" | "compare" | "sweep", seed: number) => {
@@ -254,13 +298,11 @@ export function TrafficTab({ active }: Props) {
     return <div className="panel results"><div className="tab-panel">{render(s.result)}</div></div>;
   };
 
-  const validationIds = (r: VideoValidation): Record<ApproachKey, string> => ({ a1: r.approaches.a1.approach_id, a2: r.approaches.a2.approach_id });
-
   return (
     <div className="exp-grid" hidden={!active} role="tabpanel" id="traffic-panel" aria-label="Cruzamento">
       <form className="panel params" aria-label="Parâmetros do cruzamento semaforizado" onSubmit={onSubmit}>
         <p className="sub">
-          Cruzamento com duas aproximações que dividem o mesmo ciclo semafórico fixo. Os tempos medidos no vídeo não têm valor padrão: o que ficar vazio
+          Cruzamento com 2 a 4 aproximações (uma por fase) que dividem o mesmo ciclo semafórico fixo. Os tempos medidos no vídeo não têm valor padrão: o que ficar vazio
           é tratado como “não informado”, com aviso no resultado.
         </p>
         <div className="field traffic-mode-field">
@@ -288,9 +330,9 @@ export function TrafficTab({ active }: Props) {
 
             <TrafficForm value={form} errors={errors} onChange={edit} />
             {mode === "compare" && (
-              <PlansPanel plans={plans} errors={errors} bonferroni={bonferroni} onChange={setPlans} onBonferroni={setBonferroni} nextId={() => nextId.current++} />
+              <PlansPanel plans={plans} errors={errors} bonferroni={bonferroni} phaseCount={form.phases.length} onChange={setPlans} onBonferroni={setBonferroni} nextId={() => nextId.current++} />
             )}
-            {mode === "sweep" && <SweepPanel value={sweep} errors={errors} onChange={(v) => { setSweep(v); setErrors({}); }} />}
+            {mode === "sweep" && <SweepPanel value={sweep} errors={errors} phaseCount={form.phases.length} onChange={(v) => { setSweep(v); setErrors({}); }} />}
 
             <div className="actions spaced">
               <RunButtons busy={busy} label={runLabel} onCancel={cancel} />
@@ -307,7 +349,7 @@ export function TrafficTab({ active }: Props) {
       {mode === "" && (
         <Idle title="Escolha uma opção" text="Selecione uma ferramenta no menu para começar. Cada opção atende a uma necessidade diferente:">
           <ul className="traffic-guide">
-            <li><strong>Simular:</strong> informe os tempos do semáforo e os dados de chegada e descarga das duas aproximações para estimar filas, atrasos e vazão.</li>
+            <li><strong>Simular:</strong> informe os tempos do semáforo e os dados de chegada e descarga das aproximações para estimar filas, atrasos e vazão.</li>
             <li><strong>Comparar planos:</strong> altere tempos em um ou mais planos e compare os resultados com o plano de referência.</li>
             <li><strong>Varrer o verde:</strong> defina os limites mínimos e teste diferentes divisões do tempo verde para encontrar um equilíbrio melhor.</li>
             <li><strong>Dados do vídeo:</strong> carregue as planilhas de coleta para estimar o plano e as chegadas observadas; depois, você pode validar a simulação com as contagens.</li>
@@ -319,7 +361,7 @@ export function TrafficTab({ active }: Props) {
       {mode === "simulate" && (
         <ResultArea
           state={simulate.state} idleTitle="Simule o cruzamento"
-          idleText="Preencha o semáforo e as duas aproximações (ou carregue o exemplo) e simule: sai a fila ao longo do tempo, o atraso e a vazão, com IC."
+          idleText="Preencha o semáforo e as aproximações (ou carregue o exemplo) e simule: sai a fila ao longo do tempo, o atraso e a vazão, com IC."
           loadingText="Simulando o cruzamento"
         >
           {(result) => (
@@ -365,7 +407,7 @@ export function TrafficTab({ active }: Props) {
           </>
         ),
         (partial) => (partial.length > 0 ? (
-          <p className="note">Pontos prontos (verde da fase 1): {partial.map((p) => p.green[0].toLocaleString("pt-BR")).join(", ")} s.</p>
+          <p className="note">Pontos prontos (verde da primeira fase varrida): {partial.map((p) => (p.green[Number(sweep.pair1 || 1) - 1] ?? p.green[0]).toLocaleString("pt-BR")).join(", ")} s.</p>
         ) : null),
       )}
 
@@ -381,16 +423,61 @@ export function TrafficTab({ active }: Props) {
               <>
                 <div className="save-row">
                   <button type="button" className="btn btn-primary btn-small" onClick={() => applyToForm(result)}>Usar no formulário</button>
+                  {result.suggested.replay && (
+                    <button type="button" className="btn btn-small" onClick={() => applyToForm(result, true)}
+                      title="O perfil de chegadas leva as contagens observadas (por classe): os planos alternativos enfrentam exatamente o que foi filmado.">
+                      Usar reproduzindo as contagens
+                    </button>
+                  )}
+                  <button type="button" className="btn btn-small" onClick={() => setSaved((s) => ({ ...s, a: result }))}>Guardar como sessão A</button>
+                  <button type="button" className="btn btn-small" onClick={() => setSaved((s) => ({ ...s, b: result }))}>Guardar como sessão B</button>
                 </div>
                 <VideoEstimateView estimate={result} />
               </>
             )}
           </ResultArea>
+          {(saved.a || saved.b) && (
+            <section className="panel results" aria-label="Duas sessões lado a lado">
+              <div className="tab-panel">
+                <h2 className="group-title">Duas sessões lado a lado</h2>
+                <p className="sub">
+                  Guarde duas estimativas (por exemplo, manhã e tarde) e compare plano, chegadas, ℓ e h. Sessão A: {saved.a ? `guardada (${saved.a.session_id ?? "única"})` : "vazia"};
+                  sessão B: {saved.b ? `guardada (${saved.b.session_id ?? "única"})` : "vazia"}.
+                </p>
+                <div className="grid2">
+                  <div className="field">
+                    <label htmlFor="sessions-label-a">Nome da sessão A</label>
+                    <input id="sessions-label-a" value={saved.labelA} onChange={(e) => setSaved((s) => ({ ...s, labelA: e.target.value }))} />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="sessions-label-b">Nome da sessão B</label>
+                    <input id="sessions-label-b" value={saved.labelB} onChange={(e) => setSaved((s) => ({ ...s, labelB: e.target.value }))} />
+                  </div>
+                </div>
+                <div className="actions">
+                  <button type="button" className="btn btn-small" disabled={!saved.a || !saved.b || sessions.busy} onClick={() => void runSessions()}>
+                    {sessions.busy ? "Comparando…" : "Comparar as sessões"}
+                  </button>
+                  <button type="button" className="btn btn-small" disabled={!saved.a || !saved.b} onClick={() => void exportSessions()}>
+                    <IconDownload size={15} aria-hidden="true" /> Exportar CSV da comparação
+                  </button>
+                </div>
+                {sessions.error && <span className="field-error" role="alert">{sessions.error}</span>}
+                {sessions.result && <TrafficSessionsView data={sessions.result} />}
+              </div>
+            </section>
+          )}
           {validation.state.status !== "idle" && (
             <ResultArea state={validation.state} idleTitle="" idleText="" loadingText="Validando o modelo com as contagens">
               {(result) => (
                 <>
-                  {saveRow("validation", requests.current.validation, result)}
+                  <div className="save-row">
+                    <SaveButton suggestedTitle={TRAFFIC_TITLE.validation} build={(t) => trafficRecord("validation", requests.current.validation, result, t ?? TRAFFIC_TITLE.validation)} />
+                    <button type="button" className="btn btn-small" disabled={csv.busy} onClick={() => void exportValidation(result.settings.seed)}>
+                      <IconDownload size={15} aria-hidden="true" /> {csv.busy ? "Exportando…" : "Exportar CSV da validação"}
+                    </button>
+                    {csv.error && <span className="field-error" role="alert">{csv.error}</span>}
+                  </div>
                   <h2 className="group-title">Validação: simulado × observado</h2>
                   <TrafficValidationView result={result} ids={validationIds(result)} />
                 </>

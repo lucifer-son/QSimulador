@@ -59,6 +59,10 @@ import trafficSimulate from "./fixtures/traffic-simulate.json";
 import trafficSweep from "./fixtures/traffic-sweep.json";
 import trafficVideoEstimate from "./fixtures/traffic-video-estimate.json";
 import trafficVideoValidate from "./fixtures/traffic-video-validate.json";
+import trafficVideoEstimateClasses from "./fixtures/traffic-video-estimate-classes.json";
+import trafficVideoValidateClasses from "./fixtures/traffic-video-validate-classes.json";
+import trafficSessionsCompare from "./fixtures/traffic-sessions-compare.json";
+import trafficSimulate4Phases from "./fixtures/traffic-simulate-4phases.json";
 import analysisDistributionMmc from "./fixtures/analysis-distribution-mmc.json";
 import analysisDistributionMmck from "./fixtures/analysis-distribution-mmck.json";
 import analysisDistributionMgc from "./fixtures/analysis-distribution-mgc.json";
@@ -87,13 +91,13 @@ export const fixtures = {
   sizingCostMmc, sizingSlaErlangb, sizingSlaMmc, sizingTableMgc, sizingTableMmc,
   errorScenariosCapacity, scenariosCompareMmc, scenariosCompareMmcBonferroni, scenariosExportMmc,
   errorTrafficHeadway, errorTrafficVideo, trafficCompare, trafficExportSweep, trafficSimulate, trafficSweep,
-  trafficVideoEstimate, trafficVideoValidate,
+  trafficVideoEstimate, trafficVideoValidate, trafficVideoEstimateClasses, trafficVideoValidateClasses, trafficSessionsCompare, trafficSimulate4Phases,
   analysisDistributionMmc, analysisDistributionMmck, analysisDistributionMgc, analysisSensitivityMm1, errorAnalysisErlangb, analysisFitLognormal, analysisFitConstant, errorAnalysisFitSample, realdataAnalyzeHint,
 };
 
 export const colors: ThemeColors = {
   text: "#111111", textSecondary: "#222222", textMuted: "#333333",
-  border: "#444444", accent: "#0000ff", danger: "#ff0000",
+  border: "#444444", accent: "#0000ff", danger: "#ff0000", surface: "#ffffff",
 };
 
 /** Cópia profunda, para um teste poder alterar a fixture sem afetar os outros. */

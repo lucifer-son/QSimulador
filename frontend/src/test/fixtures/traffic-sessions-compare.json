@@ -1,0 +1,295 @@
+{
+ "labels": [
+  "manhã",
+  "tarde"
+ ],
+ "level": 0.95,
+ "rows": [
+  {
+   "group": "plano",
+   "name": "Ciclo",
+   "unit": "s",
+   "a": 87.0,
+   "b": 87.0,
+   "difference": 0.0,
+   "ratio": null,
+   "ratio_ci": null,
+   "p_value": null,
+   "note": null
+  },
+  {
+   "group": "plano",
+   "name": "Verde da fase 1",
+   "unit": "s",
+   "a": 34.0,
+   "b": 34.0,
+   "difference": 0.0,
+   "ratio": null,
+   "ratio_ci": null,
+   "p_value": null,
+   "note": null
+  },
+  {
+   "group": "plano",
+   "name": "Amarelo da fase 1",
+   "unit": "s",
+   "a": 3.0,
+   "b": 3.0,
+   "difference": 0.0,
+   "ratio": null,
+   "ratio_ci": null,
+   "p_value": null,
+   "note": null
+  },
+  {
+   "group": "plano",
+   "name": "Todo-vermelho da fase 1",
+   "unit": "s",
+   "a": 2.0,
+   "b": 2.0,
+   "difference": 0.0,
+   "ratio": null,
+   "ratio_ci": null,
+   "p_value": null,
+   "note": null
+  },
+  {
+   "group": "plano",
+   "name": "Verde da fase 2",
+   "unit": "s",
+   "a": 22.0,
+   "b": 22.0,
+   "difference": 0.0,
+   "ratio": null,
+   "ratio_ci": null,
+   "p_value": null,
+   "note": null
+  },
+  {
+   "group": "plano",
+   "name": "Amarelo da fase 2",
+   "unit": "s",
+   "a": 3.0,
+   "b": 3.0,
+   "difference": 0.0,
+   "ratio": null,
+   "ratio_ci": null,
+   "p_value": null,
+   "note": null
+  },
+  {
+   "group": "plano",
+   "name": "Todo-vermelho da fase 2",
+   "unit": "s",
+   "a": 2.0,
+   "b": 2.0,
+   "difference": 0.0,
+   "ratio": null,
+   "ratio_ci": null,
+   "p_value": null,
+   "note": null
+  },
+  {
+   "group": "plano",
+   "name": "Verde da fase 3",
+   "unit": "s",
+   "a": 16.0,
+   "b": 16.0,
+   "difference": 0.0,
+   "ratio": null,
+   "ratio_ci": null,
+   "p_value": null,
+   "note": null
+  },
+  {
+   "group": "plano",
+   "name": "Amarelo da fase 3",
+   "unit": "s",
+   "a": 3.0,
+   "b": 3.0,
+   "difference": 0.0,
+   "ratio": null,
+   "ratio_ci": null,
+   "p_value": null,
+   "note": null
+  },
+  {
+   "group": "plano",
+   "name": "Todo-vermelho da fase 3",
+   "unit": "s",
+   "a": 2.0,
+   "b": 2.0,
+   "difference": 0.0,
+   "ratio": null,
+   "ratio_ci": null,
+   "p_value": null,
+   "note": null
+  },
+  {
+   "group": "Aproximação 1",
+   "name": "Taxa de chegada",
+   "unit": "veíc/s",
+   "a": 0.12777777777777777,
+   "b": 0.16444444444444445,
+   "difference": 0.03666666666666668,
+   "ratio": 1.2869565217391306,
+   "ratio_ci": [
+    1.0796200562811946,
+    1.5356486674490335
+   ],
+   "p_value": 0.004549551708841002,
+   "note": "Teste binomial exato; supõe chegadas de Poisson."
+  },
+  {
+   "group": "Aproximação 1",
+   "name": "ℓ (1º veículo)",
+   "unit": "s",
+   "a": 2.3157418802600658,
+   "b": 2.611525500251181,
+   "difference": 0.295783619991115,
+   "ratio": null,
+   "ratio_ci": null,
+   "p_value": 0.25556632235811017,
+   "note": "p-valor aproximado, a partir dos ICs."
+  },
+  {
+   "group": "Aproximação 1",
+   "name": "h (intervalo por carro)",
+   "unit": "s",
+   "a": 2.156107366171483,
+   "b": 1.847909781667909,
+   "difference": -0.3081975845035738,
+   "ratio": null,
+   "ratio_ci": null,
+   "p_value": 1.7325969504726796e-06,
+   "note": "p-valor aproximado, a partir dos ICs."
+  },
+  {
+   "group": "Aproximação 1",
+   "name": "Amarelo utilizável (limite inferior)",
+   "unit": "s",
+   "a": null,
+   "b": 0.6949463210099793,
+   "difference": null,
+   "ratio": null,
+   "ratio_ci": null,
+   "p_value": null,
+   "note": null
+  },
+  {
+   "group": "Aproximação 2",
+   "name": "Taxa de chegada",
+   "unit": "veíc/s",
+   "a": 0.09888888888888889,
+   "b": 0.13166666666666665,
+   "difference": 0.03277777777777777,
+   "ratio": 1.3314606741573032,
+   "ratio_ci": [
+    1.0916030555123888,
+    1.6263960435826892
+   ],
+   "p_value": 0.004355473859552999,
+   "note": "Teste binomial exato; supõe chegadas de Poisson."
+  },
+  {
+   "group": "Aproximação 2",
+   "name": "ℓ (1º veículo)",
+   "unit": "s",
+   "a": 2.5678549044647365,
+   "b": 2.3519373480180086,
+   "difference": -0.21591755644672794,
+   "ratio": null,
+   "ratio_ci": null,
+   "p_value": 0.4724731566426368,
+   "note": "p-valor aproximado, a partir dos ICs."
+  },
+  {
+   "group": "Aproximação 2",
+   "name": "h (intervalo por carro)",
+   "unit": "s",
+   "a": 2.005746238585114,
+   "b": 1.96598043337706,
+   "difference": -0.03976580520805406,
+   "ratio": null,
+   "ratio_ci": null,
+   "p_value": 0.624882434308148,
+   "note": "p-valor aproximado, a partir dos ICs."
+  },
+  {
+   "group": "Aproximação 2",
+   "name": "Amarelo utilizável (limite inferior)",
+   "unit": "s",
+   "a": 0.16093769265899027,
+   "b": 0.9021445995051636,
+   "difference": 0.7412069068461733,
+   "ratio": null,
+   "ratio_ci": null,
+   "p_value": null,
+   "note": null
+  },
+  {
+   "group": "Aproximação 3",
+   "name": "Taxa de chegada",
+   "unit": "veíc/s",
+   "a": 0.07222222222222222,
+   "b": 0.0811111111111111,
+   "difference": 0.00888888888888889,
+   "ratio": 1.123076923076923,
+   "ratio_ci": [
+    0.8805709338458794,
+    1.4336552266296745
+   ],
+   "p_value": 0.3666096709216109,
+   "note": "Teste binomial exato; supõe chegadas de Poisson."
+  },
+  {
+   "group": "Aproximação 3",
+   "name": "ℓ (1º veículo)",
+   "unit": "s",
+   "a": 2.6025106086305554,
+   "b": 2.760152315074075,
+   "difference": 0.1576417064435196,
+   "ratio": null,
+   "ratio_ci": null,
+   "p_value": 0.5350778197889103,
+   "note": "p-valor aproximado, a partir dos ICs."
+  },
+  {
+   "group": "Aproximação 3",
+   "name": "h (intervalo por carro)",
+   "unit": "s",
+   "a": 1.9014107493451267,
+   "b": 1.9765849665944397,
+   "difference": 0.07517421724931306,
+   "ratio": null,
+   "ratio_ci": null,
+   "p_value": 0.2811103407658042,
+   "note": "p-valor aproximado, a partir dos ICs."
+  },
+  {
+   "group": "Aproximação 3",
+   "name": "Amarelo utilizável (limite inferior)",
+   "unit": "s",
+   "a": 0.6677913684690111,
+   "b": 0.5308006755840324,
+   "difference": -0.13699069288497867,
+   "ratio": null,
+   "ratio_ci": null,
+   "p_value": null,
+   "note": null
+  }
+ ],
+ "notes": [],
+ "sessions": [
+  {
+   "label": "manhã",
+   "session_id": null,
+   "horizon": 1800.0
+  },
+  {
+   "label": "tarde",
+   "session_id": null,
+   "horizon": 1800.0
+  }
+ ]
+}

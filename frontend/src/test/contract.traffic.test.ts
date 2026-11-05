@@ -8,7 +8,7 @@ import {
   exportTrafficCsv, simulateTraffic, streamTraffic,
   type CompareResult, type SweepResult, type TrafficEvent,
 } from "../api/traffic";
-import { buildComparisonBody, buildSweepBody, buildTrafficBody, exampleTraffic } from "../domain/traffic";
+import { blankSweep, buildComparisonBody, buildSweepBody, buildTrafficBody, exampleTraffic } from "../domain/traffic";
 import { fixtures } from "./helpers";
 
 const live = Boolean(import.meta.env.VITE_API_BASE_URL);
@@ -27,7 +27,7 @@ describe.skipIf(!live)("contrato do cruzamento com a API real", () => {
     expect(Object.keys(r).sort()).toEqual(Object.keys(fixtures.trafficSimulate).sort());
     expect(r.approaches.map((a) => a.key)).toEqual(["a1", "a2"]);
     expect(r.metrics.x.delay_censored?.n).toBe(4);
-    expect(r.reference.a1.exact).toBe(false);
+    expect(r.reference.a1!.exact).toBe(false);
     expect(r.alerts.every((a) => ["not_informed", "oversaturated", "at_risk", "check_units"].includes(a.code))).toBe(true);
   });
 
@@ -43,7 +43,7 @@ describe.skipIf(!live)("contrato do cruzamento com a API real", () => {
 
   it("compara planos em NDJSON e fecha com o resultado completo", async () => {
     const { form } = example();
-    const built = buildComparisonBody(form, [{ id: 1, name: "Mais verde na 1", green1: "36", green2: "19", amber1: "", amber2: "", allRed1: "", allRed2: "" }], false);
+    const built = buildComparisonBody(form, [{ id: 1, name: "Mais verde na 1", phases: [{ green: "36", amber: "", allRed: "" }, { green: "19", amber: "", allRed: "" }] }], false);
     if (!built.ok) throw new Error("plano inválido");
     const events: TrafficEvent[] = [];
     await streamTraffic("/api/traffic/compare", built.body, (e) => events.push(e));
@@ -55,7 +55,7 @@ describe.skipIf(!live)("contrato do cruzamento com a API real", () => {
 
   it("varre o verde e exporta o CSV da mesma varredura", async () => {
     const { form } = example();
-    const built = buildSweepBody(form, { minGreen1: "10", minGreen2: "10", step: "5" });
+    const built = buildSweepBody(form, { ...blankSweep(), minGreen1: "10", minGreen2: "10", step: "5" });
     if (!built.ok) throw new Error("varredura inválida");
     const events: TrafficEvent[] = [];
     await streamTraffic("/api/traffic/sweep", built.body, (e) => events.push(e));
@@ -68,7 +68,7 @@ describe.skipIf(!live)("contrato do cruzamento com a API real", () => {
 
   it("um evento de erro no meio do fluxo vira ApiError", async () => {
     const { form } = example();
-    const built = buildSweepBody(form, { minGreen1: "40", minGreen2: "40", step: "5" });
+    const built = buildSweepBody(form, { ...blankSweep(), minGreen1: "40", minGreen2: "40", step: "5" });
     if (!built.ok) throw new Error("varredura inválida");
     await expect(streamTraffic("/api/traffic/sweep", built.body, () => undefined)).rejects.toBeInstanceOf(ApiError);
   });

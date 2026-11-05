@@ -2,7 +2,9 @@
 
 - simulate: um plano, com réplicas e IC (JSON).
 - compare e sweep: NDJSON com progresso (como /api/scenarios/compare); fechar a conexão cancela o resto.
-- video/estimate e video/validate: multipart com as planilhas do protocolo.
+- video/estimate e video/validate: multipart com as planilhas do protocolo (Fase 13.2: 2 a 4 aproximações,
+  classes de veículos com `class_factors`, testes de hipótese e exportação CSV da validação).
+- video/sessions/compare: duas sessões (manhã × tarde) lado a lado, a partir de duas respostas de video/estimate.
 - *.csv: refazem o cálculo com o mesmo corpo e a mesma semente (resultado reproduzível).
 """
 
@@ -16,7 +18,8 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.api.schemas import ErrorResponse
 from app.api.schemas_traffic import (
-    CompareRequest, SimulateRequest, SweepRequest, TrafficEventOut, TrafficResultOut, VideoEstimateOut, VideoValidationOut,
+    CompareRequest, SessionsCompareRequest, SessionsCompareOut, SimulateRequest, SweepRequest, TrafficEventOut, TrafficResultOut,
+    VideoEstimateOut, VideoValidationOut,
 )
 from app.domain.validation.errors import InvalidDatasetError, QueueValidationError
 from app.domain.validation.realdata import MAX_UPLOAD_BYTES
@@ -24,11 +27,12 @@ from app.traffic.compare import (
     ComparePlan, PlanSpec, SweepPlan, _finite, iter_compare, iter_sweep, prepare_compare, prepare_sweep,
     run_compare, run_sweep,
 )
-from app.traffic.csvout import compare_csv, simulate_csv, sweep_csv
+from app.traffic.csvout import compare_csv, sessions_csv, simulate_csv, sweep_csv, validation_csv
 from app.traffic.report import simulate_report
 from app.traffic.run import prepare_settings, run_plan
 from app.traffic.service import intersection_from_values
-from app.traffic.validate import validate_session
+from app.traffic.sessions import compare_estimates
+from app.traffic.validate import boost_replications, validate_session
 from app.traffic.video import (
     DEFAULT_CORE, DEFAULT_MAX_HEADWAY, DEFAULT_MIN_RUN, DEFAULT_PROFILE_BLOCK, estimate, load_session,
 )
@@ -62,16 +66,14 @@ def _simulate(request: SimulateRequest):
 def _compare_plan(request: CompareRequest) -> ComparePlan:
     specs = []
     for i, plan in enumerate(request.scenarios):
-        if len(plan.phases) != 2:
-            raise QueueValidationError("phases do plano deve ter 2 itens (use null para manter a fase).", f"scenarios.{i}.phases")
         specs.append(PlanSpec(plan.name, tuple(None if x is None else x.values() for x in plan.phases)))
     return prepare_compare(_intersection(request), specs, bonferroni=request.bonferroni,
                            series_step=request.series_step, **_run_kwargs(request))
 
 
 def _sweep_plan(request: SweepRequest) -> SweepPlan:
-    return prepare_sweep(_intersection(request), min_green=list(request.min_green), step=request.step, **{
-        k: v for k, v in _run_kwargs(request).items()})
+    return prepare_sweep(_intersection(request), min_green=list(request.min_green), step=request.step,
+                         pair=None if request.pair is None else list(request.pair), **_run_kwargs(request))
 
 
 def _lines(events: Iterator[dict], what: str) -> Iterator[str]:
@@ -159,7 +161,19 @@ def _read_csv(file: UploadFile | None, label: str, *, required: bool) -> bytes |
     return content
 
 
-def _session(signal_events, counts, crossings, trajectories, session_id, approach_ids):
+def _class_factors(text: str | None) -> dict | None:
+    if text is None or not text.strip():
+        return None
+    try:
+        value = json.loads(text)
+    except json.JSONDecodeError:
+        raise QueueValidationError("class_factors deve ser um JSON válido, por exemplo {\"carro\": 1, \"moto\": 0.33}.", "class_factors") from None
+    if not isinstance(value, dict):
+        raise QueueValidationError("class_factors deve ser um objeto nome da classe → fator.", "class_factors")
+    return value
+
+
+def _session(signal_events, counts, crossings, trajectories, session_id, approach_ids, class_factors=None):
     contents = []
     for file, label, required in ((signal_events, "signal_events", True), (counts, "counts", True),
                                   (crossings, "crossings", False), (trajectories, "trajectories", False)):
@@ -170,10 +184,11 @@ def _session(signal_events, counts, crossings, trajectories, session_id, approac
     ids = None
     if approach_ids:
         parts = [x.strip() for x in approach_ids.split(",") if x.strip()]
-        if len(parts) != 2:
-            raise QueueValidationError("approach_ids deve ter exatamente dois identificadores separados por vírgula.", "approach_ids")
-        ids = (parts[0], parts[1])
-    return load_session(*contents, session_id=session_id or None, approach_ids=ids)
+        if not 2 <= len(parts) <= 4 or len(set(parts)) != len(parts):
+            raise QueueValidationError(
+                "approach_ids deve ter de dois a quatro identificadores diferentes, separados por vírgula.", "approach_ids")
+        ids = tuple(parts)
+    return load_session(*contents, session_id=session_id or None, approach_ids=ids, class_factors=_class_factors(class_factors))
 
 
 _FILES = (
@@ -193,37 +208,27 @@ def video_estimate(
     crossings: Annotated[UploadFile | None, File(description="CSV dos cruzamentos da linha de retenção (necessário para ℓ, h e o amarelo utilizável).")] = None,
     trajectories: Annotated[UploadFile | None, File(description="CSV dos veículos acompanhados (para o atraso observado).")] = None,
     session_id: Annotated[str | None, Form(description="Sessão a usar, se os arquivos tiverem mais de uma.")] = None,
-    approach_ids: Annotated[str | None, Form(description="As duas aproximações, separadas por vírgula (a 1ª é a da fase 1).")] = None,
+    approach_ids: Annotated[str | None, Form(description="De 2 a 4 aproximações, separadas por vírgula, na ordem das fases (a 1ª é a da fase 1).")] = None,
+    class_factors: Annotated[str | None, Form(description="JSON nome da classe → fator de equivalência em carros. Obrigatório se as contagens tiverem `vehicle_class`; sem valor padrão.")] = None,
     max_headway: Annotated[float, Form(description="Intervalo máximo (s) entre veículos para contar como descarga saturada.")] = DEFAULT_MAX_HEADWAY,
     min_run: Annotated[int, Form(description="Veículos mínimos da sequência saturada de um verde.")] = DEFAULT_MIN_RUN,
     core: Annotated[int, Form(description="Veículos da cabeça da fila usados no ajuste da reta de descarga.")] = DEFAULT_CORE,
     profile_block: Annotated[float, Form(description="Duração (s) dos blocos do perfil de chegadas sugerido.")] = DEFAULT_PROFILE_BLOCK,
     confidence_level: Annotated[float, Form()] = 0.95,
 ):
-    session = _session(signal_events, counts, crossings, trajectories, session_id, approach_ids)
+    session = _session(signal_events, counts, crossings, trajectories, session_id, approach_ids, class_factors)
     if isinstance(session, JSONResponse):
         return session
     return _finite(estimate(session, max_headway=max_headway, min_run=min_run, core=core,
                             profile_block=profile_block, level=confidence_level))
 
 
-@router.post("/video/validate", response_model=VideoValidationOut, responses=_upload_errors, description=(
-    "Simula o plano observado com as chegadas do vídeo e compara com a fila e as saídas observadas, intervalo a intervalo. "
-    "As chegadas usam as contagens observadas (número fixo por intervalo). A resposta traz erros (viés, MAE, RMSE) e a "
-    "cobertura da faixa simulada; não há teste de hipótese nem limite de aprovação. " + _FILES))
-def video_validate(
-    signal_events: Annotated[UploadFile, File()],
-    counts: Annotated[UploadFile, File()],
-    config: Annotated[str, Form(description="JSON do cruzamento (phases, offset, approaches com headway etc.) — o corpo de /simulate sem as chegadas, que vêm das contagens.")],
-    crossings: Annotated[UploadFile | None, File()] = None,
-    trajectories: Annotated[UploadFile | None, File()] = None,
-    session_id: Annotated[str | None, Form()] = None,
-    approach_ids: Annotated[str | None, Form()] = None,
-    replications: Annotated[int, Form()] = 30,
-    seed: Annotated[int | None, Form()] = None,
-    confidence_level: Annotated[float, Form()] = 0.95,
+def _validation(
+    signal_events, counts, config, crossings, trajectories, session_id, approach_ids, class_factors, replications, seed,
+    confidence_level, tolerance_delay, tolerance_departures,
 ):
-    session = _session(signal_events, counts, crossings, trajectories, session_id, approach_ids)
+    """Monta a sessão e o cruzamento (as chegadas são as contagens observadas, com o tamanho real do trabalho) e valida."""
+    session = _session(signal_events, counts, crossings, trajectories, session_id, approach_ids, class_factors)
     if isinstance(session, JSONResponse):
         return session
     try:
@@ -232,14 +237,96 @@ def video_validate(
         raise QueueValidationError("config deve ser um JSON válido.", "config") from None
     if not isinstance(body, dict):
         raise QueueValidationError("config deve ser um objeto JSON.", "config")
+    items = body.get("approaches") or []
     approaches = []
-    for item in body.get("approaches") or []:
-        h = item.get("headway") if isinstance(item, dict) else None
+    for i, item in enumerate(items):
+        item = item if isinstance(item, dict) else {}
+        h = item.get("headway")
         spec = None
         if isinstance(h, dict) and "distribution" in h:
             spec = (h["distribution"], {k: v for k, v in h.items() if k != "distribution"})
-        approaches.append({**(item if isinstance(item, dict) else {}), "headway": spec, "lam": 1.0, "profile": None})
+        profile = None
+        if i < len(session.approach_ids):
+            with_classes = bool(item.get("classes")) and bool(session.classes)
+            if item.get("classes") and not session.classes:
+                raise QueueValidationError(
+                    "O cruzamento tem classes de veículos, mas as contagens do vídeo não têm a coluna vehicle_class.",
+                    f"config.approaches.{i}.classes")
+            profile = [{"duration": d["end"] - d["start"], "count": d["arrivals"],
+                        **({"class_counts": dict(d["by_class"])} if with_classes else {})}
+                       for d in session.counts[session.approach_ids[i]]]
+        approaches.append({**item, "headway": spec, "lam": None, "profile": profile})
     inter = intersection_from_values(body.get("phases"), body.get("offset"), approaches)
     settings = prepare_settings(inter, simulation_time=session.horizon, replications=replications, warmup_time=0.0,
                                 seed=seed, confidence_level=confidence_level)
-    return _finite(validate_session(session, inter, settings))
+    settings = boost_replications(settings, inter)
+    result = validate_session(session, inter, settings, tolerance_delay=tolerance_delay, tolerance_departures=tolerance_departures)
+    result["settings"]["requested_replications"] = replications
+    return _finite(result)
+
+
+_VALIDATE_DESC = (
+    "Simula o plano observado com as chegadas do vídeo e compara com a fila e as saídas observadas, intervalo a intervalo. "
+    "As chegadas usam as contagens observadas (número fixo por intervalo, por classe quando houver). A resposta traz erros "
+    "(viés, MAE, RMSE), a cobertura da faixa simulada e, em `tests`, testes de hipótese (aderência por Monte Carlo, KS e "
+    "Mann-Whitney do atraso e, se você informar `tolerance_delay` e `tolerance_departures`, a equivalência TOST), com "
+    "p-valor ajustado por Holm. Não há tolerância padrão nem limite de aprovação. "
+)
+
+
+@router.post("/video/validate", response_model=VideoValidationOut, responses=_upload_errors, description=_VALIDATE_DESC + _FILES)
+def video_validate(
+    signal_events: Annotated[UploadFile, File()],
+    counts: Annotated[UploadFile, File()],
+    config: Annotated[str, Form(description="JSON do cruzamento (phases, offset, approaches com headway etc.) — o corpo de /simulate sem as chegadas, que vêm das contagens.")],
+    crossings: Annotated[UploadFile | None, File()] = None,
+    trajectories: Annotated[UploadFile | None, File()] = None,
+    session_id: Annotated[str | None, Form()] = None,
+    approach_ids: Annotated[str | None, Form()] = None,
+    class_factors: Annotated[str | None, Form()] = None,
+    replications: Annotated[int, Form()] = 30,
+    seed: Annotated[int | None, Form()] = None,
+    confidence_level: Annotated[float, Form()] = 0.95,
+    tolerance_delay: Annotated[float | None, Form(description="Margem (s) do teste de equivalência do atraso médio. Sem valor padrão.")] = None,
+    tolerance_departures: Annotated[float | None, Form(description="Margem (fração do total observado, ex.: 0,05) do teste de equivalência das saídas. Sem valor padrão.")] = None,
+):
+    return _validation(signal_events, counts, config, crossings, trajectories, session_id, approach_ids, class_factors,
+                       replications, seed, confidence_level, tolerance_delay, tolerance_departures)
+
+
+@router.post("/video/validate/export.csv", response_class=Response, responses={200: _CSV, **_upload_errors}, description=(
+    "Os mesmos parâmetros de /video/validate; devolve o CSV com o resumo dos erros, o intervalo a intervalo e os testes. "
+    "Refaz o cálculo com a mesma semente: informe `seed` para o CSV bater com a tela."))
+def video_validate_csv(
+    signal_events: Annotated[UploadFile, File()],
+    counts: Annotated[UploadFile, File()],
+    config: Annotated[str, Form()],
+    crossings: Annotated[UploadFile | None, File()] = None,
+    trajectories: Annotated[UploadFile | None, File()] = None,
+    session_id: Annotated[str | None, Form()] = None,
+    approach_ids: Annotated[str | None, Form()] = None,
+    class_factors: Annotated[str | None, Form()] = None,
+    replications: Annotated[int, Form()] = 30,
+    seed: Annotated[int | None, Form()] = None,
+    confidence_level: Annotated[float, Form()] = 0.95,
+    tolerance_delay: Annotated[float | None, Form()] = None,
+    tolerance_departures: Annotated[float | None, Form()] = None,
+):
+    result = _validation(signal_events, counts, config, crossings, trajectories, session_id, approach_ids, class_factors,
+                         replications, seed, confidence_level, tolerance_delay, tolerance_departures)
+    if isinstance(result, JSONResponse):
+        return result
+    return _csv(validation_csv(result), "cruzamento-validacao.csv")
+
+
+@router.post("/video/sessions/compare", response_model=SessionsCompareOut, responses=_errors, description=(
+    "Compara duas sessões (por exemplo, manhã e tarde) lado a lado: ciclo, fases, taxa de chegada (teste binomial exato), ℓ, h e "
+    "amarelo utilizável, a partir de duas respostas de /video/estimate. A tabela é descritiva: os p-valores não são corrigidos entre linhas."))
+def video_sessions_compare(request: SessionsCompareRequest) -> dict:
+    return _finite(compare_estimates(request.a, request.b, (request.label_a, request.label_b), request.confidence_level))
+
+
+@router.post("/video/sessions/compare/export.csv", response_class=Response, responses={200: _CSV, **_errors})
+def video_sessions_compare_csv(request: SessionsCompareRequest) -> Response:
+    result = _finite(compare_estimates(request.a, request.b, (request.label_a, request.label_b), request.confidence_level))
+    return _csv(sessions_csv(result), "cruzamento-sessoes.csv")

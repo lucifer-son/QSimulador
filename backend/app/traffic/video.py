@@ -1,4 +1,4 @@
-"""Dados do vídeo (Fase 13.1): leitura das planilhas do protocolo, estimação e validação.
+"""Dados do vídeo (Fases 13.1 e 13.2): leitura das planilhas do protocolo, estimação e validação.
 
 Planilhas (CSV, vírgula, ponto-e-vírgula ou tabulação; decimal com ponto ou vírgula; tempos em
 segundos do vídeo ou hh:mm:ss). Cada tabela pode ter várias sessões; informe `session_id` se houver mais de uma.
@@ -9,6 +9,11 @@ segundos do vídeo ou hh:mm:ss). Cada tabela pode ter várias sessões; informe 
   e opcionais `queue_count` (fila no fim do intervalo), `queue_visible` (a fila inteira estava visível?)
   e `queue_count_start` (fila no início do intervalo, usada só no primeiro).
 - **cruzamentos** (opcional, necessária para estimar ℓ, h e o amarelo utilizável): `crossing_time`, `approach_id`.
+- **classes de veículos** (opcional): coluna `vehicle_class` nas contagens (uma linha por intervalo, aproximação e
+  classe) e nos cruzamentos. Os fatores de equivalência em carros (`class_factors`) são informados por quem usa o
+  sistema: não há valor padrão. Com classes, ℓ e h são estimados por carro equivalente (a reta de descarga usa o fator
+  acumulado dos veículos que passaram) e os totais de chegadas, saídas e fila são em veículos.
+- Com 3 ou 4 aproximações, `approach_ids` lista as aproximações na ordem das fases (a 1ª é a da fase 1).
 - **trajetórias amostradas** (opcional): `approach_id`, `queue_arrival_time`, `crossing_time`, `complete_observation`.
 
 Nada é preenchido por suposição: célula vazia é dado ausente. Onde um valor ausente impediria o
@@ -21,6 +26,7 @@ O tempo zero da simulação é o início do primeiro intervalo de contagem da se
 import csv
 import io
 import math
+from collections.abc import Mapping
 from dataclasses import dataclass
 from numbers import Real
 
@@ -52,6 +58,7 @@ _ALIASES = {
     "queue_count": ("queue_count", "fila"),
     "queue_visible": ("queue_visible", "fila_visivel", "fila_visível"),
     "queue_count_start": ("queue_count_start", "fila_inicio", "fila_início"),
+    "vehicle_class": ("vehicle_class", "classe", "classe_veiculo", "classe_veículo", "tipo_veiculo", "tipo_veículo"),
     "crossing_time": ("crossing_time", "cruzamento", "passagem"),
     "queue_arrival_time": ("queue_arrival_time", "chegada_fila"),
     "complete_observation": ("complete_observation", "completa", "observacao_completa"),
@@ -175,7 +182,7 @@ SIGNAL_TABLE, COUNTS_TABLE, CROSSINGS_TABLE, TRACKS_TABLE = "signal_events", "co
 @dataclass
 class Session:
     session_id: str | None
-    approach_ids: tuple[str, str]
+    approach_ids: tuple[str, ...]
     signal: dict[str, list[tuple[float, str]]]          # approach_id -> [(t, estado)], ordenado, t em relação a t0
     counts: dict[str, list[dict]]                       # approach_id -> intervalos ordenados (t em relação a t0)
     crossings: dict[str, np.ndarray] | None
@@ -183,6 +190,9 @@ class Session:
     t0: float
     horizon: float
     notes: list[str]
+    classes: tuple[str, ...] = ()                       # nomes das classes (vazio = sem classes)
+    class_factors: dict[str, float] | None = None       # nome → equivalência em carros (informada pelo usuário)
+    crossing_factors: dict[str, np.ndarray] | None = None   # fator de cada cruzamento (None = não informado por classe)
 
 
 def _pick_session(rows: list[dict], table: str, session_id: str | None) -> list[dict]:
@@ -197,58 +207,142 @@ def _pick_session(rows: list[dict], table: str, session_id: str | None) -> list[
     return rows
 
 
-def _resolve_approaches(all_ids: set[str], requested: tuple[str, str] | None) -> tuple[str, str]:
+def _resolve_approaches(all_ids: set[str], requested: tuple[str, ...] | None) -> tuple[str, ...]:
     if requested is not None:
-        if len(set(requested)) != 2:
-            raise QueueValidationError("approach_ids deve ter dois identificadores diferentes.", "approach_ids")
+        if not 2 <= len(requested) <= 4 or len(set(requested)) != len(requested):
+            raise QueueValidationError("approach_ids deve ter de dois a quatro identificadores diferentes.", "approach_ids")
         missing = [a for a in requested if a not in all_ids]
         if missing:
             raise InvalidDatasetError(
                 f"approach_id não encontrado nos dados: {', '.join(missing)}. Encontrados: {', '.join(sorted(all_ids))}.", "approach_ids")
         return requested
-    if len(all_ids) != 2:
+    if not 2 <= len(all_ids) <= 4:
         raise InvalidDatasetError(
-            f"Os dados têm {len(all_ids)} aproximações ({', '.join(sorted(all_ids))}); o modelo tem duas. "
-            "Informe approach_ids com as duas que serão estudadas.", "approach_ids")
+            f"Os dados têm {len(all_ids)} aproximações ({', '.join(sorted(all_ids))}); o modelo aceita de duas a quatro, "
+            "uma por fase. Informe approach_ids com as que serão estudadas, na ordem das fases.", "approach_ids")
+    if len(all_ids) > 2:
+        raise InvalidDatasetError(
+            f"Os dados têm {len(all_ids)} aproximações ({', '.join(sorted(all_ids))}). Informe approach_ids com elas "
+            "na ordem das fases (a 1ª é a da fase 1).", "approach_ids")
     first, second = sorted(all_ids)
     return first, second
 
 
+def _clean_factors(class_factors: Mapping[str, object] | None) -> dict[str, float] | None:
+    if class_factors is None:
+        return None
+    if not isinstance(class_factors, Mapping) or not class_factors:
+        raise QueueValidationError("class_factors deve ser um objeto nome da classe → fator (equivalência em carros).", "class_factors")
+    out: dict[str, float] = {}
+    for name, value in class_factors.items():
+        key = str(name).strip().lower()
+        if isinstance(value, bool) or not isinstance(value, Real) or not math.isfinite(value) or value <= 0:
+            raise QueueValidationError(f"class_factors.{name} deve ser um número maior que zero.", "class_factors")
+        if key in out:
+            raise QueueValidationError(f"class_factors: a classe “{name}” aparece mais de uma vez.", "class_factors")
+        out[key] = float(value)
+    return out
+
+
+def _class_of(row: dict, table: str) -> str | None:
+    value = row.get("vehicle_class")
+    return None if value is None else value.strip().lower()
+
+
+def _collapse_counts(rows: list[dict], approach: str, classes: tuple[str, ...]) -> list[dict]:
+    """Uma linha por intervalo e classe → um item por intervalo (totais em veículos e contagem por classe)."""
+    items = []
+    for r in rows:
+        start, end = _num(r, "interval_start", COUNTS_TABLE), _num(r, "interval_end", COUNTS_TABLE)
+        if end <= start:
+            raise _fail(COUNTS_TABLE, "interval_end deve ser maior que interval_start", r["_row"])
+        arrivals = _num(r, "arrivals", COUNTS_TABLE)
+        if arrivals < 0 or arrivals != int(arrivals):
+            raise _fail(COUNTS_TABLE, "arrivals deve ser um inteiro maior ou igual a 0", r["_row"])
+        dep = _num(r, "departures", COUNTS_TABLE, required=False)
+        if dep is not None and (dep < 0 or dep != int(dep)):
+            raise _fail(COUNTS_TABLE, "departures deve ser um inteiro maior ou igual a 0", r["_row"])
+        q = _num(r, "queue_count", COUNTS_TABLE, required=False)
+        if q is not None and (q < 0 or q != int(q)):
+            raise _fail(COUNTS_TABLE, "queue_count deve ser um inteiro maior ou igual a 0", r["_row"])
+        q0 = _num(r, "queue_count_start", COUNTS_TABLE, required=False)
+        items.append({"start": start, "end": end, "arrivals": int(arrivals), "departures": None if dep is None else int(dep),
+                      "queue": None if q is None else int(q), "queue_visible": _flag(r, "queue_visible", COUNTS_TABLE),
+                      "queue_start": None if q0 is None else int(q0), "row": r["_row"], "cls": _class_of(r, COUNTS_TABLE)})
+    if not classes:
+        for it in items:
+            it["by_class"] = None
+        return items
+    grouped: dict[tuple[float, float], dict[str, dict]] = {}
+    for it in items:
+        if it["cls"] is None:
+            raise _fail(COUNTS_TABLE, "a coluna vehicle_class está vazia em uma linha: com classes, toda linha precisa de classe", it["row"])
+        slot = grouped.setdefault((it["start"], it["end"]), {})
+        if it["cls"] in slot:
+            raise _fail(COUNTS_TABLE, f"a classe “{it['cls']}” aparece duas vezes no mesmo intervalo de {approach}", it["row"])
+        slot[it["cls"]] = it
+    merged = []
+    for (start, end), by in sorted(grouped.items()):
+        missing = [c for c in classes if c not in by]
+        if missing:
+            first_row = next(iter(by.values()))["row"]
+            raise _fail(COUNTS_TABLE, f"faltam linhas das classes {', '.join(missing)} no intervalo {start:g}–{end:g} s de {approach} "
+                        "(informe 0 quando não houve veículo)", first_row)
+        parts = list(by.values())
+        deps = [p["departures"] for p in parts]
+        queues = [p["queue"] for p in parts]
+        q0s = [p["queue_start"] for p in parts]
+        flags = [p["queue_visible"] for p in parts]
+        merged.append({
+            "start": start, "end": end, "arrivals": sum(p["arrivals"] for p in parts),
+            "departures": None if any(d is None for d in deps) else sum(deps),
+            "queue": None if any(q is None for q in queues) else sum(queues),
+            "queue_visible": None if all(f is None for f in flags) else all(f is not False for f in flags),
+            "queue_start": None if any(q is None for q in q0s) else sum(q0s), "row": parts[0]["row"],
+            "by_class": {c: by[c]["arrivals"] for c in classes},
+            "departures_by_class": None if any(d is None for d in deps) else {c: by[c]["departures"] for c in classes},
+        })
+    return merged
+
+
 def load_session(
     signal_csv: bytes, counts_csv: bytes, crossings_csv: bytes | None = None, tracks_csv: bytes | None = None,
-    *, session_id: str | None = None, approach_ids: tuple[str, str] | None = None,
+    *, session_id: str | None = None, approach_ids: tuple[str, ...] | None = None,
+    class_factors: Mapping[str, object] | None = None,
 ) -> Session:
+    factors = _clean_factors(class_factors)
     sig_rows = _pick_session(read_table(signal_csv, SIGNAL_TABLE, ("timestamp", "approach_id", "signal_state")), SIGNAL_TABLE, session_id)
     cnt_rows = _pick_session(
         read_table(counts_csv, COUNTS_TABLE, ("interval_start", "interval_end", "approach_id", "arrivals"),
-                   ("departures", "queue_count", "queue_visible", "queue_count_start")), COUNTS_TABLE, session_id)
+                   ("departures", "queue_count", "queue_visible", "queue_count_start", "vehicle_class")), COUNTS_TABLE, session_id)
     ids = {r["approach_id"] for r in cnt_rows if r["approach_id"]}
     chosen = _resolve_approaches(ids, approach_ids)
     notes: list[str] = []
 
+    # classes de veículos
+    present = {_class_of(r, COUNTS_TABLE) for r in cnt_rows}
+    present.discard(None)
+    classes: tuple[str, ...] = tuple(sorted(present))
+    if classes:
+        if factors is None:
+            raise QueueValidationError(
+                "As contagens têm a coluna vehicle_class (" + ", ".join(classes) + "): informe class_factors, o fator de "
+                "equivalência em carros de cada classe. Não há valor padrão.", "class_factors")
+        missing_f = [c for c in classes if c not in factors]
+        if missing_f:
+            raise QueueValidationError("class_factors não tem a(s) classe(s): " + ", ".join(missing_f) + ".", "class_factors")
+        extra = [c for c in factors if c not in classes]
+        if extra:
+            notes.append("class_factors traz classes que não aparecem nas contagens (ignoradas): " + ", ".join(extra) + ".")
+        factors = {c: factors[c] for c in classes}
+    elif factors is not None:
+        notes.append("class_factors foi informado, mas as contagens não têm a coluna vehicle_class: as classes foram ignoradas.")
+        factors = None
+
     # contagens
     counts: dict[str, list[dict]] = {}
     for a in chosen:
-        items = []
-        for r in (x for x in cnt_rows if x["approach_id"] == a):
-            start, end = _num(r, "interval_start", COUNTS_TABLE), _num(r, "interval_end", COUNTS_TABLE)
-            if end <= start:
-                raise _fail(COUNTS_TABLE, "interval_end deve ser maior que interval_start", r["_row"])
-            arrivals = _num(r, "arrivals", COUNTS_TABLE)
-            if arrivals < 0 or arrivals != int(arrivals):
-                raise _fail(COUNTS_TABLE, "arrivals deve ser um inteiro maior ou igual a 0", r["_row"])
-            dep = _num(r, "departures", COUNTS_TABLE, required=False)
-            if dep is not None and (dep < 0 or dep != int(dep)):
-                raise _fail(COUNTS_TABLE, "departures deve ser um inteiro maior ou igual a 0", r["_row"])
-            q = _num(r, "queue_count", COUNTS_TABLE, required=False)
-            if q is not None and (q < 0 or q != int(q)):
-                raise _fail(COUNTS_TABLE, "queue_count deve ser um inteiro maior ou igual a 0", r["_row"])
-            q0 = _num(r, "queue_count_start", COUNTS_TABLE, required=False)
-            items.append({
-                "start": start, "end": end, "arrivals": int(arrivals), "departures": None if dep is None else int(dep),
-                "queue": None if q is None else int(q), "queue_visible": _flag(r, "queue_visible", COUNTS_TABLE),
-                "queue_start": None if q0 is None else int(q0), "row": r["_row"],
-            })
+        items = _collapse_counts([x for x in cnt_rows if x["approach_id"] == a], a, classes)
         items.sort(key=lambda d: d["start"])
         if not items:
             raise _fail(COUNTS_TABLE, f"a aproximação {a} não tem intervalos")
@@ -268,7 +362,7 @@ def load_session(
         for d in items:
             d["start"] -= t0
             d["end"] -= t0
-    if any(items[-1]["end"] - t0 > horizon + 1e-9 for items in counts.values()):
+    if any(items[-1]["end"] > horizon + 1e-9 for items in counts.values()):
         notes.append("As aproximações têm durações de contagem diferentes: a simulação usa a menor.")
 
     # eventos semafóricos
@@ -289,10 +383,32 @@ def load_session(
             raise _fail(SIGNAL_TABLE, f"a aproximação {a} tem poucos eventos semafóricos")
         signal[a] = deduped
 
-    crossings = None
+    crossings = crossing_factors = None
     if crossings_csv:
-        rows = _pick_session(read_table(crossings_csv, CROSSINGS_TABLE, ("crossing_time", "approach_id")), CROSSINGS_TABLE, session_id)
-        crossings = {a: np.sort(np.array([_num(r, "crossing_time", CROSSINGS_TABLE) - t0 for r in rows if r["approach_id"] == a])) for a in chosen}
+        rows = _pick_session(read_table(crossings_csv, CROSSINGS_TABLE, ("crossing_time", "approach_id"), ("vehicle_class",)),
+                             CROSSINGS_TABLE, session_id)
+        crossings, crossing_factors, with_class = {}, {}, bool(classes)
+        for a in chosen:
+            mine = [r for r in rows if r["approach_id"] == a]
+            t = np.array([_num(r, "crossing_time", CROSSINGS_TABLE) - t0 for r in mine])
+            order = np.argsort(t, kind="stable")
+            crossings[a] = t[order]
+            if classes and any(r.get("vehicle_class") is not None for r in mine):
+                labels = []
+                for r in mine:
+                    c = _class_of(r, CROSSINGS_TABLE)
+                    if c is None:
+                        raise _fail(CROSSINGS_TABLE, "vehicle_class vazia: se a coluna existir, toda linha precisa de classe", r["_row"])
+                    if c not in factors:
+                        raise _fail(CROSSINGS_TABLE, f"a classe “{c}” não existe nas contagens ({', '.join(classes)})", r["_row"])
+                    labels.append(factors[c])
+                crossing_factors[a] = np.asarray(labels, float)[order]
+            else:
+                crossing_factors[a] = None
+        if classes and all(f is None for f in crossing_factors.values()):
+            notes.append("Os cruzamentos não têm vehicle_class: ℓ e h usam o fator médio de carros equivalentes das contagens.")
+        if not classes:
+            crossing_factors = None
     tracks = None
     if tracks_csv:
         rows = _pick_session(read_table(tracks_csv, TRACKS_TABLE, ("approach_id", "queue_arrival_time", "crossing_time"),
@@ -305,7 +421,7 @@ def load_session(
                 cr = _num(r, "crossing_time", TRACKS_TABLE, required=False)
                 ok = complete is not False and arr is not None and cr is not None
                 tracks[r["approach_id"]].append((arr - t0 if arr is not None else math.nan, cr - t0 if cr is not None else math.nan, ok))
-    return Session(session_id, chosen, signal, counts, crossings, tracks, t0, horizon, notes)
+    return Session(session_id, chosen, signal, counts, crossings, tracks, t0, horizon, notes, classes, factors, crossing_factors)
 
 
 # ---------- estimação ----------
@@ -327,19 +443,21 @@ def _next_after(times: list[float], t: float) -> float | None:
 
 
 def estimate_signal(session: Session) -> dict:
-    a1, a2 = session.approach_ids
-    ev1, ev2 = session.signal[a1], session.signal[a2]
-    g1, am1, r1 = (_transitions(ev1, s) for s in ("green", "amber", "red"))
-    g2, am2, r2 = (_transitions(ev2, s) for s in ("green", "amber", "red"))
-    if len(g1) < MIN_CYCLES + 1 or len(g2) < MIN_CYCLES:
+    ids = session.approach_ids
+    n = len(ids)
+    events = [session.signal[a] for a in ids]
+    greens = [_transitions(ev, "green") for ev in events]
+    ambers = [_transitions(ev, "amber") for ev in events]
+    reds = [_transitions(ev, "red") for ev in events]
+    if len(greens[0]) < MIN_CYCLES + 1 or any(len(g) < MIN_CYCLES for g in greens[1:]):
         raise InvalidDatasetError(
             f"São necessários ao menos {MIN_CYCLES} ciclos completos de cada aproximação nos eventos semafóricos.", SIGNAL_TABLE)
 
-    def durations(greens, ambers, reds):
+    def durations(gs, ams, rs):
         green, amber = [], []
-        for g in greens:
-            a = _next_after(ambers, g)
-            r = _next_after(reds, g)
+        for g in gs:
+            a = _next_after(ams, g)
+            r = _next_after(rs, g)
             if r is None:
                 continue
             if a is not None and a < r:
@@ -350,13 +468,13 @@ def estimate_signal(session: Session) -> dict:
                 amber.append(0.0)
         return green, amber
 
-    green1, amber1 = durations(g1, am1, r1)
-    green2, amber2 = durations(g2, am2, r2)
-    all_red1 = [x - r for r in r1 if (x := _next_after(g2, r)) is not None and x - r < 60]
-    all_red2 = [x - r for r in r2 if (x := _next_after(g1, r)) is not None and x - r < 60]
-    cycles = [b - a for a, b in zip(g1, g1[1:])]
+    green_amber = [durations(greens[i], ambers[i], reds[i]) for i in range(n)]
+    # todo-vermelho da fase i: do início do vermelho dela até o verde da fase seguinte (a última volta à primeira)
+    all_red = [[x - r for r in reds[i] if (x := _next_after(greens[(i + 1) % n], r)) is not None and x - r < 60] for i in range(n)]
+    cycles = [b - a for a, b in zip(greens[0], greens[0][1:])]
     if len(cycles) < MIN_CYCLES:
-        raise InvalidDatasetError(f"Apenas {len(cycles)} ciclo(s) completo(s) da aproximação {a1}: são necessários {MIN_CYCLES}.", SIGNAL_TABLE)
+        raise InvalidDatasetError(
+            f"Apenas {len(cycles)} ciclo(s) completo(s) da aproximação {ids[0]}: são necessários {MIN_CYCLES}.", SIGNAL_TABLE)
 
     warnings = []
     cycle_stat = _stat(cycles)
@@ -367,31 +485,50 @@ def estimate_signal(session: Session) -> dict:
             "message": (f"O ciclo observado varia de {cycle_stat['min']:.1f} a {cycle_stat['max']:.1f} s (CV {cv:.1%}): o plano "
                         "não parece de tempo fixo. O modelo usa as médias; confira se isso é aceitável para o seu cruzamento."),
         })
-    phases = [
-        {"green": _mean(green1), "amber": _mean(amber1), "all_red": _mean(all_red1)},
-        {"green": _mean(green2), "amber": _mean(amber2), "all_red": _mean(all_red2)},
-    ]
+    phases = [{"green": _mean(green_amber[i][0]), "amber": _mean(green_amber[i][1]), "all_red": _mean(all_red[i])} for i in range(n)]
     total = sum(sum(v for v in p.values() if v is not None) for p in phases)
     if abs(total - cycle_stat["mean"]) > max(1.0, 0.03 * cycle_stat["mean"]):
+        extra = (" Com mais de duas fases, confira se há uma fase sem aproximação em approach_ids (por exemplo, "
+                 "uma conversão protegida) e inclua-a." if n < 4 else "")
         warnings.append({
             "code": "cycle_mismatch", "level": "warning",
             "message": (f"As fases somam {total:.1f} s, mas o ciclo medido é {cycle_stat['mean']:.1f} s: há estados ausentes "
-                        "ou não registrados (por exemplo, fases que o modelo não representa)."),
+                        "ou não registrados (por exemplo, fases que o modelo não representa)." + extra),
         })
+    # a ordem de approach_ids tem de ser a ordem em que os verdes acontecem
+    if n > 2 and greens[0]:
+        order_ok = True
+        for g in greens[0][:-1]:
+            t = g
+            for i in range(1, n):
+                nxt = _next_after(greens[i], t)
+                if nxt is None:
+                    break
+                t = nxt
+            else:
+                if _next_after(greens[0], g) is not None and t > _next_after(greens[0], g):
+                    order_ok = False
+                    break
+        if not order_ok:
+            warnings.append({
+                "code": "phase_order", "level": "warning",
+                "message": ("Os verdes não seguem a ordem de approach_ids dentro do ciclo: a aproximação i deve receber o verde "
+                            "logo depois da aproximação i − 1. Reordene approach_ids na sequência das fases."),
+            })
 
     # instante do ciclo em t = 0
-    before = [g for g in g1 if g <= 1e-9]
+    before = [g for g in greens[0] if g <= 1e-9]
     if before:
         offset, source = -max(before), "observed"
     else:
-        offset, source = (-min(g1)) % cycle_stat["mean"], "extrapolated"
+        offset, source = (-min(greens[0])) % cycle_stat["mean"], "extrapolated"
         warnings.append({
             "code": "offset_extrapolated", "level": "warning",
             "message": "Nenhum verde da aproximação 1 foi registrado antes do início da contagem: o offset foi extrapolado com o ciclo médio."})
     return {
-        "approach_ids": [a1, a2], "phases": phases, "offset": float(offset), "offset_source": source,
-        "cycle": cycle_stat, "green": [_stat(green1), _stat(green2)], "amber": [_stat(amber1), _stat(amber2)],
-        "all_red": [_stat(all_red1), _stat(all_red2)], "warnings": warnings,
+        "approach_ids": list(ids), "phases": phases, "offset": float(offset), "offset_source": source,
+        "cycle": cycle_stat, "green": [_stat(g[0]) for g in green_amber], "amber": [_stat(g[1]) for g in green_amber],
+        "all_red": [_stat(r) for r in all_red], "warnings": warnings,
     }
 
 
@@ -414,8 +551,11 @@ def estimate_arrivals(session: Session, level: float = 0.95) -> dict:
         for d in items:
             duration = d["end"] - d["start"]
             low, high = _poisson_ci(d["arrivals"], duration, level)
-            blocks.append({"start": d["start"], "duration": duration, "arrivals": d["arrivals"],
-                           "lam": d["arrivals"] / duration, "ci_low": low, "ci_high": high})
+            block = {"start": d["start"], "duration": duration, "arrivals": d["arrivals"],
+                     "lam": d["arrivals"] / duration, "ci_low": low, "ci_high": high}
+            if d.get("by_class") is not None:
+                block["by_class"] = dict(d["by_class"])
+            blocks.append(block)
         total = sum(b["arrivals"] for b in blocks)
         span = sum(b["duration"] for b in blocks)
         low, high = _poisson_ci(total, span, level)
@@ -425,7 +565,22 @@ def estimate_arrivals(session: Session, level: float = 0.95) -> dict:
             "approach_id": a, "blocks": blocks, "mean_rate": total / span, "mean_rate_ci": [low, high], "arrivals": total,
             "initial_queue": initial if (initial is not None and visible is not False) else None,
         }
+        if session.classes:
+            by_class = {c: sum(d["by_class"][c] for d in items) for c in session.classes}
+            shares = {c: (n / total if total else 0.0) for c, n in by_class.items()}
+            out[key]["classes"] = [{"name": c, "arrivals": by_class[c], "share": shares[c], "factor": session.class_factors[c]}
+                                   for c in session.classes]
+            out[key]["mean_factor"] = float(sum(shares[c] * session.class_factors[c] for c in session.classes))
     return out
+
+
+def _weights(session: Session, approach: str, mean_factor: float) -> np.ndarray:
+    """Equivalência em carros de cada cruzamento: por classe, se houver; senão o fator médio; sem classes, 1."""
+    times = session.crossings[approach]
+    if not session.classes:
+        return np.ones(len(times))
+    given = (session.crossing_factors or {}).get(approach)
+    return given if given is not None else np.full(len(times), mean_factor)
 
 
 def estimate_discharge(
@@ -440,7 +595,8 @@ def estimate_discharge(
 
         instante do n-ésimo veículo − início do verde = ℓ + (n − 1) · h
 
-    por mínimos quadrados: a inclinação é o intervalo h entre veículos e o intercepto é ℓ. A reta
+    por mínimos quadrados: a inclinação é o intervalo h entre veículos e o intercepto é ℓ. Com classes, n − 1 vira
+    a soma dos fatores (equivalência em carros) dos veículos que passaram antes, e h é o intervalo por carro. A reta
     absorve a partida mais lenta dos primeiros veículos, e é exatamente o que o motor reproduz
     (1º veículo em ℓ, depois um a cada h). Os intervalos entre veículos consecutivos da cabeça da
     fila alimentam o ajuste da distribuição. Verdes cortados pelo início ou pelo fim da gravação ficam de fora.
@@ -448,11 +604,13 @@ def estimate_discharge(
     if session.crossings is None:
         return None
     out = {}
+    arrivals_info = estimate_arrivals(session, level) if session.classes else {}
     for key, a in zip(APPROACH_KEYS, session.approach_ids):
         ev = session.signal[a]
         greens, ambers, reds = (_transitions(ev, s) for s in ("green", "amber", "red"))
         times = session.crossings[a]
-        index_list: list[int] = []
+        weights = _weights(session, a, arrivals_info.get(key, {}).get("mean_factor", 1.0))
+        index_list: list[float] = []
         offset_list: list[float] = []
         gaps: list[float] = []
         first_raw: list[float] = []
@@ -463,12 +621,14 @@ def estimate_discharge(
                 continue                      # verde cortado pelo início ou pelo fim da gravação: não dá para medir a descarga
             amber = _next_after(ambers, g)
             amber_start = amber if (amber is not None and amber < red) else red
-            inside = times[(times >= g) & (times < red)]
+            mask = (times >= g) & (times < red)
+            inside, w_in = times[mask], weights[mask]
             if len(inside) == 0:
                 continue
             run = [inside[0]]
-            for t in inside[1:]:
-                if t - run[-1] <= max_headway:
+            for t, w_prev in zip(inside[1:], w_in[:-1]):
+                # o intervalo é medido por carro equivalente: depois de um ônibus o intervalo esperado é maior
+                if (t - run[-1]) / w_prev <= max_headway:
                     run.append(t)
                 else:
                     break
@@ -476,9 +636,11 @@ def estimate_discharge(
                 continue
             used += 1
             head = run[:core]
-            index_list.extend(range(len(head)))
+            w_head = w_in[:len(head)]
+            # fator acumulado dos veículos que passaram antes de cada um (0, 1, 2... sem classes)
+            index_list.extend(np.concatenate([[0.0], np.cumsum(w_head)[:-1]]).tolist())
             offset_list.extend(t - g for t in head)
-            gaps.extend(np.diff(head).tolist())
+            gaps.extend((np.diff(head) / w_head[:-1]).tolist())
             first_raw.append(run[0] - g)
             if run[-1] >= amber_start - max_headway:           # a fila ainda pressionava no fim do verde
                 pressured += 1
@@ -508,6 +670,9 @@ def estimate_discharge(
             "mean": float(intercept), "ci_low": float(intercept - tcrit * se_int), "ci_high": float(intercept + tcrit * se_int),
             "n": used, "first_crossing_mean": float(np.mean(first_raw)),
             "method": "intercepto da reta de descarga (extrapolado ao 1º veículo)",
+            "std": float(np.std(first_raw, ddof=1)) if len(first_raw) > 1 else None,
+            # variação do 1º veículo entre verdes (só com 3 ou mais verdes): alimenta o ℓ variável do modelo
+            "cv": float(np.std(first_raw, ddof=1) / np.mean(first_raw)) if len(first_raw) >= 3 and np.mean(first_raw) > 0 else None,
         }
         gaps_arr = np.asarray([g for g in gaps if g > 0], float)
         h_mean = float(slope)
@@ -530,9 +695,13 @@ def estimate_discharge(
         item["headway"] = headway
         if amber_extra:
             # o maior tempo de amarelo em que ainda houve cruzamento: um limite inferior do amarelo utilizável
-            item["amber_usable"] = {**_stat(amber_extra), "value": max(amber_extra), "pressured_cycles": pressured}
+            item["amber_usable"] = {**_stat(amber_extra), "value": max(amber_extra), "pressured_cycles": pressured,
+                                    "upper": max(amber_extra) + h_mean,
+                                    "note": ("Limite inferior: o maior tempo de amarelo com cruzamento observado. O valor real fica entre "
+                                             "`value` e `upper` (value + h): quem cruza no fim do amarelo depende de haver veículo naquele instante.")}
         elif pressured >= MIN_SATURATED_CYCLES:
-            item["amber_usable"] = {"value": 0.0, "n": 0, "pressured_cycles": pressured}
+            item["amber_usable"] = {"value": 0.0, "n": 0, "pressured_cycles": pressured, "upper": h_mean,
+                                    "note": "Ninguém cruzou no amarelo com a fila pressionando: o valor real fica entre 0 e `upper` (h)."}
         else:
             item["notes"].append("Poucos verdes chegaram ao fim ainda com fila: o amarelo utilizável não pôde ser estimado.")
         out[key] = item
@@ -559,7 +728,10 @@ def aggregate_blocks(blocks: list[dict], block_seconds: float) -> list[dict]:
     for g in groups:
         duration = sum(b["duration"] for b in g)
         arrivals = sum(b["arrivals"] for b in g)
-        out.append({"start": g[0]["start"], "duration": duration, "arrivals": arrivals, "lam": arrivals / duration})
+        block = {"start": g[0]["start"], "duration": duration, "arrivals": arrivals, "lam": arrivals / duration}
+        if g[0].get("by_class") is not None:
+            block["by_class"] = {c: sum(b["by_class"][c] for b in g) for c in g[0]["by_class"]}
+        out.append(block)
     return out
 
 
@@ -595,16 +767,28 @@ def suggested_intersection(session: Session, signal: dict, arrivals: dict, disch
     cada minuto como taxa de um novo Poisson sortearia a contagem duas vezes e inflaria a variância
     (e, com ela, o atraso). Na validação, as contagens observadas são usadas diretamente.
     """
-    approaches = []
-    for key in APPROACH_KEYS:
+    approaches, replay = [], []
+    for key in APPROACH_KEYS[:len(session.approach_ids)]:
         arr = arrivals[key]
         d = (discharge or {}).get(key) or {}
-        approaches.append({
+        blocks = aggregate_blocks(arr["blocks"], profile_block)
+        base = {
             "name": arr["approach_id"],
-            "profile": [{"duration": b["duration"], "lambda": b["lam"]} for b in aggregate_blocks(arr["blocks"], profile_block)],
             "headway": (d.get("headway") or {}).get("suggestion"),
             "first_vehicle_time": (d.get("first_vehicle_time") or {}).get("mean"),
+            "first_vehicle_cv": (d.get("first_vehicle_time") or {}).get("cv"),
             "amber_usable": (d.get("amber_usable") or {}).get("value"),
             "initial_queue": arr["initial_queue"],
-        })
-    return {"phases": signal["phases"], "offset": signal["offset"], "approaches": approaches, "simulation_time": session.horizon}
+        }
+        if arr.get("classes"):
+            base["classes"] = [{"name": c["name"], "share": c["share"], "factor": c["factor"]} for c in arr["classes"]]
+        approaches.append({**base, "profile": [{"duration": b["duration"], "lambda": b["lam"]} for b in blocks]})
+        replay_blocks = []
+        for b in blocks:
+            item = {"duration": b["duration"], "count": b["arrivals"]}
+            if b.get("by_class") is not None:
+                item["class_counts"] = dict(b["by_class"])
+            replay_blocks.append(item)
+        replay.append({**base, "profile": replay_blocks})
+    common = {"phases": signal["phases"], "offset": signal["offset"], "simulation_time": session.horizon}
+    return {**common, "approaches": approaches, "replay": {**common, "approaches": replay}}
